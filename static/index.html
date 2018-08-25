@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="googlebot" content="noindex, nofollow">
+
+    <!-- Bootstrap CSS -->
+    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css"/>
+    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css"/>
+    
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="//unpkg.com/babel-polyfill@latest/dist/polyfill.min.js"></script>
+    <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
+
+    <title>Directory</title>
+  </head>
+  
+<body>
+    <!-- Our application root element -->
+    <div id="app">
+      <b-container>
+        <b-jumbotron header="Bootstrap Vue"
+                     lead="Bootstrap 4 Components for Vue.js 2"
+        >
+          <p>For more information visit our website</p>
+          <b-btn variant="primary" href="https://bootstrap-vue.js.org/">More Info</b-btn>
+        </b-jumbotron>
+
+        <b-form-group horizontal
+                      :label-cols="4"
+                      description="Let us know your name."
+                      label="Enter your name"
+        >
+           <b-form-input v-model.trim="name"></b-form-input>
+        </b-form-group>
+
+        <b-alert variant="success" :show="showAlert">
+          Hello {{ name }}!
+        </b-alert>
+    </div>
+
+    <!-- Start running your app -->
+    <script src="static/js/app.js"></script>
+    
+  </body>
+</html>
