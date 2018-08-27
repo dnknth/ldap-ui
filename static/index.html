@@ -8,42 +8,182 @@
     <meta name="googlebot" content="noindex, nofollow">
 
     <!-- Bootstrap CSS -->
-    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css"/>
-    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css"/>
+    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous" />
+
+    <link type="text/css" rel="stylesheet" href="style.css"/>
     
-    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-    <script src="//unpkg.com/babel-polyfill@latest/dist/polyfill.min.js"></script>
-    <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js" crossorigin="anonymous"></script>
+    
+    <script src="//unpkg.com/babel-polyfill@latest/dist/polyfill.min.js" crossorigin="anonymous"></script>
+    <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js" crossorigin="anonymous"></script>
+    <script src="//zeptojs.com/zepto.min.js"></script>
 
     <title>Directory</title>
   </head>
   
 <body>
-    <!-- Our application root element -->
+
     <div id="app">
-      <b-container>
-        <b-jumbotron header="Bootstrap Vue"
-                     lead="Bootstrap 4 Components for Vue.js 2"
-        >
-          <p>For more information visit our website</p>
-          <b-btn variant="primary" href="https://bootstrap-vue.js.org/">More Info</b-btn>
-        </b-jumbotron>
 
-        <b-form-group horizontal
-                      :label-cols="4"
-                      description="Let us know your name."
-                      label="Enter your name"
-        >
-           <b-form-input v-model.trim="name"></b-form-input>
-        </b-form-group>
+        <b-navbar toggleable="md" type="dark" variant="info" sticky>
 
-        <b-alert variant="success" :show="showAlert">
-          Hello {{ name }}!
-        </b-alert>
+            <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
+
+            <b-navbar-brand href="#">LDAP</b-navbar-brand>
+
+            <b-collapse is-nav id="nav_collapse">
+
+              <!-- Right aligned nav items -->
+              <b-navbar-nav class="ml-auto">                  
+                <b-nav-item-dropdown text="Schema" right>
+                    <b-dropdown-item v-for="(obj, name) in schema.objectClasses"
+                        :key="name" href="#" @click="oc = obj; attr = null;">{{ name }}</b-dropdown-item>
+                </b-nav-item-dropdown>
+
+                <b-nav-form>
+                  <b-form-input size="sm" class="mr-sm-2" type="text" placeholder="Search"/>
+                  <b-button size="sm" class="my-2 my-sm-0" type="submit">Search</b-button>
+                </b-nav-form>
+              </b-navbar-nav>
+            </b-collapse>
+        </b-navbar>
+        
+        <br />
+
+        <b-container fluid>
+            <b-row>
+                <b-col cols="4">
+                
+                    <!-- Tree view -->
+                    <b-card>
+                        <div slot="header"><span class="small"><i class="fas fa-user">&nbsp;</i><a href="#" @click="loadEntry( user)" class="tree-link">
+                            {{ user }}</a></span>
+                            <b-link href="#" class="close-box" @click="showTree = !showTree">{{ showTree ? '⊖' : '⊕' }}</b-link>
+                        </div>
+                        <ul id="tree" v-if="showTree">
+                            <li v-for="item in treeItems"
+                                :id="item.dn" :class="'level-' + item.level + ' ' + item.structuralObjectClass">
+                                    <span v-if="item.hasSubordinates"
+                                        :class="{ collapsed: item.collapsed, opened: !item.collapsed }"
+                                        @click="toggle(item)"><i :class="'fas fa-arrow-circle-'
+                                            + (item.collapsed ? 'right' : 'down')"></i></span>
+                                    <span v-else class="leaf">&nbsp;</span>
+                                    <b-link href="#" class="tree-link" @click="loadEntry( item.dn)"> 
+                                        <i :class="'fas fa-' + (icons[item.structuralObjectClass] || 'question')"></i>
+                                        {{ item.name }}
+                                    </b-link>
+                            </li>
+                        </ul>
+                    </b-card>
+
+                    <!-- Schema / Objectclass -->
+                    <b-card class="schema" v-if="oc" :title="oc.desc">
+                        <span class="header" slot="header">
+                            {{ oc.name }}
+                            <b-link href="#" class="close-box" @click="oc = null;">⊗</b-link>                            
+                        </span>
+                                                
+                        <div v-if="oc.must.length > 0">
+                            Must have attributes:
+                            <ul class="click-through">
+                                <li v-for="name in oc.must">
+                                    <b-link href="#" @click="oc = null; attr = getAttr(name)">{{ name }}</b-link>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div v-if="oc.may.length > 0">
+                            May have attributes:
+                            <ul class="click-through">
+                                <li v-for="name in oc.may">
+                                    <b-link href="#" @click="oc = null; attr = getAttr(name)">{{ name }}</b-link>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div v-if="oc.sup.length > 0">
+                            Superclasses:
+                            <ul class="click-through">
+                                <li v-for="name in oc.sup">
+                                    <b-link href="#" @click="oc = getOc(name)">{{ name }}</b-link>
+                                </li>
+                            </ul>
+                        </div>
+                    </b-card>
+                    
+                    <!-- Schema / Attribute -->
+                    <b-card class="schema" v-if="attr" :title="attr.desc">
+                        <span class="header" slot="header">
+                            {{ attr.names.join(', ') }}
+                            <b-link href="#" class="close-box" @click="attr = null;">⊗</b-link>                            
+                        </span>
+                        
+                        <ul>
+                            <li v-for="(val, key) in attr"
+                                v-if="val !== null && hiddenFields.indexOf( key) == -1">
+                                {{ key }}: {{ val }}
+                            </li>
+                        </ul>
+                        
+                        <div v-if="attr.sup.length > 0">
+                            Superclasses:
+                            <ul class="click-through">
+                                <li v-for="name in attr.sup">
+                                    <b-link href="#" @click="attr = getAttr(name)">{{ name }}</b-link>
+                                </li>
+                            </ul>
+                        </div>
+                    </b-card>
+                </b-col>
+                
+                <b-col>
+                    
+                    <!-- Entry form -->
+                    <b-form @submit="onSubmit" @reset="loadEntry( entry.meta.dn)">
+                        <b-card v-if="entry">
+                            <span class="header" slot="header">
+                                {{ entry.attrs.cn ? entry.attrs.cn[0] : entry.meta.dn }}
+                                <b-link href="#" class="close-box" @click="entry = null;">⊗</b-link>
+                            </span>
+
+                            <table id="entry">
+                                <tr v-for="(values, key) in entry.attrs"
+                                    v-if="!getAttr(key).no_user_mod">
+                                    <th :class="required( key) ? 'required' : 'optional'">
+                                        <b-link href="#" @click="oc = null; attr = getAttr(key)">{{ key }}</b-link>
+                                        <b-link href="#" class="add-btn" 
+                                            v-if="!getAttr(key).single_value"
+                                            @click="addRow( values)">⊕<b-link>
+                                    </th>
+                                    <td>
+                                        <div v-for="val in values">
+                                            <input :name="key" :value="val"
+                                                :type="fieldType( key)"
+                                                :class="{ structural: isStructural( key, val) }"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th></th>
+                                    <td>
+                                        <b-button type="submit" variant="primary">Submit</b-button>
+                                        <b-button type="reset" variant="danger">Reset</b-button>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                        </b-card>
+                    </b-form>
+                </b-col>
+                    
+            </b-row>
+        </b-container>
+        
     </div>
-
-    <!-- Start running your app -->
-    <script src="static/js/app.js"></script>
     
+    <script src="app.js"></script>
+
   </body>
 </html>

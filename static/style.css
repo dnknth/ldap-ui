@@ -1,0 +1,104 @@
+a, a:hover {
+    text-decoration: none;
+    color: black;
+}
+
+ul.click-through a {
+    text-decoration: underline;
+}
+
+ul#tree {
+    list-style-type: none;
+    padding: 0px;
+}
+
+ul#tree li {
+    margin-top: 0.1em;
+}
+
+li.level-1 {
+    padding-left: 1em;
+}
+
+li.level-2 {
+    padding-left: 2em;
+}
+
+li.level-3 {
+    padding-left: 3em;
+}
+
+li.level-4 {
+    padding-left: 4em;
+}
+
+li.level-5 {
+    padding-left: 5em;
+}
+
+a.tree-link i.fas {
+    color: gray;
+}
+
+span.leaf {
+    margin-left: 0.6em;
+}
+
+span.collapsed, span.opened {
+    cursor: pointer;
+    color: gray;
+}
+
+.small {
+    font-size: small;
+}
+
+a.close-box {
+    position: absolute;
+    top: 0.2em;
+    right: 0.4em;
+    font-size: 150%;
+    color: gray;
+}
+
+div.schema {
+    margin-top: 1ex;
+}
+
+span.header {
+    font-weight: bold;
+}
+
+table#entry {
+    width: 100%;
+}
+
+table#entry th {
+    vertical-align: top;
+    padding-right: 1em;
+    position: relative;
+    top: 0.5ex;
+}
+
+table#entry th.optional {
+    font-weight: normal;
+}
+
+table#entry input {
+    margin-bottom: 0.2em;
+    display: block;
+    width: 100%;
+    padding: 0px 0.5em;
+}
+
+a.add-btn {
+    font-size: 150%;
+    float: right;
+    position: relative;
+    top: -0.7ex;
+    color: LightGray;
+}
+
+input.structural {
+    font-weight: bold;
+}
