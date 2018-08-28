@@ -13,13 +13,22 @@ app = Flask( __name__)
 app.config.from_object( 'settings')
 
 
-def _search( expr=app.config['FILTER_ALL'], base=app.config['BASE_DN'], scope=ldap.SCOPE_SUBTREE, attrs=('*','+')):
+def _search( expr=app.config['FILTER_ALL'],
+        base=app.config['BASE_DN'],
+        scope=ldap.SCOPE_SUBTREE,
+        attrs=('*','+'),
+        auth=None):
+        
     con = ldap.initialize( app.config['LDAP_URL'])
-    return con.search_s(
-        base,
-        scope,
-        expr,
-        attrs)
+    if auth:
+        res = con.search_s( app.config['FILTER_UID'] % auth['username'],
+            base, ldap.SCOPE_SUBTREE, ('*','+'))
+        dn, attrs = res[0]
+        con.simple_bind_s( dn, auth['password'])
+        
+    res = con.search_s( base, scope, expr, attrs)        
+    if auth: con.unbind_s()
+    return res
 
     
 def get_schema() -> None:
@@ -45,7 +54,7 @@ def static_file( filename): # FIXME Dev mode only, serve statically
 
 @app.route( '/api/whoami')
 def whoami():
-    if request.authorization: 
+    if request.authorization:
         res = _search( app.config['FILTER_UID'] % request.authorization['username'])
         if res:
             dn, attrs = res[0]
@@ -107,35 +116,47 @@ def tree():
     return jsonify( data)
 
 
+def _entry( res):
+    dn, attrs = res
+    ocs = set( _decode( attrs['objectClass']))
+    soc = _decode( attrs['structuralObjectClass'][0])
+    must_attrs, may_attrs = app.schema.attribute_types( ocs)
+    aux = set( app.schema.get_obj( ObjectClass, a).names[0]
+        for a in app.schema.get_applicable_aux_classes( soc))
+    
+    return {
+        'attrs':  _decode( attrs, excludes=app.config['HIDDEN_ATTRS']
+                    | app.config['INTERNAL_ATTRS']),
+        'meta': {
+            'dn': dn,
+            'required': [ app.schema.get_obj( AttributeType, a).names[0] for a in must_attrs],
+            'aux': sorted( aux - ocs),
+        }
+    }
+
 @app.route( '/api/entry/<dn>', methods=('GET', 'POST'))
 def entry( dn: str):
     'Edit directory entries'
     
     if request.method == 'GET':
         res = _search( base=dn, scope=ldap.SCOPE_BASE)
-        if res:
-            dn, attrs = res[0]
-            ocs = set( _decode( attrs['objectClass']))
-            soc = _decode( attrs['structuralObjectClass'][0])
-            must_attrs, may_attrs = app.schema.attribute_types( ocs)
-            aux = set( app.schema.get_obj( ObjectClass, a).names[0]
-                for a in app.schema.get_applicable_aux_classes( soc))
+        if res: return jsonify( _entry( res[0]))
             
-            return jsonify( {
-                'attrs':  _decode( attrs, excludes=app.config['HIDDEN_ATTRS']
-                            | app.config['INTERNAL_ATTRS']),
-                'meta': {
-                    'dn': dn,
-                    'required': [ app.schema.get_obj( AttributeType, a).names[0] for a in must_attrs],
-                    'aux': sorted( aux - ocs),
-                }
-            })
-
     elif request.method == 'POST':
         return jsonify( request.form.getlist('objectClass')) # FIXME debug code
         
-    return jsonify({})
+    return jsonify( None)
     
+    
+@app.route( '/api/search/<q>')
+def search( q: str):
+    'Search the directory'
+    for query in app.config['SEARCH_PATTERNS']:
+        res = _search( query % q)
+        if res: return jsonify( _entry( res[0]))
+
+    return jsonify( None)
+
 
 ### LDAP Schema ###
 def _schema( schema_class):

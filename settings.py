@@ -13,3 +13,9 @@ TREE_ATTRS = set( ('structuralObjectClass', 'hasSubordinates'))
 
 FILTER_ALL = '(objectclass=*)'
 FILTER_UID = '(uid=%s)'
+
+SEARCH_PATTERNS = (FILTER_UID, 
+    '(cn=*%s)',
+    '(cn=%s*)',
+    '(cn=*%s*)',
+)

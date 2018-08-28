@@ -151,6 +151,14 @@ window.app = new Vue({
             return key == 'objectClass'
                 && val == this.entry.attrs.structuralObjectClass[0];
         },
+        
+        search: function( evt) {
+            evt.preventDefault();
+            const fd = new FormData( evt.target);
+            $.get('api/search/' + $('input#q').val(), function(response) {
+                window.app.entry = response;
+            });
+        },
 
     },
     
