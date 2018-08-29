@@ -8,17 +8,16 @@
     <meta name="googlebot" content="noindex, nofollow">
 
     <!-- Bootstrap CSS -->
-    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css" crossorigin="anonymous" />
-    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css" crossorigin="anonymous" />
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous" />
-
+    <link type="text/css" rel="stylesheet" href="vendor/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="vendor/bootstrap-vue.css" />
+    
+    <link type="text/css" rel="stylesheet" href="vendor/fontawesome-free-5.3.1-web/css/all.css" />
     <link type="text/css" rel="stylesheet" href="style.css"/>
     
-    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js" crossorigin="anonymous"></script>
-    
-    <script src="//unpkg.com/babel-polyfill@latest/dist/polyfill.min.js" crossorigin="anonymous"></script>
-    <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js" crossorigin="anonymous"></script>
-    <script src="//zeptojs.com/zepto.min.js"></script>
+    <script src="vendor/vue.js"></script>
+    <script src="vendor/polyfill.min.js"></script>
+    <script src="vendor/bootstrap-vue.js"></script>
+    <script src="vendor/jquery.min.js"></script>
 
     <title>Directory</title>
   </head>
@@ -51,17 +50,50 @@
         
         <br />
 
+        <!-- Confirmation popup -->
+        <b-modal id="confirm" title="Are you sure?" @ok="remove">
+            <p>This action is not reversible.</p>
+        </b-modal>
+  
+        <!-- Popup for object class selection -->
+        <b-modal id="oc-modal" ref="ocref" title="Add objectClass" @ok="addOc">
+            <b-form-select v-model="selectedOc" :options="aux" class="mb-3" />
+        </b-modal>
+  
+        <!-- Add entry popup -->
+        <b-modal id="newEntry" ref="newRef" title="New entry" @ok="createEntry">
+            <b-form-group label="Object class:" label-for="newoc">
+                <b-form-select id="newoc" v-model="newEntry.objectClass"
+                    :options="structural" v-if="newEntry" class="mb-3" />
+            </b-form-group>
+            
+            <b-form-group label="RDN attribute:" label-for="newrdn"
+                v-if="newEntry && newEntry.objectClass">
+                <b-form-select id="newrdn" v-model="newEntry.rdn"
+                    :options="rdn" class="mb-3" />
+            </b-form-group>
+
+            <b-form-input v-if="newEntry && newEntry.objectClass"
+                v-model="newEntry.name" class="mb-3" placeholder="RDN value" />
+            </b-form-input>
+        </b-modal>
+  
+        <!-- Popup for new attribute selection -->
+        <b-modal id="newAttr" ref="newAttr" title="Add attribute" @ok="addAttr">
+            <b-form-select v-model="newAttr" :options="attrs" class="mb-3" />
+        </b-modal>
+  
         <b-container fluid>
             <b-row>
-                <b-col cols="4">
+                <b-col cols="*" id="left">
                 
                     <!-- Tree view -->
-                    <b-card>
+                    <b-card id="tree-view">
                         <div slot="header"><span class="small"><i class="fas fa-user">&nbsp;</i><a href="#" @click="loadEntry( user)" class="tree-link">
                             {{ user }}</a></span>
-                            <b-link href="#" class="close-box" @click="showTree = !showTree">{{ showTree ? '⊖' : '⊕' }}</b-link>
                         </div>
-                        <ul id="tree" v-if="showTree">
+                        
+                        <ul id="tree">
                             <li v-for="item in treeItems"
                                 :id="item.dn" :class="'level-' + item.level + ' ' + item.structuralObjectClass">
                                     <span v-if="item.hasSubordinates"
@@ -138,38 +170,65 @@
                 </b-col>
                 
                 <b-col>
+                    <b-alert dismissible fade :variant="error.type"
+                            :show="error && error.counter" @dismissed="error.counter=0">
+                        {{ error.msg }}
+                    </b-alert>
                     
+                    <b-card v-if="searchResult">
+                        <span class="header" slot="header">
+                            Search results
+                        </span>
+                        
+                        <ul class="search-result">
+                            <li v-for="entry in searchResult">
+                                <b-link href="#" @click="loadEntry(entry.dn)">{{ entry.name }}</b-link>
+                            </li>
+                        </ul>
+                    </b-card>
+                
                     <!-- Entry form -->
-                    <b-form @submit="onSubmit" @reset="loadEntry( entry.meta.dn)">
+                    <b-form @submit="change" @reset="reset">
                         <b-card v-if="entry">
                             <span class="header" slot="header">
                                 {{ entry.attrs.cn ? entry.attrs.cn[0] : entry.meta.dn }}
-                                <b-link href="#" class="close-box" @click="entry = null;">⊗</b-link>
+                                <b-link href="#" class="close-box" @click="entry = newEntry = null;">⊗</b-link>
                             </span>
+                            
+                            <div slot="footer" v-if="!newEntry">
+                                <b-button type="submit" variant="primary">Submit</b-button>
+                                <b-button type="reset" v-if="!newEntry">Reset</b-button>
+
+                                <b-button variant="danger" class="right" v-b-modal.confirm>Delete</b-button>
+                                <b-button class="right" @click="addEntry">Add child</b-button>
+                                <b-button class="right" @click="createAttr">Add attribute</b-button>
+                            </div>
 
                             <table id="entry">
-                                <tr v-for="(values, key) in entry.attrs"
-                                    v-if="!getAttr(key).no_user_mod">
+                                <tr v-for="(values, key) in entry.attrs" v-if="!getAttr(key).no_user_mod">
+                                    
                                     <th :class="required( key) ? 'required' : 'optional'">
                                         <b-link href="#" @click="oc = null; attr = getAttr(key)">{{ key }}</b-link>
-                                        <b-link href="#" class="add-btn" 
-                                            v-if="!getAttr(key).single_value"
-                                            @click="addRow( values)">⊕<b-link>
+                                        <i v-if="changed( key)" class="fas fa-check"></i>
+                                        <b-link href="#" class="right add-btn" 
+                                            v-if="!getAttr(key).single_value && !newEntry"
+                                            @click="addRow( key, values)">⊕</b-link>
                                     </th>
                                     <td>
-                                        <div v-for="val in values">
-                                            <input :name="key" :value="val"
+                                        <div v-for="(val, index) in values">
+                                            <input v-model="entry.attrs[key][index]"
                                                 :type="fieldType( key)"
                                                 :class="{ structural: isStructural( key, val) }"/>
+                                            &nbsp;
+                                            <b-link href="#" @click="oc = getOc(val); attr = null;">
+                                                <i class="fas fa-info-circle" v-if="key == 'objectClass'"></i>
+                                            </b-link>
                                         </div>
                                     </td>
                                 </tr>
-                                <tr>
+                                <tr v-if="newEntry">
                                     <th></th>
-                                    <td>
-                                        <b-button type="submit" variant="primary">Submit</b-button>
-                                        <b-button type="reset" variant="danger">Reset</b-button>
-                                    </td>
+                                    <td><b-button type="submit" variant="primary">Submit</b-button></td>
                                 </tr>
                             </table>
                             

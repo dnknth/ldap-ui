@@ -1,21 +1,35 @@
-ENV = 'development'
-PREFERRED_URL_SCHEME = 'https'
-SECRET_KEY = b'\x95\xf9(\xc6\xcb\x05\x1b\xea\x10\xc5\xe8\x97\xcfa\x98\xa2' # obtained via os.urandom(16)
+import os
 
-LDAP_URL = 'ldapi:///'
-BASE_DN = 'dc=krachbumm,dc=de'
+# App settings
+PREFERRED_URL_SCHEME = 'https'
+SECRET_KEY = os.urandom( 16)
+
+# LDAP settings
+LDAP_URL = os.environ.get( 'LDAP_URL', 'ldapi:///')
+BASE_DN = os.environ.get( 'BASE_DN', 'dc=krachbumm,dc=de')
 SCHEMA_DN = 'cn=subschema'
 ENCODING = 'UTF8'
 
-INTERNAL_ATTRS = set( ('createTimestamp', 'creatorsName', 'modifiersName', 'modifyTimestamp'))
-HIDDEN_ATTRS = set( ('entryCSN', 'entryDN', 'entryUUID', 'subschemaSubentry', 'hasSubordinates', 'memberOf'))
-TREE_ATTRS = set( ('structuralObjectClass', 'hasSubordinates'))
+# UI settings
+TREE_LEVEL = 1 # tree depth shown on page load
+HIDDEN_ATTRS = set( ( # Do not change
+    'createTimestamp', 'creatorsName',
+    'modifiersName', 'modifyTimestamp',
+    'entryCSN', 'entryDN', 'entryUUID',
+    'subschemaSubentry', 'hasSubordinates',
+    'memberOf'))
+TREE_ATTRS = set( ( # Do not change
+    'structuralObjectClass', 'hasSubordinates'))
 
-FILTER_ALL = '(objectclass=*)'
-FILTER_UID = '(uid=%s)'
+# Attribute to check for user login
+UID_ATTR = 'uid'
 
-SEARCH_PATTERNS = (FILTER_UID, 
-    '(cn=*%s)',
-    '(cn=%s*)',
-    '(cn=*%s*)',
+# Searches
+SEARCH_PATTERNS = ( # for search field
+    '(%s=%%s)' % UID_ATTR, 
+    '(cn=%s)',
+    '(gn=%s)',
+    '(sn=%s)',
 )
+SEARCH_QUERY_MIN = 2 # Minimm length of query term
+SEARCH_MAX = 30 # Maximum number of results

@@ -1,71 +1,89 @@
-from collections import OrderedDict
-from flask import Flask, jsonify, request, session
-from ldap.schema.models import (Entry,
-    AttributeType, ObjectClass,
-    DITContentRule, DITStructureRule,
-    MatchingRule, MatchingRuleUse,
-    NameForm)
-
-import ldap, sys
+from flask import request
+from ldap.modlist import addModlist, modifyModlist
+import flask, functools, ldap, sys, types
 
 
-app = Flask( __name__)
+app = flask.Flask( __name__)
 app.config.from_object( 'settings')
 
+# Constant to add technical attributes in LDAP search results
+WITH_OPERATIONAL_ATTRS = ('*','+')
 
-def _search( expr=app.config['FILTER_ALL'],
-        base=app.config['BASE_DN'],
-        scope=ldap.SCOPE_SUBTREE,
-        attrs=('*','+'),
-        auth=None):
-        
-    con = ldap.initialize( app.config['LDAP_URL'])
-    if auth:
-        res = con.search_s( app.config['FILTER_UID'] % auth['username'],
-            base, ldap.SCOPE_SUBTREE, ('*','+'))
-        dn, attrs = res[0]
-        con.simple_bind_s( dn, auth['password'])
-        
-    res = con.search_s( base, scope, expr, attrs)        
-    if auth: con.unbind_s()
-    return res
 
+def api( view: types.FunctionType) -> flask.Response:
+    ''' View decorator for ReST endpoints.
+        Requires authentication and emits Json.
+    '''
+    @functools.wraps( view)
+    def wrapped_view( **values) -> flask.Response:
+        if not request.authorization: flask.abort( 401) # Unauthorized
+        else:
+            data = view( **values)
+            return flask.jsonify( data)
+    return wrapped_view
+
+
+def no_cache( view: types.FunctionType) -> flask.Response:
+    'View decorator to prevent browser caching. Must precede @api.'
     
-def get_schema() -> None:
-    # See: https://hub.packtpub.com/python-ldap-applications-part-4-ldap-schema/
-    res = _search( base=app.config['SCHEMA_DN'], scope=ldap.SCOPE_BASE)
+    @functools.wraps( view)
+    def wrapped_view( **values) -> flask.Response:
+        resp = view( **values)
+        resp.headers[ 'Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        resp.headers[ 'Pragma'] = 'no-cache'
+        resp.headers[ 'Expires'] = '0'
+        return resp
+    return wrapped_view
 
-    # See: https://www.python-ldap.org/en/latest/reference/ldap-schema.html
-    dn, subschema_entry = res[0]
-    app.schema = ldap.schema.SubSchema( subschema_entry, check_uniqueness=2)
 
-get_schema()
+class Ldap:
+    'Context manager for authenticated LDAP connections'
+    
+    def __init__( self, auth:dict=None) -> None:
+        self.auth = auth
+        
+    def __enter__( self) -> ldap.ldapobject.LDAPObject:
+        'Authenticate with LDAP server'
+        
+        self.connection = ldap.initialize( app.config['LDAP_URL'])
+        if self.auth:
+            res = self.connection.search_s( 
+                app.config['BASE_DN'],
+                ldap.SCOPE_SUBTREE,
+                '(%s=%s)' % (app.config['UID_ATTR'], self.auth['username']))
+            if len( res) != 1:
+                raise ldap.INVALID_CREDENTIALS( {
+                    'desc': 'Invalid user',
+                    'info': "User '%s' unknown" % self.auth['username']})
+            dn, attrs = res[0]
+            self.connection.simple_bind_s( dn, self.auth['password'])
+        return self.connection
+
+    def __exit__( self, *args) -> None:
+        if self.auth: self.connection.unbind_s()
 
 
 @app.route( '/')
-def index( filename='index.html'): # FIXME Dev mode only, serve statically
+def index() -> flask.Response:
     return static_file( 'index.html')
 
 
-@app.route( '/<filename>')
-def static_file( filename): # FIXME Dev mode only, serve statically
+@app.route( '/<path:filename>')
+def static_file( filename) -> flask.Response:
     return app.send_static_file( filename)
 
 
 @app.route( '/api/whoami')
-def whoami():
-    if request.authorization:
-        res = _search( app.config['FILTER_UID'] % request.authorization['username'])
-        if res:
-            dn, attrs = res[0]
-            return jsonify( dn)
-    return jsonify( None)
+@no_cache
+@api
+def whoami() -> str:
+    with Ldap( request.authorization) as con:
+        return con.whoami_s().replace( 'dn:', '')
 
 
 def dn_sort( dn: str) -> tuple:
     'Re-order DN parts for sorting'
     return tuple( reversed( dn.lower().split( ',')))
-
 
 def _decode( attrs, filters=None, excludes=None):
     if type( attrs) is dict:
@@ -79,17 +97,24 @@ def _decode( attrs, filters=None, excludes=None):
 
 
 @app.route( '/api/tree')
-def tree():
-    'Dump directory entries as JSON'
-    res = dict( _search())
+@no_cache
+@api
+def tree() -> list:
+    'List directory entries'
+    
+    with Ldap( request.authorization) as con:
+        res = dict( con.search_s( app.config['BASE_DN'],
+            ldap.SCOPE_SUBTREE, attrlist=WITH_OPERATIONAL_ATTRS))
+
     data, stack = [], []
     for dn in sorted( res.keys(), key=dn_sort):
         attrs = _decode( res[dn], app.config['TREE_ATTRS'])
+
+        # Flatten single-valued lists
+        for key in attrs: attrs[key] = attrs[key][0]
+        
         attrs['dn'] = dn
         attrs['level'] = len( stack)
-        
-        # Flatten single-valued lists
-        for key in app.config['TREE_ATTRS']: attrs[key] = attrs[key][0]
         
         if not stack:
             stack.append( (dn, attrs))
@@ -110,55 +135,125 @@ def tree():
             if attrs['hasSubordinates']:
                 stack.append( (dn, attrs))
                 
+        attrs['collapsed'] = attrs['level'] > app.config['TREE_LEVEL']
         attrs['name'] = dnpart
         data.append( attrs)
         
-    return jsonify( data)
+    return data
 
 
-def _entry( res):
+def _entry( res: tuple) -> dict:
+    'Prepare an LDAP entry for transmission'
+    
     dn, attrs = res
     ocs = set( _decode( attrs['objectClass']))
     soc = _decode( attrs['structuralObjectClass'][0])
     must_attrs, may_attrs = app.schema.attribute_types( ocs)
-    aux = set( app.schema.get_obj( ObjectClass, a).names[0]
+    aux = set( app.schema.get_obj( ldap.schema.models.ObjectClass, a).names[0]
         for a in app.schema.get_applicable_aux_classes( soc))
     
     return {
-        'attrs':  _decode( attrs, excludes=app.config['HIDDEN_ATTRS']
-                    | app.config['INTERNAL_ATTRS']),
+        'attrs':  _decode( attrs, excludes=app.config['HIDDEN_ATTRS']),
         'meta': {
             'dn': dn,
-            'required': [ app.schema.get_obj( AttributeType, a).names[0] for a in must_attrs],
+            'required': [ app.schema.get_obj( ldap.schema.models.AttributeType, a).names[0]
+                          for a in must_attrs],
             'aux': sorted( aux - ocs),
         }
     }
 
-@app.route( '/api/entry/<dn>', methods=('GET', 'POST'))
-def entry( dn: str):
+def _bytes( s: str) -> bytes:
+    return s.encode( app.config['ENCODING'])
+
+
+@app.route( '/api/entry/<dn>', methods=('GET', 'POST', 'DELETE', 'PUT'))
+@no_cache
+@api
+def entry( dn: str) -> dict:
     'Edit directory entries'
     
-    if request.method == 'GET':
-        res = _search( base=dn, scope=ldap.SCOPE_BASE)
-        if res: return jsonify( _entry( res[0]))
-            
-    elif request.method == 'POST':
-        return jsonify( request.form.getlist('objectClass')) # FIXME debug code
+    if request.is_json:
+        # Copy JSON payload into a dictionary of non-empty byte strings
+        req  = { k: list( map( _bytes, filter( None, v)))
+                    for k,v in request.get_json().items()
+                    if k != 'structuralObjectClass'}
         
-    return jsonify( None)
+    try:
+        with Ldap( request.authorization) as con:
+            if request.method == 'GET':
+                res = con.search_s( dn, ldap.SCOPE_BASE,
+                        attrlist=WITH_OPERATIONAL_ATTRS)
+                return _entry( res[0]) if res else None
+        
+            elif request.method == 'POST':
+                # Get previous values from directory
+                res = con.search_s( dn, ldap.SCOPE_BASE)
+                
+                mods = { k: v for k, v in res[0][1].items() if k in req }
+                modlist = modifyModlist( mods, req)
+                
+                if modlist: # Apply changes and send changed keys back
+                    con.modify_s( dn, modlist)
+                return { 'changed' : sorted( set( m[1] for m in modlist)) }
+            
+            elif request.method == 'PUT':
+                # Create new object
+                modlist = addModlist( req)
+                if modlist: con.add_s( dn, modlist)
+                return { 'changed' : ['dn'] } # Dummy
+                
+            elif request.method == 'DELETE':
+                with Ldap( request.authorization) as con:
+                    con.delete_s( dn)
+                    
+    except ldap.LDAPError as err:
+        # Send LDAP error message as 500 Internal Server Error
+        args = err.args[0]
+        flask.abort( flask.make_response( '%s: %s' % (
+            args.get( 'desc', ''),
+            args.get( 'info', '')), 500, []))
     
-    
-@app.route( '/api/search/<q>')
-def search( q: str):
-    'Search the directory'
-    for query in app.config['SEARCH_PATTERNS']:
-        res = _search( query % q)
-        if res: return jsonify( _entry( res[0]))
 
-    return jsonify( None)
+def _ename( entry: dict) -> str:
+    'Try to extract a CN'
+    if entry['cn']: return _decode( entry['cn'][0])
+
+
+@app.route( '/api/search/<q>')
+@api
+def search( q: str) -> list:
+    'Search the directory'
+    
+    # Build query
+    if len(q) < app.config['SEARCH_QUERY_MIN']: return []
+    query = '(|%s)' % ''.join( pattern % q
+            for pattern in app.config['SEARCH_PATTERNS'])
+    
+    with Ldap( request.authorization) as con:
+        res = con.search_s(
+            app.config['BASE_DN'], ldap.SCOPE_SUBTREE,
+            query, WITH_OPERATIONAL_ATTRS)
+        if len( res) == 1: return [ _entry( res[0]) ]
+        return [ { 'dn': dn, 'name': _ename( attrs) or dn }
+            for dn, attrs in res[:app.config['SEARCH_MAX']]]
 
 
 ### LDAP Schema ###
+def get_schema() -> ldap.schema.SubSchema:
+    # See: https://hub.packtpub.com/python-ldap-applications-part-4-ldap-schema/
+    with Ldap() as con:
+        res = con.search_s( app.config['SCHEMA_DN'],
+            ldap.SCOPE_BASE, attrlist=WITH_OPERATIONAL_ATTRS)
+
+        # See: https://www.python-ldap.org/en/latest/reference/ldap-schema.html
+        dn, subschema_entry = res[0]
+        return ldap.schema.SubSchema( subschema_entry, check_uniqueness=2)
+
+
+# Load schema into the app
+app.schema = get_schema()
+
+
 def _schema( schema_class):
     'Get all objects from the schema for type'
     for oid in app.schema.listall( schema_class):
@@ -177,27 +272,30 @@ def _el( obj) -> dict:
         'sup'      : sorted( obj.sup),
     }
 
-def _kind( i: int) -> str:
-    if i==0: return 'structural'
-    if i==1: return 'abstract'
-    if i==2: return 'auxiliary'
-    
+# Object class constants
+SCHEMA_OC_KIND = {
+    0: 'structural',
+    1: 'abstract',
+    2: 'auxiliary',
+}
+   
 def _oc( obj) -> dict:
     'Additional information about an object class'
     r = _el( obj)
     r.update({
         'may'   : sorted( obj.may),
         'must'  : sorted( obj.must),
-        'kind'  : _kind( obj.kind)
+        'kind'  : SCHEMA_OC_KIND[ obj.kind]
     })
     return r
 
-def _usage( i: int) -> str:
-    'Attribute usage constants'
-    if i == 0: return 'userApplications'
-    if i == 1: return 'directoryOperation'
-    if i == 2: return 'distributedOperation'
-    if i == 3: return 'dSAOperation'
+# Attribute usage constants
+SCHEMA_ATTR_USAGE = {
+    0: 'userApplications',
+    1: 'directoryOperation',
+    2: 'distributedOperation',
+    3: 'dSAOperation',
+}
     
 def _at( obj) -> dict:
     'Additional information about an object class'
@@ -209,7 +307,7 @@ def _at( obj) -> dict:
         'syntax'       : obj.syntax,
         'substr'       : obj.substr,
         'ordering'     : obj.ordering,
-        'usage'        : _usage( obj.usage),
+        'usage'        : SCHEMA_ATTR_USAGE[ obj.usage],
     })
     return r
 
@@ -219,8 +317,10 @@ def _dict( key: str, items) -> dict:
 
 
 @app.route( '/api/schema')
-def schema():
-    return jsonify({
-        'attributes'    : _dict( 'name', map( _at, _schema( AttributeType))),
-        'objectClasses' : _dict( 'name', map( _oc, _schema( ObjectClass))),
-    })
+@api
+def schema() -> dict:
+    'Dump the schema'
+    return dict( attributes = _dict( 'name', map( _at, 
+                            _schema( ldap.schema.models.AttributeType))),
+              objectClasses = _dict( 'name', map( _oc,
+                            _schema( ldap.schema.models.ObjectClass))))

@@ -7,6 +7,15 @@ ul.click-through a {
     text-decoration: underline;
 }
 
+#left {
+    margin-left: 1em;
+}
+
+.right {
+    float: right;
+    margin-left: 0.3em;
+}
+
 ul#tree {
     list-style-type: none;
     padding: 0px;
@@ -14,30 +23,35 @@ ul#tree {
 
 ul#tree li {
     margin-top: 0.1em;
+    white-space: nowrap;
 }
 
-li.level-1 {
-    padding-left: 1em;
+ul#tree li.level-1 {
+    margin-left: 1em;
 }
 
-li.level-2 {
-    padding-left: 2em;
+ul#tree li.level-2 {
+    margin-left: 2em;
 }
 
-li.level-3 {
-    padding-left: 3em;
+ul#tree li.level-3 {
+    margin-left: 3em;
 }
 
-li.level-4 {
-    padding-left: 4em;
+ul#tree li.level-4 {
+    margin-left: 4em;
 }
 
-li.level-5 {
-    padding-left: 5em;
+ul#tree li.level-5 {
+    margin-left: 5em;
 }
 
 a.tree-link i.fas {
     color: gray;
+}
+
+i.fas.fa-arrow-circle-right, i.fas.fa-arrow-circle-down {
+    color: LightGray;
 }
 
 span.leaf {
@@ -80,20 +94,26 @@ table#entry th {
     top: 0.5ex;
 }
 
+table#entry td i.fas {
+    opacity: 0.1;
+}
+
 table#entry th.optional {
     font-weight: normal;
 }
 
+table#entry i.fa-check {
+    color: green;
+}
+
 table#entry input {
     margin-bottom: 0.2em;
-    display: block;
-    width: 100%;
+    width: 90%;
     padding: 0px 0.5em;
 }
 
 a.add-btn {
     font-size: 150%;
-    float: right;
     position: relative;
     top: -0.7ex;
     color: LightGray;
