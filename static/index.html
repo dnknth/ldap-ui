@@ -83,6 +83,12 @@
             <b-form-select v-model="newAttr" :options="attrs" class="mb-3" />
         </b-modal>
   
+        <!-- Popup to copy an entry -->
+        <b-modal id="copy" ref="copyRef" title="Copy entry" @ok="cloneEntry" @cancel="copyDn = null;">
+            <b-form-input v-model="copyDn" class="mb-3" placeholder="New DN" />
+            </b-form-input>
+        </b-modal>
+  
         <b-container fluid>
             <b-row>
                 <b-col cols="*" id="left">
@@ -200,6 +206,7 @@
                                 <b-button type="reset" v-if="!newEntry">Reset</b-button>
 
                                 <b-button variant="danger" class="right" v-b-modal.confirm>Delete</b-button>
+                                <b-button variant="warning" class="right" @click="copy">Copy</b-button>
                                 <b-button class="right" @click="addEntry">Add child</b-button>
                                 <b-button class="right" @click="createAttr">Add attribute</b-button>
                             </div>

@@ -25,7 +25,9 @@ window.app = new Vue({
         searchResult: null,
         
         // entry editor
-        newEntry: null,         // DN for new entry        
+        newEntry: null,         // set by addEntry()
+        copyDn: null,           // set by copy dialog
+        
         entry: null,            // entry in editor
         attrMap: {
             'integerMatch': 'number',
@@ -131,6 +133,43 @@ window.app = new Vue({
             this.entry.meta.aux = [];
         },
         
+        // Pop up the copy dialog
+        copy: function() {
+            this.error = {};
+            this.copyDn = this.entry.meta.dn;
+            this.$refs.copyRef.show();
+        },
+        
+        // Load copied entry into the editor
+        cloneEntry: function( evt) {
+
+            if (!this.copyDn) {
+                evt.preventDefault();
+                return;
+            }
+            
+            if (this.copyDn == this.entry.meta.dn) {
+                this.copyDn = null;
+                this.showWarning( 'Entry not copied');
+                return;
+            }
+            
+            const parts = this.copyDn.split(','),
+                rdnpart = parts[0].split('='), 
+                rdn = rdnpart[0];
+
+            if (rdnpart.length != 2 || this.entry.meta.required.indexOf( rdn) == -1) {
+                this.copyDn = null;
+                this.showError( 'Invalid RDN: ' + parts[0]);
+                return;
+            }
+            
+            this.entry.attrs[rdn] = [rdnpart[1]];
+            this.entry.meta.dn = this.copyDn;
+            this.newEntry = { dn: this.copyDn }
+            this.copyDn = null;
+        },
+        
         // load an entry into the editing form
         loadEntry: function( dn, changed) {
             this.newEntry = null;
@@ -149,7 +188,7 @@ window.app = new Vue({
         change: function( evt) {
             evt.preventDefault();
             this.entry.changed = [];
-            if (this.error) this.error.counter = 0;
+            this.error = {};
             const dn = this.entry.meta.dn;
             
             $.ajax({
