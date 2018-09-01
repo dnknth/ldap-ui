@@ -88,12 +88,12 @@ window.app = new Vue({
                 rdn: null,
                 objectClass: null,
             };
-            this.entry = null;
             this.$refs.newRef.show();
         },
         
         // Create anew entry in the main editor
         createEntry: function( evt) {
+            this.entry = null;
             if (!this.newEntry || !this.newEntry.objectClass
                 || !this.newEntry.rdn || !this.newEntry.name) {
                 evt.preventDefault();

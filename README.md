@@ -1,6 +1,6 @@
 # Simple LDAP editor
 
-This is a *very minimal* web interface for LDAP directories. I wrote it over an extended weekend because I finally lost patience with [PHPLdapAdmin](http://phpldapadmin.sourceforge.net/). It may still have bugs, use with caution.
+This is a *very minimal* web interface for LDAP directories. I wrote it over an extended weekend because I finally lost patience with [PHPLdapAdmin](http://phpldapadmin.sourceforge.net/).
 
 Features:
 * Directory tree view
@@ -9,7 +9,7 @@ Features:
 * Simple search (configurable)
 * Easy to extend (less than 1000 lines of code)
 
-## Getting it Up and Running
+## Installation and configuration
 
 Prerequisites:
 * [GNU make](https://www.gnu.org/software/make/)
@@ -18,30 +18,36 @@ Prerequisites:
 * [pip](https://packaging.python.org/tutorials/installing-packages/)
 * [python-ldap](https://pypi.org/project/python-ldap/)
 
-Install them via your favourite package manager, then run.
+Download static assets into ```static/vendor``` and set up a virtual Python environment in ```venv``` with:
 
 ​    make setup
 
-This installs the static assets into ```static/vendor``` and sets up a virtual Python environment.
+Check the configuration in `settings.py`. It is very short and should be self-explaining (Python literacy helps). 
 
-Adjust the configuration in `settings.py`. It should be self-explaining and is very short. Then run the app with
+## Usage
+
+Run the app with
 
 ​    make run
 
 and head over to http://localhost:5000/.
 
-## Usage
+The app always requires authentication, even if the directory permits anonymous access. User credentials are validated by the LDAP directory. What a particular user can see (and edit) is governed entirely by directory access rules.
 
-The app always requires authentication, even if the directory may permit anonymous access. User credentials are validated by the LDAP directory. What a particular user can see (and edit) is governed entirely by directory access rules.
+## Caveats
+
+* The software has not been thoroughly tested. It likely has bugs. Do not use for production directories.
+* It works with [OpenLdap](http://www.openldap.org) using simple authentication. Other directories and authentication schemes have not been tested.
+* Currently, only plain-text is supported for new passwords. If the LDAP server does not hash them automatically, they are stored as-is.
 
 ## Acknowledgements
 
-The Python backend uses [Flask](http://flask.pocoo.org/). Kudos for [Armin Ronacher](http://lucumr.pocoo.org) and the [other authors](http://flask.pocoo.org/docs/1.0/license/#authors) of this beautifully simple web framework!
+The Python backend uses [Flask](http://flask.pocoo.org/). Kudos for [Armin Ronacher](http://lucumr.pocoo.org) and the [other authors](http://flask.pocoo.org/docs/1.0/license/#authors) of this beautifully simple framework!
 
-The Frontend is just one HTML page. Thanks to the fantastic [Bootstrap Vue](https://bootstrap-vue.js.org) components and [vue.js](https://vuejs.org), it was a breeze to write it.
+The HTML frontend uses the fantastic [Bootstrap Vue](https://bootstrap-vue.js.org) components. It was fun to write it.
 
 ## TODO
-* Copy entries
+
+* Add support for password algorithms
 * Add LDIF export / import
-* Add password algorithms, password verification
 

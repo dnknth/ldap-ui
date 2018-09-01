@@ -26,7 +26,7 @@
 
     <div id="app">
 
-        <b-navbar toggleable="md" type="dark" variant="info" sticky>
+        <b-navbar toggleable="md" type="dark" variant="info">
 
             <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
 
@@ -123,7 +123,7 @@
                         </span>
                                                 
                         <div v-if="oc.must.length > 0">
-                            Must have attributes:
+                            Required attributes:
                             <ul class="click-through">
                                 <li v-for="name in oc.must">
                                     <b-link href="#" @click="oc = null; attr = getAttr(name)">{{ name }}</b-link>
@@ -132,7 +132,7 @@
                         </div>
 
                         <div v-if="oc.may.length > 0">
-                            May have attributes:
+                            Optional attributes:
                             <ul class="click-through">
                                 <li v-for="name in oc.may">
                                     <b-link href="#" @click="oc = null; attr = getAttr(name)">{{ name }}</b-link>
@@ -195,22 +195,20 @@
                 
                     <!-- Entry form -->
                     <b-form @submit="change" @reset="reset">
-                        <b-card v-if="entry">
-                            <span class="header" slot="header">
-                                {{ entry.attrs.cn ? entry.attrs.cn[0] : entry.meta.dn }}
+                        <b-card v-if="entry" id="editor">
+                            <div class="header" slot="header">
+                                <b-nav>
+                                    <b-nav-item-dropdown 
+                                        :text="entry.attrs.cn ? entry.attrs.cn[0] : entry.meta.dn.split(',')[0]"
+                                        extra-toggle-classes="nav-link-custom" right  class="right">
+                                        <b-dropdown-item @click="addEntry">Add child</b-dropdown-item>
+                                        <b-dropdown-item @click="copy">Copy</b-dropdown-item>
+                                        <b-dropdown-item v-b-modal.confirm class="red">Delete</b-dropdown-item>
+                                    </b-nav-item-dropdown>
+                                </b-nav>
                                 <b-link href="#" class="close-box" @click="entry = newEntry = null;">⊗</b-link>
-                            </span>
-                            
-                            <div slot="footer" v-if="!newEntry">
-                                <b-button type="submit" variant="primary">Submit</b-button>
-                                <b-button type="reset" v-if="!newEntry">Reset</b-button>
-
-                                <b-button variant="danger" class="right" v-b-modal.confirm>Delete</b-button>
-                                <b-button variant="warning" class="right" @click="copy">Copy</b-button>
-                                <b-button class="right" @click="addEntry">Add child</b-button>
-                                <b-button class="right" @click="createAttr">Add attribute</b-button>
                             </div>
-
+                            
                             <table id="entry">
                                 <tr v-for="(values, key) in entry.attrs" v-if="!getAttr(key).no_user_mod">
                                     
@@ -233,9 +231,17 @@
                                         </div>
                                     </td>
                                 </tr>
-                                <tr v-if="newEntry">
+                                <tr>
                                     <th></th>
-                                    <td><b-button type="submit" variant="primary">Submit</b-button></td>
+                                    <td>
+                                        <div class="button-bar">
+                                            <b-button type="submit" variant="primary">Submit</b-button>
+                                            <b-button type="reset" v-if="!newEntry">Reset</b-button>
+                                            <b-button class="right" @click="createAttr" v-if="!newEntry">
+                                                Add attribute
+                                            </b-button>
+                                        </div>
+                                    </td>
                                 </tr>
                             </table>
                             

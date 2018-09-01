@@ -16,6 +16,10 @@ ul.click-through a {
     margin-left: 0.3em;
 }
 
+.red {
+    color: red;
+}
+
 ul#tree {
     list-style-type: none;
     padding: 0px;
@@ -83,6 +87,10 @@ span.header {
     font-weight: bold;
 }
 
+#editor div.card-header {
+    padding: 0.45ex 0px;
+}
+
 table#entry {
     width: 100%;
 }
@@ -110,6 +118,10 @@ table#entry input {
     margin-bottom: 0.2em;
     width: 90%;
     padding: 0px 0.5em;
+}
+
+table#entry div.button-bar {
+    width: 90%;
 }
 
 a.add-btn {

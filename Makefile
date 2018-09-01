@@ -36,6 +36,9 @@ clean:
 	rm -r static/vendor
 	find . -name __pycache__ | xargs rm -r
 	
+tgz:
+	tar -czvf ../ldap-ui.tgz --exclude=.git --exclude-from=.gitignore .
+	
 edit: $(SOURCES)
 	rmate $(SOURCES)
 
