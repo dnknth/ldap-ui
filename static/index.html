@@ -30,7 +30,7 @@
 
             <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
 
-            <b-navbar-brand href="#">LDAP</b-navbar-brand>
+            <b-navbar-brand href="#">{{ tree.length ? tree[0].dn : 'LDAP' }}</b-navbar-brand>
 
             <b-collapse is-nav id="nav_collapse">
 
@@ -42,7 +42,7 @@
                 </b-nav-item-dropdown>
 
                 <b-nav-form @submit="search">
-                    <b-form-input size="sm" class="mr-sm-2" id="q" name="q" placeholder="Search" />
+                    <input size="sm" class="mr-sm-2 form-control" id="q" name="q" placeholder="Search" />
                 </b-nav-form>
               </b-navbar-nav>
             </b-collapse>
@@ -52,19 +52,19 @@
 
         <!-- Confirmation popup -->
         <b-modal id="confirm" title="Are you sure?" @ok="remove">
-            <p>This action is not reversible.</p>
+            <p>This action is irreversible.</p>
         </b-modal>
   
         <!-- Popup for object class selection -->
-        <b-modal id="oc-modal" ref="ocref" title="Add objectClass" @ok="addOc">
-            <b-form-select v-model="selectedOc" :options="aux" class="mb-3" />
+        <b-modal id="oc-modal" ref="ocRef" title="Add objectClass" @ok="addOc">
+            <b-form-select v-model="selectedOc" :options="entry ? entry.meta.aux : []" class="mb-3" />
         </b-modal>
   
         <!-- Add entry popup -->
         <b-modal id="newEntry" ref="newRef" title="New entry" @ok="createEntry">
             <b-form-group label="Object class:" label-for="newoc">
                 <b-form-select id="newoc" v-model="newEntry.objectClass"
-                    :options="structural" v-if="newEntry" class="mb-3" />
+                    :options="schema.structural" v-if="newEntry" class="mb-3" />
             </b-form-group>
             
             <b-form-group label="RDN attribute:" label-for="newrdn"
@@ -73,20 +73,26 @@
                     :options="rdn" class="mb-3" />
             </b-form-group>
 
-            <b-form-input v-if="newEntry && newEntry.objectClass"
+            <input v-if="newEntry && newEntry.objectClass" class="form-control"
                 v-model="newEntry.name" class="mb-3" placeholder="RDN value" />
-            </b-form-input>
+        </b-modal>
+  
+        <!-- Rename entry popup -->
+        <b-modal id="rename" ref="renameRef" title="Rename entry" @ok="renameEntry">
+            <b-form-group label="New RDN attribute:" label-for="renamerdn">
+                <b-form-select id="renamerdn" v-model="newRdn"
+                    :options="entry ? entry.meta.required : []" class="mb-3" />
+            </b-form-group>
         </b-modal>
   
         <!-- Popup for new attribute selection -->
-        <b-modal id="newAttr" ref="newAttr" title="Add attribute" @ok="addAttr">
+        <b-modal id="newAttr" ref="attrRef" title="Add attribute" @ok="addAttr">
             <b-form-select v-model="newAttr" :options="attrs" class="mb-3" />
         </b-modal>
   
         <!-- Popup to copy an entry -->
-        <b-modal id="copy" ref="copyRef" title="Copy entry" @ok="cloneEntry" @cancel="copyDn = null;">
-            <b-form-input v-model="copyDn" class="mb-3" placeholder="New DN" />
-            </b-form-input>
+        <b-modal id="copy" ref="copyRef" title="Copy entry" @ok="copyEntry" @cancel="copyDn = null;">
+            <input v-model="copyDn" class="mb-3 form-control" placeholder="New DN" />
         </b-modal>
   
         <b-container fluid>
@@ -101,15 +107,16 @@
                         
                         <ul id="tree">
                             <li v-for="item in treeItems"
-                                :id="item.dn" :class="'level-' + item.level + ' ' + item.structuralObjectClass">
+                                :id="item.dn" :class="item.structuralObjectClass">
+                                    <span v-for="i in item.level" class="indent"></span>
                                     <span v-if="item.hasSubordinates"
                                         :class="{ collapsed: item.collapsed, opened: !item.collapsed }"
                                         @click="toggle(item)"><i :class="'fas fa-arrow-circle-'
                                             + (item.collapsed ? 'right' : 'down')"></i></span>
-                                    <span v-else class="leaf">&nbsp;</span>
+                                    <span v-else class="indent"></span>
                                     <b-link href="#" class="tree-link" @click="loadEntry( item.dn)"> 
                                         <i :class="'fas fa-' + (icons[item.structuralObjectClass] || 'question')"></i>
-                                        {{ item.name }}
+                                        {{ item.level ? item.dn.split(',')[0] : item.dn }}
                                     </b-link>
                             </li>
                         </ul>
@@ -201,8 +208,9 @@
                                     <b-nav-item-dropdown 
                                         :text="entry.attrs.cn ? entry.attrs.cn[0] : entry.meta.dn.split(',')[0]"
                                         extra-toggle-classes="nav-link-custom" right  class="right">
-                                        <b-dropdown-item @click="addEntry">Add child</b-dropdown-item>
-                                        <b-dropdown-item @click="copy">Copy</b-dropdown-item>
+                                        <b-dropdown-item @click="addDialog">Add child</b-dropdown-item>
+                                        <b-dropdown-item @click="copyDialog">Copy</b-dropdown-item>
+                                        <b-dropdown-item @click="renameDialog">Rename</b-dropdown-item>
                                         <b-dropdown-item v-b-modal.confirm class="red">Delete</b-dropdown-item>
                                     </b-nav-item-dropdown>
                                 </b-nav>
@@ -237,7 +245,7 @@
                                         <div class="button-bar">
                                             <b-button type="submit" variant="primary">Submit</b-button>
                                             <b-button type="reset" v-if="!newEntry">Reset</b-button>
-                                            <b-button class="right" @click="createAttr" v-if="!newEntry">
+                                            <b-button class="right" @click="attrDialog" v-if="!newEntry">
                                                 Add attribute
                                             </b-button>
                                         </div>

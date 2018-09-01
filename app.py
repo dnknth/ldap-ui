@@ -63,13 +63,23 @@ class Ldap:
         if self.auth: self.connection.unbind_s()
 
 
+def _abort( err: ldap.LDAPError) -> None:
+    'Send LDAP error message as 500 Internal Server Error'
+    args = err.args[0]
+    flask.abort( flask.make_response( '%s: %s' % (
+        args.get( 'desc', ''),
+        args.get( 'info', '')), 500, []))
+    
+
 @app.route( '/')
 def index() -> flask.Response:
+    'Serve the main page'
     return static_file( 'index.html')
 
 
 @app.route( '/<path:filename>')
 def static_file( filename) -> flask.Response:
+    'Serve static assets'
     return app.send_static_file( filename)
 
 
@@ -96,47 +106,30 @@ def _decode( attrs, filters=None, excludes=None):
     return attrs
 
 
-@app.route( '/api/tree')
+@app.route( '/api/tree/<basedn>')
 @no_cache
 @api
-def tree() -> list:
+def tree( basedn:str) -> list:
     'List directory entries'
     
+    if basedn == 'base': basedn = app.config['BASE_DN']
+    limit = len( basedn.split( ',')) + 1
+    
     with Ldap( request.authorization) as con:
-        res = dict( con.search_s( app.config['BASE_DN'],
-            ldap.SCOPE_SUBTREE, attrlist=WITH_OPERATIONAL_ATTRS))
+        res = dict( con.search_s( basedn, ldap.SCOPE_SUBTREE,
+            attrlist=WITH_OPERATIONAL_ATTRS))
 
     data, stack = [], []
     for dn in sorted( res.keys(), key=dn_sort):
-        attrs = _decode( res[dn], app.config['TREE_ATTRS'])
 
-        # Flatten single-valued lists
+        level = len( dn.split( ','))
+        if level > limit: continue
+        
+        # Extract and flatten attributes
+        attrs = _decode( res[dn], app.config['TREE_ATTRS'])
         for key in attrs: attrs[key] = attrs[key][0]
         
         attrs['dn'] = dn
-        attrs['level'] = len( stack)
-        
-        if not stack:
-            stack.append( (dn, attrs))
-            dnpart = dn
-            attrs['parent'] = None
-            
-        else:
-            rootdn, rootattrs = stack[-1]
-            while not dn.endswith( rootdn):
-                stack.pop()
-                attrs['level'] = len( stack)
-                rootdn, rootattrs = stack[-1]
-                
-            attrs['parent'] = rootdn
-            crop = len( rootdn) + 1
-            dnpart = dn[:-crop]
-
-            if attrs['hasSubordinates']:
-                stack.append( (dn, attrs))
-                
-        attrs['collapsed'] = attrs['level'] > app.config['TREE_LEVEL']
-        attrs['name'] = dnpart
         data.append( attrs)
         
     return data
@@ -206,13 +199,21 @@ def entry( dn: str) -> dict:
                 with Ldap( request.authorization) as con:
                     con.delete_s( dn)
                     
-    except ldap.LDAPError as err:
-        # Send LDAP error message as 500 Internal Server Error
-        args = err.args[0]
-        flask.abort( flask.make_response( '%s: %s' % (
-            args.get( 'desc', ''),
-            args.get( 'info', '')), 500, []))
-    
+    except ldap.LDAPError as err: _abort( err)
+
+
+@app.route( '/api/rename/<dn>/<newrdn>')
+@no_cache
+@api
+def rename( dn: str, newrdn:str) -> dict:
+    'Rename an entry'
+
+    try:
+        with Ldap( request.authorization) as con:
+            con.rename_s( dn, newrdn, delold=0)
+
+    except ldap.LDAPError as err: _abort( err)
+
 
 def _ename( entry: dict) -> str:
     'Try to extract a CN'

@@ -30,24 +30,8 @@ ul#tree li {
     white-space: nowrap;
 }
 
-ul#tree li.level-1 {
-    margin-left: 1em;
-}
-
-ul#tree li.level-2 {
-    margin-left: 2em;
-}
-
-ul#tree li.level-3 {
-    margin-left: 3em;
-}
-
-ul#tree li.level-4 {
-    margin-left: 4em;
-}
-
-ul#tree li.level-5 {
-    margin-left: 5em;
+span.indent {
+    margin-left: 1.2em;
 }
 
 a.tree-link i.fas {
@@ -56,10 +40,6 @@ a.tree-link i.fas {
 
 i.fas.fa-arrow-circle-right, i.fas.fa-arrow-circle-down {
     color: LightGray;
-}
-
-span.leaf {
-    margin-left: 0.6em;
 }
 
 span.collapsed, span.opened {

@@ -11,7 +11,6 @@ SCHEMA_DN = 'cn=subschema'
 ENCODING = 'UTF8'
 
 # UI settings
-TREE_LEVEL = 1 # tree depth shown on page load
 HIDDEN_ATTRS = set( ( # Do not change
     'createTimestamp', 'creatorsName',
     'modifiersName', 'modifyTimestamp',
