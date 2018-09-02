@@ -1,11 +1,12 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="robots" content="noindex, nofollow">
-    <meta name="googlebot" content="noindex, nofollow">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="googlebot" content="noindex, nofollow" />
 
     <!-- Bootstrap CSS -->
     <link type="text/css" rel="stylesheet" href="vendor/bootstrap.min.css" />
@@ -30,7 +31,7 @@
 
             <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
 
-            <b-navbar-brand href="#">{{ tree.length ? tree[0].dn : 'LDAP' }}</b-navbar-brand>
+            <b-navbar-brand>{{ tree.length ? tree[0].dn : 'LDAP' }}</b-navbar-brand>
 
             <b-collapse is-nav id="nav_collapse">
 
@@ -57,20 +58,23 @@
   
         <!-- Popup for object class selection -->
         <b-modal id="oc-modal" ref="ocRef" title="Add objectClass" @ok="addOc">
-            <b-form-select v-model="selectedOc" :options="entry ? entry.meta.aux : []" class="mb-3" />
+            <b-form-select v-model="selectedOc" :options="entry ? entry.meta.aux : []" class="mb-3">
+            </b-form-select>
         </b-modal>
   
         <!-- Add entry popup -->
         <b-modal id="newEntry" ref="newRef" title="New entry" @ok="createEntry">
             <b-form-group label="Object class:" label-for="newoc">
                 <b-form-select id="newoc" v-model="newEntry.objectClass"
-                    :options="schema.structural" v-if="newEntry" class="mb-3" />
+                    :options="schema.structural" v-if="newEntry" class="mb-3">
+                </b-form-select>
             </b-form-group>
             
             <b-form-group label="RDN attribute:" label-for="newrdn"
                 v-if="newEntry && newEntry.objectClass">
                 <b-form-select id="newrdn" v-model="newEntry.rdn"
-                    :options="rdn" class="mb-3" />
+                    :options="rdn" class="mb-3">
+                </b-form-select>
             </b-form-group>
 
             <input v-if="newEntry && newEntry.objectClass" class="form-control"
@@ -81,13 +85,15 @@
         <b-modal id="rename" ref="renameRef" title="Rename entry" @ok="renameEntry">
             <b-form-group label="New RDN attribute:" label-for="renamerdn">
                 <b-form-select id="renamerdn" v-model="newRdn"
-                    :options="entry ? entry.meta.required : []" class="mb-3" />
+                    :options="entry ? Object.keys( entry.attrs) : []" class="mb-3">
+                </b-form-select>
             </b-form-group>
         </b-modal>
   
         <!-- Popup for new attribute selection -->
         <b-modal id="newAttr" ref="attrRef" title="Add attribute" @ok="addAttr">
-            <b-form-select v-model="newAttr" :options="attrs" class="mb-3" />
+            <b-form-select v-model="newAttr" :options="attrs" class="mb-3">
+            </b-form-select>
         </b-modal>
   
         <!-- Popup to copy an entry -->
@@ -101,21 +107,20 @@
                 
                     <!-- Tree view -->
                     <b-card id="tree-view">
-                        <div slot="header"><span class="small"><i class="fas fa-user">&nbsp;</i><a href="#" @click="loadEntry( user)" class="tree-link">
+                        <div slot="header"><span class="small"><i class="fas fa-user-tie">&nbsp;</i><a href="#" @click="loadEntry( user)" class="tree-link">
                             {{ user }}</a></span>
                         </div>
                         
-                        <ul id="tree">
+                        <ul id="tree" class="list-unstyled">
                             <li v-for="item in treeItems"
                                 :id="item.dn" :class="item.structuralObjectClass">
                                     <span v-for="i in item.level" class="indent"></span>
-                                    <span v-if="item.hasSubordinates"
-                                        :class="{ collapsed: item.collapsed, opened: !item.collapsed }"
-                                        @click="toggle(item)"><i :class="'fas fa-arrow-circle-'
-                                            + (item.collapsed ? 'right' : 'down')"></i></span>
+                                    <span v-if="item.hasSubordinates" class="opener"
+                                        @click="toggle(item)"><i :class="'fas  fa-chevron-circle-'
+                                            + (item.open ? 'down' : 'right')"></i></span>
                                     <span v-else class="indent"></span>
                                     <b-link href="#" class="tree-link" @click="loadEntry( item.dn)"> 
-                                        <i :class="'fas fa-' + (icons[item.structuralObjectClass] || 'question')"></i>
+                                        <i class="fas" :class="icon( item)"></i>
                                         {{ item.level ? item.dn.split(',')[0] : item.dn }}
                                     </b-link>
                             </li>
@@ -123,7 +128,7 @@
                     </b-card>
 
                     <!-- Schema / Objectclass -->
-                    <b-card class="schema" v-if="oc" :title="oc.desc">
+                    <b-card v-if="oc" :title="oc.desc" title-tag="strong">
                         <span class="header" slot="header">
                             {{ oc.name }}
                             <b-link href="#" class="close-box" @click="oc = null;">⊗</b-link>                            
@@ -158,7 +163,7 @@
                     </b-card>
                     
                     <!-- Schema / Attribute -->
-                    <b-card class="schema" v-if="attr" :title="attr.desc">
+                    <b-card v-if="attr" :title="attr.desc" title-tag="strong">
                         <span class="header" slot="header">
                             {{ attr.names.join(', ') }}
                             <b-link href="#" class="close-box" @click="attr = null;">⊗</b-link>                            
@@ -200,14 +205,17 @@
                         </ul>
                     </b-card>
                 
-                    <!-- Entry form -->
-                    <b-form @submit="change" @reset="reset">
+                    <!-- Entry editor form -->
+                    <b-form @submit="change" @reset="loadEntry( entry.meta.dn);">
                         <b-card v-if="entry" id="editor">
                             <div class="header" slot="header">
                                 <b-nav>
+                                    <b-nav-item class="icon">
+                                        <i class="fas" :class="icon( treeMap[entry.meta.dn])"></i>
+                                    </b-nav-item>
                                     <b-nav-item-dropdown 
                                         :text="entry.attrs.cn ? entry.attrs.cn[0] : entry.meta.dn.split(',')[0]"
-                                        extra-toggle-classes="nav-link-custom" right  class="right">
+                                        extra-toggle-classes="nav-link-custom" right  class="entry-menu">
                                         <b-dropdown-item @click="addDialog">Add child</b-dropdown-item>
                                         <b-dropdown-item @click="copyDialog">Copy</b-dropdown-item>
                                         <b-dropdown-item @click="renameDialog">Rename</b-dropdown-item>
@@ -217,7 +225,7 @@
                                 <b-link href="#" class="close-box" @click="entry = newEntry = null;">⊗</b-link>
                             </div>
                             
-                            <table id="entry">
+                            <table id="entry" class="table">
                                 <tr v-for="(values, key) in entry.attrs" v-if="!getAttr(key).no_user_mod">
                                     
                                     <th :class="required( key) ? 'required' : 'optional'">
@@ -228,10 +236,11 @@
                                             @click="addRow( key, values)">⊕</b-link>
                                     </th>
                                     <td>
-                                        <div v-for="(val, index) in values">
+                                        <div v-for="(val, index) in values" class="attr-value">
                                             <input v-model="entry.attrs[key][index]"
-                                                :type="fieldType( key)"
-                                                :class="{ structural: isStructural( key, val) }"/>
+                                                :type="fieldType( key)" 
+                                                :class="{ structural: isStructural( key, val),
+                                                    disabled: key == entry.meta.dn.split( '=')[0] }" />
                                             &nbsp;
                                             <b-link href="#" @click="oc = getOc(val); attr = null;">
                                                 <i class="fas fa-info-circle" v-if="key == 'objectClass'"></i>
@@ -262,7 +271,7 @@
         
     </div>
     
-    <script src="app.js"></script>
+    <script src="app.js" charset="UTF-8"></script>
 
   </body>
 </html>

@@ -1,3 +1,7 @@
+div.card {
+    margin-bottom: 1em;
+}
+
 a, a:hover {
     text-decoration: none;
     color: black;
@@ -21,7 +25,6 @@ ul.click-through a {
 }
 
 ul#tree {
-    list-style-type: none;
     padding: 0px;
 }
 
@@ -42,25 +45,17 @@ i.fas.fa-arrow-circle-right, i.fas.fa-arrow-circle-down {
     color: LightGray;
 }
 
-span.collapsed, span.opened {
+span.opener {
     cursor: pointer;
     color: gray;
-}
-
-.small {
-    font-size: small;
 }
 
 a.close-box {
     position: absolute;
     top: 0.2em;
-    right: 0.4em;
+    right: 16px;
     font-size: 150%;
     color: gray;
-}
-
-div.schema {
-    margin-top: 1ex;
 }
 
 span.header {
@@ -77,9 +72,9 @@ table#entry {
 
 table#entry th {
     vertical-align: top;
-    padding-right: 1em;
     position: relative;
     top: 0.5ex;
+    padding-right: 0px;
 }
 
 table#entry td i.fas {
@@ -95,9 +90,12 @@ table#entry i.fa-check {
 }
 
 table#entry input {
-    margin-bottom: 0.2em;
     width: 90%;
     padding: 0px 0.5em;
+}
+
+table#entry div.attr-value {
+    margin: 0.2em 0px;
 }
 
 table#entry div.button-bar {
@@ -107,10 +105,22 @@ table#entry div.button-bar {
 a.add-btn {
     font-size: 150%;
     position: relative;
-    top: -0.7ex;
+    top: -0.5ex;
     color: LightGray;
 }
 
 input.structural {
     font-weight: bold;
+}
+
+input.disabled {
+    background-color: #f8f8f8;
+}
+
+li.nav-item.icon a.nav-link {
+    padding-right: 0px;
+}
+
+li.entry-menu a.nav-link {
+    padding-left: 8px;
 }

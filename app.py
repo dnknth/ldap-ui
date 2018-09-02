@@ -112,19 +112,18 @@ def _decode( attrs, filters=None, excludes=None):
 def tree( basedn:str) -> list:
     'List directory entries'
     
-    if basedn == 'base': basedn = app.config['BASE_DN']
-    limit = len( basedn.split( ',')) + 1
-    
+    data = []
+    scope = ldap.SCOPE_ONELEVEL
+    if basedn == 'base':
+        scope = ldap.SCOPE_BASE
+        basedn = app.config['BASE_DN']
+            
     with Ldap( request.authorization) as con:
-        res = dict( con.search_s( basedn, ldap.SCOPE_SUBTREE,
+        res = dict( con.search_s( basedn, scope,
             attrlist=WITH_OPERATIONAL_ATTRS))
 
-    data, stack = [], []
     for dn in sorted( res.keys(), key=dn_sort):
 
-        level = len( dn.split( ','))
-        if level > limit: continue
-        
         # Extract and flatten attributes
         attrs = _decode( res[dn], app.config['TREE_ATTRS'])
         for key in attrs: attrs[key] = attrs[key][0]
@@ -140,10 +139,12 @@ def _entry( res: tuple) -> dict:
     
     dn, attrs = res
     ocs = set( _decode( attrs['objectClass']))
-    soc = _decode( attrs['structuralObjectClass'][0])
     must_attrs, may_attrs = app.schema.attribute_types( ocs)
+    soc = [ oc.names[0]
+        for oc in map( lambda o: app.schema.get_obj( ldap.schema.models.ObjectClass, o), ocs)
+        if oc.kind == 0]
     aux = set( app.schema.get_obj( ldap.schema.models.ObjectClass, a).names[0]
-        for a in app.schema.get_applicable_aux_classes( soc))
+        for a in app.schema.get_applicable_aux_classes( soc[0]))
     
     return {
         'attrs':  _decode( attrs, excludes=app.config['HIDDEN_ATTRS']),
@@ -174,8 +175,7 @@ def entry( dn: str) -> dict:
     try:
         with Ldap( request.authorization) as con:
             if request.method == 'GET':
-                res = con.search_s( dn, ldap.SCOPE_BASE,
-                        attrlist=WITH_OPERATIONAL_ATTRS)
+                res = con.search_s( dn, ldap.SCOPE_BASE)
                 return _entry( res[0]) if res else None
         
             elif request.method == 'POST':

@@ -1,16 +1,6 @@
-// Shallow-copy an object
-function Clone( obj) {
-    if (null !== obj) {
-        for (let attr in obj) {
-            if (obj.hasOwnProperty(attr)) {
-                this[attr] = obj[attr];
-            }
-        }
-    }
-}
+"use strict";
 
-
-window.app = new Vue({
+app = new Vue({
     
     // root <div> in page
     el: "#app",
@@ -30,7 +20,7 @@ window.app = new Vue({
             groupOfNames:       'user-friends',
             groupOfUniqueNames: 'user-friends',
             posixGroup:         'user-friends',
-            person:             'user',
+            person:             'user-tie',
         },
 
         // alerts
@@ -44,7 +34,7 @@ window.app = new Vue({
         copyDn: null,           // set by copy dialog
         
         entry: null,            // entry in editor
-        attrMap: {
+        attrMap: {              // input types for matching rules
             'integerMatch': 'number',
         },
         selectedOc: null,       // objectClass selection
@@ -60,14 +50,15 @@ window.app = new Vue({
         oc: null,               // objectclass in side panel
         attr: null,             // attribute in side panel
         hiddenFields: ['desc', 'name', 'names',
-            'no_user_mod', 'obsolete', 'oid', 'usage', 'syntax', 'sup'],
+            'no_user_mod', 'obsolete', 'oid',
+            'usage', 'syntax', 'sup'],
     },
     
     created: function() { // Runs on page load
         
         // Get the DN of the current user
         $.get('api/whoami', function( response) {
-            window.app.user = response;
+            app.user = response;
         });
         
         // Populate the tree view
@@ -75,12 +66,12 @@ window.app = new Vue({
         
         // Load the schema
         $.get('api/schema', function( response) {
-            window.app.schema = response;
-            window.app.schema.structural = [];
-            for (i in window.app.schema.objectClasses) {
-                const oc = window.app.schema.objectClasses[i];
+            app.schema = response;
+            app.schema.structural = [];
+            for (let n in response.objectClasses) {
+                const oc = response.objectClasses[n];
                 if (oc.kind == 'structural') {
-                    window.app.schema.structural.push( oc.name);
+                    app.schema.structural.push( oc.name);
                 }
             }
         });
@@ -90,36 +81,44 @@ window.app = new Vue({
         
         // Reload the subtree at entry with given DN
         reload: function( dn) {
-            let pos = Math.max( this.tree.indexOf( this.treeMap[ dn]), 0);
+            const treesize = this.tree.length;
+            let pos = this.tree.indexOf( this.treeMap[ dn]);
             $.get('api/tree/' + dn, function( response) {
-                while( pos < window.app.tree.length
-                    && window.app.tree[pos].dn.indexOf( dn) != -1) {
-                        delete window.app.treeMap[ window.app.tree[pos].dn];
-                        window.app.tree.splice( pos, 1);
+                if (pos >= 0) app.tree[pos].loaded = true;
+                ++pos;
+                
+                while( pos < app.tree.length
+                    && app.tree[pos].dn.indexOf( dn) != -1) {
+                        delete app.treeMap[ app.tree[pos].dn];
+                        app.tree.splice( pos, 1);
                 }
-                response[0].loaded = true;
-                for (item of response) {
-                    window.app.treeMap[ item.dn] = item;
-                    window.app.tree.splice( pos++, 0, item);
-                    item.collapsed = !item.loaded;
+                for (let i = 0; i < response.length; ++i) {
+                    const item = response[i];
+                    app.treeMap[ item.dn] = item;
+                    app.tree.splice( pos++, 0, item);
                     item.level = item.dn.split(',').length;
-                    // Extra step is needed if this === tree[0]
-                    item.level -= window.app.tree[0].dn.split(',').length;
+                    // Extra step is needed for treesize == 0
+                    item.level -= app.tree[0].dn.split(',').length;
                 }
+                if (treesize == 0) app.toggle( app.tree[0]);
             });
         },
-
+        
         // Get the tree item containing a given DN
         parent: function( dn) {
-            const comma = dn.indexOf(',');
-            return this.treeMap[ dn.slice( comma + 1)];
+            return this.treeMap[ dn.slice( dn.indexOf(',') + 1)];
+        },
+        
+        icon: function( item) {
+            return ' fa-' +
+                (item ? this.icons[ item.structuralObjectClass] : 'atom' || 'question');
         },
         
         // Hide / show tree elements
         toggle: function( item) {
-            item.collapsed = !item.collapsed;
-            this.tree = this.tree.slice();
-            if (!item.collapsed && !item.loaded) {
+            item.open = !item.open;
+            this.tree = this.tree.slice(); // force redraw
+            if (!item.loaded) {
                 this.reload( item.dn);
             }
         },
@@ -140,8 +139,8 @@ window.app = new Vue({
             this.entry = null;
             if (!this.newEntry || !this.newEntry.objectClass
                 || !this.newEntry.rdn || !this.newEntry.name) {
-                evt.preventDefault();
-                return;
+                    evt.preventDefault();
+                    return;
             }
 
             let oc = this.getOc( this.newEntry.objectClass);
@@ -153,7 +152,6 @@ window.app = new Vue({
                 },
                 attrs: {
                     objectClass: [],
-                    structuralObjectClass: [this.newEntry.objectClass],
                 },
             };
             
@@ -161,7 +159,8 @@ window.app = new Vue({
             
             // Add required attributes and objectClass parents
             while (oc) {
-                for (let must of oc.must) {
+                for (let i = 0; i < oc.must.length; ++i) {
+                    let must = oc.must[i];
                     if (!this.entry.attrs[ must]) {
                         this.entry.attrs[ must] = ['']
                     }
@@ -176,16 +175,18 @@ window.app = new Vue({
             this.entry.meta.aux = [];
         },
         
+        // Bring up the 'rename' dialog
         renameDialog: function() {
             this.newRdn = null;
             this.$refs.renameRef.show();
         },
         
+        // Change the RDN for an entry
         renameEntry: function( evt) {
             const dn = this.entry.meta.dn,
                 dnparts = dn.split(',');
                 
-            if (!this.newRdn || this.newRdn == dnparts[0].split('=')[0]) {
+            if (!this.newRdn || this.newRdn == dn.split('=')[0]) {
                 evt.preventDefault();
                 return;
             }
@@ -199,11 +200,11 @@ window.app = new Vue({
             
             const rdn = this.newRdn + '=' + rdnAttr[0];
             $.get('api/rename/' + dn + '/' + rdn, function( response) {
-                window.app.entry = response;
-                window.app.reload( window.app.parent( dn).dn);
+                app.entry = response;
+                app.reload( app.parent( dn).dn);
             })
             .fail( function( xhr, errorType, error) {
-                window.app.showError( xhr.responseText);
+                app.showError( xhr.responseText);
             });
         },
         
@@ -249,14 +250,12 @@ window.app = new Vue({
             this.newEntry = null;
             this.searchResult = null;
             $.get('api/entry/' + dn, function( response) {
-                window.app.entry = response;
-                window.app.entry.changed = changed ? changed : [];
+                app.entry = response;
+                app.entry.changed = changed || [];
+                Vue.nextTick( function () {
+                    $('input.disabled').prop( 'disabled', true);
+                });
             });
-        },
-        
-        // Reload the edit form contents from directory
-        reset: function() {
-            this.loadEntry( this.entry.meta.dn);
         },
         
         // Submit the entry form via AJAX
@@ -274,16 +273,16 @@ window.app = new Vue({
                 dataType: 'json',
                 success: function( data) {
                     if ( data && data.changed && data.changed.length) {
-                        window.app.showInfo( '👍 Saved changes');
+                        app.showInfo( '👍 Saved changes');
                     }
-                    if (window.app.newEntry) {
-                        window.app.reload( window.app.parent( dn).dn);
+                    if (app.newEntry) {
+                        app.reload( app.parent( dn).dn);
                     }
-                    window.app.newEntry = null;
-                    window.app.loadEntry( dn, data.changed);
+                    app.newEntry = null;
+                    app.loadEntry( dn, data.changed);
                 }})
             .fail( function( xhr, errorType, error) {
-                window.app.showError( xhr.responseText);
+                app.showError( xhr.responseText);
             });
         },
         
@@ -294,9 +293,9 @@ window.app = new Vue({
                 url:  'api/entry/' + dn,
                 type: 'DELETE',
                 success: function( result) {
-                    window.app.showInfo( 'Entry deleted');
-                    window.app.entry = null;
-                    window.app.reload( window.app.parent( dn).dn);
+                    app.showInfo( 'Deleted entry: ' + dn);
+                    app.entry = null;
+                    app.reload( app.parent( dn).dn);
                 }
             });
         },
@@ -311,7 +310,8 @@ window.app = new Vue({
             this.entry.attrs.objectClass.push( this.selectedOc);
             const must = this.schema.objectClasses[
                     this.selectedOc.toLowerCase()].must;
-            for (let m of must) {
+            for (let i = 0; i < must.length; ++i) {
+                let m = must[i];
                 if (this.entry.meta.required.indexOf( m) == -1) {
                     this.entry.meta.required.push( m);
                 }
@@ -319,7 +319,6 @@ window.app = new Vue({
                     this.entry.attrs[ m] = [''];
                 }
             }
-            this.entry = new Clone( this.entry);
             this.selectedOc = null;
         },
         
@@ -332,7 +331,8 @@ window.app = new Vue({
             // brute-force search for alternative names
             for (att in this.schema.attributes) {
                 const a2 = this.schema.attributes[att];
-                for (let name of a2.names) {
+                for (let i = 0; i < a2.names.length; ++i) {
+                    let name = a2.names[i];
                     if (name.toLowerCase() == n) return a2;
                 }
             }
@@ -358,10 +358,7 @@ window.app = new Vue({
         // Add an empty row in the entry form
         addRow: function( key, values) {
             if (key == 'objectClass') this.$refs.ocRef.show();
-            else if (values.indexOf('') == -1) {
-                values.push('');
-                this.entry = new Clone( this.entry);
-            }
+            else if (values.indexOf('') == -1) values.push('');
         },
         
         // Check for required fields by key
@@ -371,20 +368,20 @@ window.app = new Vue({
         
         // Has the key been updated on last entry modification? 
         changed: function( key) {
-            if (!this.entry || !this.entry.changed) return false;
-            return this.entry.changed.indexOf( key) != -1;
+            return this.entry && this.entry.changed
+                && this.entry.changed.indexOf( key) != -1;
         },
         
         // Guess the <input> type for an attribute
         fieldType: function( attr) {
-            if (attr == 'userPassword') return 'password';
-            return this.attrMap[ this.getAttr(attr).equality] || 'text';
+            return attr == 'userPassword' ? 'password'
+                : this.attrMap[ this.getAttr(attr).equality] || 'text';
         },
         
         // Is the given value a structural object class?
         isStructural: function( key, val) {
             return key == 'objectClass'
-                && val == this.entry.attrs.structuralObjectClass[0];
+                && this.schema.structural.indexOf( val) != -1;
         },
         
         // Run a search against the directory
@@ -393,18 +390,18 @@ window.app = new Vue({
             const q = $('input#q').val();
             
             $.get('api/search/' + q, function( response) {
-                window.app.searchResult = null;
-                window.app.error = {};
+                app.searchResult = null;
+                app.error = {};
                 if (!response || !response.length) {
-                    window.app.showWarning( 'No search results');
+                    app.showWarning( 'No search results');
                 }
                 else if (response.length == 1) {
                     // load single result for editing
-                    window.app.entry = response[0];
+                    app.entry = response[0];
                 }
                 else { // multiple results
-                    window.app.entry = null;
-                    window.app.searchResult = response;
+                    app.entry = null;
+                    app.searchResult = response;
                 }
             });
         },
@@ -433,7 +430,7 @@ window.app = new Vue({
             const p = this.parent;
             return this.tree.filter( function( item) {
                 for (let i = p( item.dn); i; i = p( i.dn)) {
-                    if (i.collapsed) return false;
+                    if (!i.open) return false;
                 }
                 return true;
             });
@@ -441,10 +438,10 @@ window.app = new Vue({
         
         // Choice list of RDN attributes for a new entry
         rdn: function() {
-            if (!this.newEntry || !this.newEntry.objectClass) return [];
-            
-            return this.getOc( this.newEntry.objectClass).must.map(
-                c => this.getAttr( c).name);
+            return !this.newEntry || !this.newEntry.objectClass ? []
+                 : this.getOc( this.newEntry.objectClass).must.map( function( c) {
+                     return app.getAttr( c).name;
+            });
         },
         
         // Choice list for new attribute selection popup
@@ -452,8 +449,11 @@ window.app = new Vue({
             if (!this.entry || !this.entry.attrs || !this.entry.attrs.objectClass) return [];
             
             let options = [];
-            for (let key of this.entry.attrs.objectClass) {
-                for (let a of this.getOc( key).may) {
+            for (let i = 0; i < this.entry.attrs.objectClass.length; ++i) {
+                const key = this.entry.attrs.objectClass[i],
+                    may = this.getOc( key).may;
+                for (let j = 0; j < may.length; ++j) {
+                    let a = may[j];
                     if (options.indexOf( a) == -1 && !this.entry.attrs[a]) {
                         options.push( a);
                     }

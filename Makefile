@@ -11,6 +11,9 @@ debug: app.py setup
 run: app.py setup
 	venv/bin/python3 wsgi.py 5000
 
+shell: app.py
+	venv/bin/python3 -i $<
+	
 setup: venv static/vendor
 
 static/vendor:

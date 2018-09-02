@@ -50,4 +50,4 @@ The HTML frontend uses the fantastic [Bootstrap Vue](https://bootstrap-vue.js.or
 
 * Add support for password algorithms
 * Add LDIF export / import
-
+* Add support for images (i.e inetOrgPerson)
