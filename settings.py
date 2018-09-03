@@ -21,4 +21,4 @@ SEARCH_PATTERNS = ( # for search field
     '(sn=%s)',
 )
 SEARCH_QUERY_MIN = 2 # Minimm length of query term
-SEARCH_MAX = 30 # Maximum number of results
+SEARCH_MAX = 50 # Maximum number of results

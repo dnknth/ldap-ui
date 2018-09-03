@@ -11,6 +11,30 @@ WITH_OPERATIONAL_ATTRS = ('*','+')
 
 TREE_ATTRS = set( ('structuralObjectClass', 'hasSubordinates'))
 
+
+# Generator function that emits a JSON list for an iterable.
+# Makes most sense if data is a subgenerator
+# See: https://blog.al4.co.nz/2016/01/streaming-json-with-flask/
+def stream_list( data) -> types.GeneratorType:
+    yield '['
+
+    chunks = data.__iter__()
+    try:
+        r = next( chunks)
+        yield flask.json.dumps( r)
+    except StopIteration:
+        # no results – close array and stop iteration
+        yield ']'
+        return
+
+    # loop over remaining results
+    for r in chunks:
+        yield ',' + flask.json.dumps( r)
+
+    # close array
+    yield ']'
+
+
 def api( view: types.FunctionType) -> flask.Response:
     ''' View decorator for ReST endpoints.
         Requires authentication and emits Json.
@@ -20,6 +44,10 @@ def api( view: types.FunctionType) -> flask.Response:
         if not request.authorization: flask.abort( 401) # Unauthorized
         else:
             data = view( **values)
+            if type( data) is flask.Response: return data
+            elif type( data) is types.GeneratorType:
+                return flask.Response( stream_list( data),
+                    content_type='application/json')
             return flask.jsonify( data)
     return wrapped_view
 
@@ -113,7 +141,6 @@ def _decode( attrs, filters=None):
 def tree( basedn:str) -> list:
     'List directory entries'
     
-    data = []
     scope = ldap.SCOPE_ONELEVEL
     if basedn == 'base':
         scope = ldap.SCOPE_BASE
@@ -123,17 +150,20 @@ def tree( basedn:str) -> list:
         res = dict( con.search_s( basedn, scope,
             attrlist=WITH_OPERATIONAL_ATTRS))
 
-    for dn in sorted( res.keys(), key=dn_sort):
+    # Internal result generator
+    # Cannot simply yield in the main tree view
+    # because the Ldap bind must run in the request context
+    def result():
+        for dn in sorted( res.keys(), key=dn_sort):
 
-        # Extract and flatten attributes
-        attrs = _decode( res[dn], TREE_ATTRS)
-        for key in attrs: attrs[key] = attrs[key][0]
+            # Extract and flatten attributes
+            attrs = _decode( res[dn], TREE_ATTRS)
+            for key in attrs: attrs[key] = attrs[key][0]
+            attrs['dn'] = dn
+            yield attrs
+            
+    return result()
         
-        attrs['dn'] = dn
-        data.append( attrs)
-        
-    return data
-
 
 def _entry( res: tuple) -> dict:
     'Prepare an LDAP entry for transmission'
@@ -234,9 +264,14 @@ def search( q: str) -> list:
     with Ldap( request.authorization) as con:
         res = con.search_s(
             app.config['BASE_DN'], ldap.SCOPE_SUBTREE, query)
-        if len( res) == 1: return [ _entry( res[0]) ]
-        return [ { 'dn': dn, 'name': _ename( attrs) or dn }
-            for dn, attrs in res[:app.config['SEARCH_MAX']]]
+    
+    def result(): # See notes on generator in tree()
+        if len( res) == 1: yield _entry( res[0])
+        else:
+            for dn, attrs in res[:app.config['SEARCH_MAX']]:
+                yield { 'dn': dn, 'name': _ename( attrs) or dn }
+    
+    return result()
 
 
 ### LDAP Schema ###

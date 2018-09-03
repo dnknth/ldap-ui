@@ -22,7 +22,7 @@ Download static assets into ```static/vendor``` and set up a virtual Python envi
 
 ​    make setup
 
-Check the configuration in `settings.py`. It is very short and should be self-explaining (Python literacy helps). 
+Check the configuration in [settings.py](settings.py). It is very short and should be self-explaining (Python literacy helps). 
 
 ## Usage
 

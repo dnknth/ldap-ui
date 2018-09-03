@@ -1,6 +1,6 @@
 "use strict";
 
-app = new Vue({
+var app = new Vue({
     
     // root <div> in page
     el: "#app",
