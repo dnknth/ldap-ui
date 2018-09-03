@@ -83,7 +83,7 @@ app = new Vue({
         reload: function( dn) {
             const treesize = this.tree.length;
             let pos = this.tree.indexOf( this.treeMap[ dn]);
-            $.get('api/tree/' + dn, function( response) {
+            return $.get('api/tree/' + dn, function( response) {
                 if (pos >= 0) app.tree[pos].loaded = true;
                 ++pos;
                 
@@ -103,12 +103,51 @@ app = new Vue({
                 if (treesize == 0) app.toggle( app.tree[0]);
             });
         },
+
+        // Make a node visible in the tree, reloading as needed
+        reveal: function( dn) {
+            // Simple case: Tree node is already loaded.
+            // Just open all ancestors
+            if (this.treeMap[dn]) {
+                for( let p = this.parent( dn); p; p = this.parent( p.dn)) {
+                    p.open = p.hasSubordinates = true;
+                }
+                this.tree = this.tree.slice(); // force redraw
+                return;
+            }
+            
+            // build list of ancestors to reload
+            let parts = dn.split( ','),
+                parents = [];
+                
+            while (true) {
+                parts.splice( 0, 1);
+                const pdn = parts.join( ',');
+                parents.push( pdn);
+                if (this.treeMap[pdn]) break;
+            }
+            
+            // Walk down the tree
+            function visit() {
+                if (!parents.length) {
+                    app.tree = app.tree.slice(); // force redraw
+                    return;
+                }
+                const pdn = parents.pop();
+                app.reload( pdn).done( function() {
+                    app.treeMap[pdn].open = true;
+                    visit();
+                });
+            }
+            visit();
+        },
         
         // Get the tree item containing a given DN
         parent: function( dn) {
             return this.treeMap[ dn.slice( dn.indexOf(',') + 1)];
         },
         
+        // Get the icon classes for a tree node
         icon: function( item) {
             return ' fa-' +
                 (item ? this.icons[ item.structuralObjectClass] : 'atom' || 'question');
@@ -118,9 +157,7 @@ app = new Vue({
         toggle: function( item) {
             item.open = !item.open;
             this.tree = this.tree.slice(); // force redraw
-            if (!item.loaded) {
-                this.reload( item.dn);
-            }
+            if (!item.loaded) this.reload( item.dn);
         },
         
         // Populate the "New Entry" form
@@ -201,7 +238,8 @@ app = new Vue({
             const rdn = this.newRdn + '=' + rdnAttr[0];
             $.get('api/rename/' + dn + '/' + rdn, function( response) {
                 app.entry = response;
-                app.reload( app.parent( dn).dn);
+                const parent = app.parent( dn);
+                if (parent) app.reload( parent.dn);
             })
             .fail( function( xhr, errorType, error) {
                 app.showError( xhr.responseText);
@@ -249,6 +287,7 @@ app = new Vue({
         loadEntry: function( dn, changed) {
             this.newEntry = null;
             this.searchResult = null;
+            this.reveal( dn);
             $.get('api/entry/' + dn, function( response) {
                 app.entry = response;
                 app.entry.changed = changed || [];
@@ -297,6 +336,9 @@ app = new Vue({
                     app.entry = null;
                     app.reload( app.parent( dn).dn);
                 }
+            })
+            .fail( function( xhr, errorType, error) {
+                app.showError( xhr.responseText);
             });
         },
         
@@ -398,6 +440,7 @@ app = new Vue({
                 else if (response.length == 1) {
                     // load single result for editing
                     app.entry = response[0];
+                    app.reveal( app.entry.meta.dn);
                 }
                 else { // multiple results
                     app.entry = null;

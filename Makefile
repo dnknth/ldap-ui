@@ -22,6 +22,7 @@ static/vendor:
 	cd $@; wget -q https://unpkg.com/bootstrap@4.1.3/dist/css/bootstrap.min.css.map
 	cd $@; wget -q https://unpkg.com/bootstrap-vue@2.0.0-rc.11/dist/bootstrap-vue.css
 	cd $@; wget -q https://cdn.jsdelivr.net/npm/vue/dist/vue.js
+	cd $@; wget -q https://cdn.jsdelivr.net/npm/vue/dist/vue.min.js
 	cd $@; wget -q https://unpkg.com/babel-polyfill@7.0.0-beta.3/dist/polyfill.min.js
 	cd $@; wget -q https://unpkg.com/bootstrap-vue@2.0.0-rc.11/dist/bootstrap-vue.js
 	cd $@; wget -q https://unpkg.com/bootstrap-vue@2.0.0-rc.11/dist/bootstrap-vue.js.map

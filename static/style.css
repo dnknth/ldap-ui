@@ -37,6 +37,10 @@ span.indent {
     margin-left: 1.2em;
 }
 
+span.tree-label-active {
+    font-weight: bold;
+}
+
 a.tree-link i.fas {
     color: gray;
 }
