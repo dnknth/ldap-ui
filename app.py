@@ -9,6 +9,7 @@ app.config.from_object( 'settings')
 # Constant to add technical attributes in LDAP search results
 WITH_OPERATIONAL_ATTRS = ('*','+')
 
+TREE_ATTRS = set( ('structuralObjectClass', 'hasSubordinates'))
 
 def api( view: types.FunctionType) -> flask.Response:
     ''' View decorator for ReST endpoints.
@@ -95,13 +96,13 @@ def dn_sort( dn: str) -> tuple:
     'Re-order DN parts for sorting'
     return tuple( reversed( dn.lower().split( ',')))
 
-def _decode( attrs, filters=None, excludes=None):
+def _decode( attrs, filters=None):
     if type( attrs) is dict:
-        return { k: _decode( values, filters, excludes) for k, values in attrs.items()
-            if (filters is None or k in filters) and (excludes is None or k not in excludes)}
+        return { k: _decode( values, filters) for k, values in attrs.items()
+            if (not filters or k in filters)}
     if attrs == b'TRUE':  return True
     if attrs == b'FALSE': return False
-    if type( attrs) is list: return [ _decode( a, filters, excludes) for a in attrs ]
+    if type( attrs) is list: return [ _decode( a, filters) for a in attrs ]
     if type( attrs) is bytes: return str( attrs, app.config['ENCODING'])
     return attrs
 
@@ -125,7 +126,7 @@ def tree( basedn:str) -> list:
     for dn in sorted( res.keys(), key=dn_sort):
 
         # Extract and flatten attributes
-        attrs = _decode( res[dn], app.config['TREE_ATTRS'])
+        attrs = _decode( res[dn], TREE_ATTRS)
         for key in attrs: attrs[key] = attrs[key][0]
         
         attrs['dn'] = dn
@@ -147,7 +148,7 @@ def _entry( res: tuple) -> dict:
         for a in app.schema.get_applicable_aux_classes( soc[0]))
     
     return {
-        'attrs':  _decode( attrs, excludes=app.config['HIDDEN_ATTRS']),
+        'attrs':  _decode( attrs),
         'meta': {
             'dn': dn,
             'required': [ app.schema.get_obj( ldap.schema.models.AttributeType, a).names[0]
@@ -232,8 +233,7 @@ def search( q: str) -> list:
     
     with Ldap( request.authorization) as con:
         res = con.search_s(
-            app.config['BASE_DN'], ldap.SCOPE_SUBTREE,
-            query, WITH_OPERATIONAL_ATTRS)
+            app.config['BASE_DN'], ldap.SCOPE_SUBTREE, query)
         if len( res) == 1: return [ _entry( res[0]) ]
         return [ { 'dn': dn, 'name': _ename( attrs) or dn }
             for dn, attrs in res[:app.config['SEARCH_MAX']]]
