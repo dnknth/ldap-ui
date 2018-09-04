@@ -7,8 +7,12 @@ a, a:hover {
     color: black;
 }
 
-ul.click-through a {
+.u {
     text-decoration: underline;
+}
+
+.tree-link, .clickable {
+    cursor: pointer;
 }
 
 #left {
@@ -41,29 +45,29 @@ span.tree-label-active {
     font-weight: bold;
 }
 
-a.tree-link i.fas {
+.tree-link i.fas {
     color: gray;
-}
-
-i.fas.fa-arrow-circle-right, i.fas.fa-arrow-circle-down {
-    color: LightGray;
 }
 
 span.opener {
-    cursor: pointer;
-    color: gray;
+    color: LightGray;
 }
 
-a.close-box {
+.close-box {
     position: absolute;
     top: 0.2em;
     right: 16px;
     font-size: 150%;
     color: gray;
+    cursor: pointer;
 }
 
 span.header {
     font-weight: bold;
+}
+
+#editor {
+    max-width: 1024px;
 }
 
 #editor div.card-header {
@@ -74,6 +78,10 @@ table#entry {
     width: 100%;
 }
 
+tr.attr>th, tr.attr>td {
+    padding-bottom: 2ex;
+}
+
 table#entry th {
     vertical-align: top;
     position: relative;
@@ -81,12 +89,8 @@ table#entry th {
     padding-right: 0px;
 }
 
-table#entry td i.fas {
-    opacity: 0.1;
-}
-
-table#entry th.optional {
-    font-weight: normal;
+th.optional span.oc {
+    color: gray;
 }
 
 table#entry i.fa-check {
@@ -96,6 +100,22 @@ table#entry i.fa-check {
 table#entry input {
     width: 90%;
     padding: 0px 0.5em;
+    border-top-width: 0px;
+    border-left-width: 0px;
+    border-right-width: 0px;
+    position: relative;
+    border-bottom: 2px solid #EEE;
+    top: 0.2ex;
+}
+
+table#entry input:focus {
+    border-bottom: 2px solid blue;
+}
+
+table#entry input.disabled {
+    border-bottom-width: 0px;
+    background-color: white;
+    color: black;
 }
 
 table#entry div.attr-value {
@@ -106,19 +126,22 @@ table#entry div.button-bar {
     width: 90%;
 }
 
-a.add-btn {
+.add-btn {
     font-size: 150%;
     position: relative;
     top: -0.5ex;
     color: LightGray;
 }
 
-input.structural {
-    font-weight: bold;
+table#entry td i.fas {
+    opacity: 0.1;
+    margin-right: 0.1em;
+    position: relative;
+    top: 0.3ex;
 }
 
-input.disabled {
-    background-color: #f8f8f8;
+input.structural {
+    font-weight: bold;
 }
 
 li.nav-item.icon a.nav-link {

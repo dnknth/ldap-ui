@@ -1,5 +1,47 @@
 "use strict";
 
+/* See: https://stackoverflow.com/questions/30008114/how-do-i-promisify-native-xhr#30008115
+ * 
+ * opts = {
+ *   method: String,
+ *   url: String,
+ *   data: String | Object,
+ *   headers: Object
+ * }
+ */
+
+function request( opts) {
+  return new Promise( function( resolve, reject) {
+    var xhr = new XMLHttpRequest();
+    xhr.open( opts.method || 'GET', opts.url);
+    xhr.onload = function () {
+      if (this.status >= 200 && this.status < 300) {
+        resolve(xhr);
+      } else {
+        reject( this);
+      }
+    };
+    xhr.onerror = function () {
+      reject( this);
+    };
+    if (opts.headers) {
+      Object.keys(opts.headers).forEach(function (key) {
+        xhr.setRequestHeader(key, opts.headers[key]);
+      });
+    }
+    var params = opts.data;
+    // We'll need to stringify if we've been given an object
+    // If we have a string, this is skipped.
+    if (params && typeof params === 'object') {
+      params = Object.keys(params).map(function (key) {
+        return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+      }).join('&');
+    }
+    xhr.send(params);
+  });
+}
+
+
 var app = new Vue({
     
     // root <div> in page
@@ -56,20 +98,24 @@ var app = new Vue({
     
     created: function() { // Runs on page load
         
+        Vue.nextTick( function () {
+            document.getElementById('search').focus();
+        });
+        
         // Get the DN of the current user
-        $.get('api/whoami', function( response) {
-            app.user = response;
+        request( { url: 'api/whoami'}).then( function( xhr) {
+            app.user = JSON.parse( xhr.response);
         });
         
         // Populate the tree view
         this.reload( 'base');
         
         // Load the schema
-        $.get('api/schema', function( response) {
-            app.schema = response;
+        request( { url: 'api/schema' }).then( function( xhr) {
+            app.schema = JSON.parse( xhr.response);
             app.schema.structural = [];
-            for (let n in response.objectClasses) {
-                const oc = response.objectClasses[n];
+            for (let n in app.schema.objectClasses) {
+                const oc = app.schema.objectClasses[n];
                 if (oc.kind == 'structural') {
                     app.schema.structural.push( oc.name);
                 }
@@ -83,7 +129,9 @@ var app = new Vue({
         reload: function( dn) {
             const treesize = this.tree.length;
             let pos = this.tree.indexOf( this.treeMap[ dn]);
-            return $.get('api/tree/' + dn, function( response) {
+            return request( { url: 'api/tree/' + dn }).then( function( xhr) {
+                const response = JSON.parse( xhr.response);
+                
                 if (pos >= 0) app.tree[pos].loaded = true;
                 ++pos;
                 
@@ -134,7 +182,7 @@ var app = new Vue({
                     return;
                 }
                 const pdn = parents.pop();
-                app.reload( pdn).done( function() {
+                app.reload( pdn).then( function() {
                     app.treeMap[pdn].open = true;
                     visit();
                 });
@@ -220,8 +268,7 @@ var app = new Vue({
         
         // Change the RDN for an entry
         renameEntry: function( evt) {
-            const dn = this.entry.meta.dn,
-                dnparts = dn.split(',');
+            const dn = this.entry.meta.dn;
                 
             if (!this.newRdn || this.newRdn == dn.split('=')[0]) {
                 evt.preventDefault();
@@ -236,13 +283,15 @@ var app = new Vue({
             }
             
             const rdn = this.newRdn + '=' + rdnAttr[0];
-            $.get('api/rename/' + dn + '/' + rdn, function( response) {
-                app.entry = response;
-                const parent = app.parent( dn);
+            request( { url: 'api/rename/' + dn + '/' + rdn }).then( function( xhr) {
+                app.entry = JSON.parse( xhr.response);
+                const parent = app.parent( dn),
+                    dnparts = dn.split(',');
                 if (parent) app.reload( parent.dn);
-            })
-            .fail( function( xhr, errorType, error) {
-                app.showError( xhr.responseText);
+                dnparts.splice( 0, 1, rdn);
+                app.loadEntry( dnparts.join(','));
+            }).catch( function( xhr) {
+                app.showError( xhr.response);
             });
         },
         
@@ -288,57 +337,58 @@ var app = new Vue({
             this.newEntry = null;
             this.searchResult = null;
             this.reveal( dn);
-            $.get('api/entry/' + dn, function( response) {
-                app.entry = response;
+            request( { url: 'api/entry/' + dn }).then( function( xhr) {
+                app.entry = JSON.parse( xhr.response);
                 app.entry.changed = changed || [];
                 Vue.nextTick( function () {
-                    $('input.disabled').prop( 'disabled', true);
+                    document.querySelectorAll('input.disabled').forEach( function( el) {
+                        el.setAttribute( 'disabled', 'disabled');
+                    });
                 });
             });
         },
         
+        disabled: function( key) {
+            return key == this.entry.meta.dn.split( '=')[0];
+        },
+        
         // Submit the entry form via AJAX
         change: function( evt) {
-            evt.preventDefault();
             this.entry.changed = [];
             this.error = {};
             const dn = this.entry.meta.dn;
             
-            $.ajax({
+            request({
                 url:  'api/entry/' + dn,
-                type: this.newEntry ? 'PUT' : 'POST',
+                method: this.newEntry ? 'PUT' : 'POST',
                 data: JSON.stringify( this.entry.attrs),
-                contentType: 'application/json; charset=utf-8',
-                dataType: 'json',
-                success: function( data) {
-                    if ( data && data.changed && data.changed.length) {
-                        app.showInfo( '👍 Saved changes');
-                    }
-                    if (app.newEntry) {
-                        app.reload( app.parent( dn).dn);
-                    }
-                    app.newEntry = null;
-                    app.loadEntry( dn, data.changed);
-                }})
-            .fail( function( xhr, errorType, error) {
-                app.showError( xhr.responseText);
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8',
+                }
+            }).then( function( xhr) {
+                const data = JSON.parse( xhr.response);
+                if ( data && data.changed && data.changed.length) {
+                    app.showInfo( '👍 Saved changes');
+                }
+                if (app.newEntry) {
+                    app.reload( app.parent( dn).dn);
+                }
+                app.newEntry = null;
+                app.loadEntry( dn, data.changed);
+            }).catch( function( xhr) {
+                app.showError( xhr.response);
             });
         },
         
         // Delete an entry
         remove: function() {
             const dn = this.entry.meta.dn;
-            $.ajax({
-                url:  'api/entry/' + dn,
-                type: 'DELETE',
-                success: function( result) {
-                    app.showInfo( 'Deleted entry: ' + dn);
-                    app.entry = null;
-                    app.reload( app.parent( dn).dn);
-                }
-            })
-            .fail( function( xhr, errorType, error) {
-                app.showError( xhr.responseText);
+            request({ url:  'api/entry/' + dn, method: 'DELETE' }).then( function() {
+                app.showInfo( 'Deleted entry: ' + dn);
+                app.entry = null;
+                app.reload( app.parent( dn).dn);
+            }).catch( function( xhr) {
+                app.showError( xhr.response);
             });
         },
         
@@ -428,19 +478,19 @@ var app = new Vue({
         
         // Run a search against the directory
         search: function( evt) {
-            evt.preventDefault();
-            const q = $('input#q').val();
+            const q = document.getElementById('search').value;
             
-            $.get('api/search/' + q, function( response) {
+            request( { url: 'api/search/' + q }).then( function( xhr) {
+                const response = JSON.parse( xhr.response);
                 app.searchResult = null;
                 app.error = {};
+
                 if (!response || !response.length) {
                     app.showWarning( 'No search results');
                 }
                 else if (response.length == 1) {
                     // load single result for editing
-                    app.entry = response[0];
-                    app.reveal( app.entry.meta.dn);
+                    app.loadEntry( response[0].dn);
                 }
                 else { // multiple results
                     app.entry = null;

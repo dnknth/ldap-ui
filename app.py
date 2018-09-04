@@ -1,6 +1,7 @@
+from contextlib import contextmanager
 from flask import request
 from ldap.modlist import addModlist, modifyModlist
-import flask, functools, ldap, sys, types
+import flask, functools, ldap, sys, types, typing
 
 
 app = flask.Flask( __name__)
@@ -15,7 +16,7 @@ TREE_ATTRS = set( ('structuralObjectClass', 'hasSubordinates'))
 # Generator function that emits a JSON list for an iterable.
 # Makes most sense if data is a subgenerator
 # See: https://blog.al4.co.nz/2016/01/streaming-json-with-flask/
-def stream_list( data) -> types.GeneratorType:
+def stream_list( data) -> typing.Generator:
     yield '['
 
     chunks = data.__iter__()
@@ -35,7 +36,7 @@ def stream_list( data) -> types.GeneratorType:
     yield ']'
 
 
-def api( view: types.FunctionType) -> flask.Response:
+def api( view: typing.Callable) -> flask.Response:
     ''' View decorator for ReST endpoints.
         Requires authentication and emits Json.
     '''
@@ -65,40 +66,34 @@ def no_cache( view: types.FunctionType) -> flask.Response:
     return wrapped_view
 
 
-class Ldap:
+@contextmanager
+def Ldap( auth:dict=None):
     'Context manager for authenticated LDAP connections'
     
-    def __init__( self, auth:dict=None) -> None:
-        self.auth = auth
-        
-    def __enter__( self) -> ldap.ldapobject.LDAPObject:
-        'Authenticate with LDAP server'
-        
-        self.connection = ldap.initialize( app.config['LDAP_URL'])
-        if self.auth:
-            res = self.connection.search_s( 
-                app.config['BASE_DN'],
-                ldap.SCOPE_SUBTREE,
-                '(%s=%s)' % (app.config['UID_ATTR'], self.auth['username']))
-            if len( res) != 1:
-                raise ldap.INVALID_CREDENTIALS( {
-                    'desc': 'Invalid user',
-                    'info': "User '%s' unknown" % self.auth['username']})
-            dn, attrs = res[0]
-            self.connection.simple_bind_s( dn, self.auth['password'])
-        return self.connection
-
-    def __exit__( self, *args) -> None:
-        if self.auth: self.connection.unbind_s()
+    connection = ldap.initialize( app.config['LDAP_URL'])
+    if auth:
+        res = connection.search_s( 
+            app.config['BASE_DN'],
+            ldap.SCOPE_SUBTREE,
+            '(%s=%s)' % (app.config['UID_ATTR'], auth['username']))
+        if len( res) != 1:
+            raise ldap.INVALID_CREDENTIALS( {
+                'desc': 'Invalid user',
+                'info': "User '%s' unknown" % auth['username']})
+        dn, attrs = res[0]
+        connection.simple_bind_s( dn, auth['password'])
+    yield connection
+    if auth: connection.unbind_s()
 
 
-def _abort( err: ldap.LDAPError) -> None:
+def _abort( err: ldap.LDAPError) -> typing.NoReturn:
     'Send LDAP error message as 500 Internal Server Error'
     args = err.args[0]
     flask.abort( flask.make_response( '%s: %s' % (
         args.get( 'desc', ''),
         args.get( 'info', '')), 500, []))
-    
+    assert False # Keep mypy happy
+
 
 @app.route( '/')
 def index() -> flask.Response:
@@ -138,7 +133,7 @@ def _decode( attrs, filters=None):
 @app.route( '/api/tree/<basedn>')
 @no_cache
 @api
-def tree( basedn:str) -> list:
+def tree( basedn:str) -> typing.Generator[dict, None, None]:
     'List directory entries'
     
     scope = ldap.SCOPE_ONELEVEL
@@ -150,19 +145,12 @@ def tree( basedn:str) -> list:
         res = dict( con.search_s( basedn, scope,
             attrlist=WITH_OPERATIONAL_ATTRS))
 
-    # Internal result generator
+    # Return result generator
     # Cannot simply yield in the main tree view
     # because the Ldap bind must run in the request context
-    def result():
-        for dn in sorted( res.keys(), key=dn_sort):
-
-            # Extract and flatten attributes
-            attrs = _decode( res[dn], TREE_ATTRS)
-            for key in attrs: attrs[key] = attrs[key][0]
-            attrs['dn'] = dn
-            yield attrs
-            
-    return result()
+    return ( dict( ((key, values[0])
+        for key, values in _decode( res[dn], TREE_ATTRS).items()), dn=dn)
+            for dn in sorted( res.keys(), key=dn_sort))
         
 
 def _entry( res: tuple) -> dict:
@@ -194,7 +182,7 @@ def _bytes( s: str) -> bytes:
 @app.route( '/api/entry/<dn>', methods=('GET', 'POST', 'DELETE', 'PUT'))
 @no_cache
 @api
-def entry( dn: str) -> dict:
+def entry( dn: str) -> typing.Optional[dict]:
     'Edit directory entries'
     
     if request.is_json:
@@ -230,13 +218,15 @@ def entry( dn: str) -> dict:
                 with Ldap( request.authorization) as con:
                     con.delete_s( dn)
                     
+            return None # for mypy
+                    
     except ldap.LDAPError as err: _abort( err)
 
 
 @app.route( '/api/rename/<dn>/<newrdn>')
 @no_cache
 @api
-def rename( dn: str, newrdn:str) -> dict:
+def rename( dn: str, newrdn:str) -> None:
     'Rename an entry'
 
     try:
@@ -246,14 +236,14 @@ def rename( dn: str, newrdn:str) -> dict:
     except ldap.LDAPError as err: _abort( err)
 
 
-def _ename( entry: dict) -> str:
+def _ename( entry: dict) -> typing.Optional[str]:
     'Try to extract a CN'
-    if entry['cn']: return _decode( entry['cn'][0])
+    return _decode( entry['cn'][0]) if entry['cn'] else None
 
 
 @app.route( '/api/search/<q>')
 @api
-def search( q: str) -> list:
+def search( q: str) -> typing.Iterable[ dict]:
     'Search the directory'
     
     # Build query
@@ -265,13 +255,8 @@ def search( q: str) -> list:
         res = con.search_s(
             app.config['BASE_DN'], ldap.SCOPE_SUBTREE, query)
     
-    def result(): # See notes on generator in tree()
-        if len( res) == 1: yield _entry( res[0])
-        else:
-            for dn, attrs in res[:app.config['SEARCH_MAX']]:
-                yield { 'dn': dn, 'name': _ename( attrs) or dn }
-    
-    return result()
+    return ( { 'dn': dn, 'name': _ename( attrs) or dn }
+        for dn, attrs in res[:app.config['SEARCH_MAX']])
 
 
 ### LDAP Schema ###

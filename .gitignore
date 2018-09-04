@@ -1,3 +1,4 @@
-venv
+.venv3
 __pycache__
+.mypy_cache
 static/vendor
