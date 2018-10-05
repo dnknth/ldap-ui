@@ -28,28 +28,11 @@ static/vendor:
 	cd $@; wget -c -q https://unpkg.com/bootstrap-vue@2.0.0-rc.11/dist/bootstrap-vue.min.js
 	cd $@; wget -c -q https://unpkg.com/bootstrap-vue@2.0.0-rc.11/dist/bootstrap-vue.min.js.map
 	#
-	cd $@; wget -c -q https://code.getmdl.io/1.3.0/material.teal-orange.min.css
-	cd $@; wget -c -q https://code.getmdl.io/1.3.0/material.min.js
-	cd $@; wget -c -q https://code.getmdl.io/1.3.0/material.min.js.map
-	#
-	cd $@; wget -c -q https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.min.css
-	cd $@; wget -c -q https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.min.js
-	#
-	# cd $@; wget -c -q https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 	#
 	mkdir -p $@/fonts
 	cd /tmp; wget -c -q https://use.fontawesome.com/releases/v5.3.1/fontawesome-free-5.3.1-web.zip
 	unzip -q -o -d $@/fonts /tmp/fontawesome-free-5.3.1-web.zip
 	rm -f /tmp/fontawesome-free-5.3.1-web.zip
-	#
-	cd /tmp; wget -c -q -O /tmp/mdi-fonts.zip https://github.com/Templarian/MaterialDesign-Webfont/archive/master.zip
-	unzip -q -o -d $@/fonts /tmp/mdi-fonts.zip
-	rm -f /tmp/mdi-fonts.zip
-	#
-	mkdir -p $@/fonts/roboto
-	wget -c -q -O /tmp/roboto.zip 'https://google-webfonts-helper.herokuapp.com/api/fonts/roboto?download=zip&subsets=latin&variants=300,500,700,regular&formats=woff,woff2'
-	unzip -q -o -d $@/fonts/roboto /tmp/roboto.zip
-	rm -f /tmp/roboto.zip
 
 .venv3: requirements.txt
 	python3 -m venv --system-site-packages $@

@@ -26,6 +26,8 @@ Check the configuration in [settings.py](settings.py). It is very short and shou
 
 ## Usage
 
+### Standalone
+
 Run the app with
 
 ​    make run
@@ -34,9 +36,17 @@ and head over to http://localhost:5000/.
 
 The app always requires authentication, even if the directory permits anonymous access. User credentials are validated by the LDAP directory. What a particular user can see (and edit) is governed entirely by directory access rules.
 
+### Docker
+
+A Dockerfile is included. The container exposes port 5000. LDAP access is controlled by environment variables:
+
+* `LDAP_URL`: connection URL, e.g. `ldap://your.ldap.server/`
+* `BASE_DN`: search base, e.g. `dc=example,dc=org`
+* `LOGIN_ATTR`: User name attribute, defaults to `uid`
+
 ## Caveats
 
-* The software has not been thoroughly tested. It likely has bugs. Do not use for production directories.
+* The software has not been thoroughly tested. It likely has bugs. Do not use for production directories (like I do).
 * It works with [OpenLdap](http://www.openldap.org) using simple authentication. Other directories and authentication schemes have not been tested.
 * Currently, only plain-text is supported for new passwords. If the LDAP server does not hash them automatically, they are stored as-is.
 

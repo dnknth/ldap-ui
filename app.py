@@ -12,6 +12,8 @@ WITH_OPERATIONAL_ATTRS = ('*','+')
 
 TREE_ATTRS = set( ('structuralObjectClass', 'hasSubordinates'))
 
+UNAUTHORIZED = {'WWW-Authenticate': 'Basic realm="Login Required"'}
+
 
 # Generator function that emits a JSON list for an iterable.
 # Makes most sense if data is a subgenerator
@@ -42,9 +44,17 @@ def api( view: typing.Callable) -> flask.Response:
     '''
     @functools.wraps( view)
     def wrapped_view( **values) -> flask.Response:
-        if not request.authorization: flask.abort( 401) # Unauthorized
+        if not request.authorization: 
+            return flask.Response(
+                'Please log in', 401, UNAUTHORIZED)
+            
         else:
-            data = view( **values)
+            try:
+                data = view( **values)
+            except ldap.INVALID_CREDENTIALS:
+                return flask.Response(
+                    'Please log in', 401, UNAUTHORIZED)
+                
             if type( data) is flask.Response: return data
             elif type( data) is types.GeneratorType:
                 return flask.Response( stream_list( data),
@@ -75,7 +85,7 @@ def Ldap( auth:dict=None):
         res = connection.search_s( 
             app.config['BASE_DN'],
             ldap.SCOPE_SUBTREE,
-            '(%s=%s)' % (app.config['UID_ATTR'], auth['username']))
+            '(%s=%s)' % (app.config['LOGIN_ATTR'], auth['username']))
         if len( res) != 1:
             raise ldap.INVALID_CREDENTIALS( {
                 'desc': 'Invalid user',

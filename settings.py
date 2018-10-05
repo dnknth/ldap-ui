@@ -11,11 +11,11 @@ SCHEMA_DN = 'cn=subschema'
 ENCODING = 'UTF8'
 
 # Attribute to check for user login
-UID_ATTR = 'uid'
+LOGIN_ATTR = os.environ.get( 'LOGIN_ATTR', 'uid')
 
 # Searches
 SEARCH_PATTERNS = ( # for search field
-    '(%s=%%s)' % UID_ATTR, 
+    '(%s=%%s)' % LOGIN_ATTR, 
     '(cn=%s)',
     '(gn=%s)',
     '(sn=%s)',

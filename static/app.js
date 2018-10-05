@@ -63,6 +63,7 @@ var app = new Vue({
             groupOfUniqueNames: 'user-friends',
             posixGroup:         'user-friends',
             person:             'user-tie',
+            account:            'user-tie',
         },
 
         // alerts
