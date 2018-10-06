@@ -28,6 +28,10 @@ a, a:hover {
     color: red;
 }
 
+.green {
+    color: green;
+}
+
 ul#tree {
     padding: 0px;
 }
@@ -93,10 +97,6 @@ th.optional span.oc {
     color: gray;
 }
 
-table#entry i.fa-check {
-    color: green;
-}
-
 table#entry input {
     width: 90%;
     padding: 0px 0.5em;
@@ -104,7 +104,7 @@ table#entry input {
     border-left-width: 0px;
     border-right-width: 0px;
     position: relative;
-    border-bottom: 2px solid #EEE;
+    border-bottom: 1px solid #EEE;
     top: 0.2ex;
 }
 
@@ -150,4 +150,14 @@ li.nav-item.icon a.nav-link {
 
 li.entry-menu a.nav-link {
     padding-left: 8px;
+}
+
+#change-password input {
+    width: 90%;
+    display: inline;
+    break: left;
+}
+
+#change-password i {
+    margin-left: 0.5em;
 }

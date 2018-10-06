@@ -5,8 +5,8 @@ PREFERRED_URL_SCHEME = 'https'
 SECRET_KEY = os.urandom( 16)
 
 # LDAP settings
-LDAP_URL = os.environ.get( 'LDAP_URL', 'ldapi:///')
-BASE_DN = os.environ.get( 'BASE_DN', 'dc=krachbumm,dc=de')
+LDAP_URL = os.environ.get( 'LDAP_URL', 'ldap:///')
+BASE_DN = os.environ.get( 'BASE_DN')
 SCHEMA_DN = 'cn=subschema'
 ENCODING = 'UTF8'
 

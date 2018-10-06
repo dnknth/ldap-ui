@@ -4,6 +4,9 @@ SOURCES += $(wildcard static/*.html)
 SOURCES += $(wildcard static/*.js)
 SOURCES += $(wildcard static/*.css)
 
+export BASE_DN = dc=scheer-group,dc=com
+export LOGIN_ATTR = cn
+
 
 debug: app.py setup
 	FLASK_APP=app.py FLASK_ENV=development .venv3/bin/flask run --host=0.0.0.0
@@ -35,16 +38,13 @@ static/vendor:
 	rm -f /tmp/fontawesome-free-5.3.1-web.zip
 
 .venv3: requirements.txt
-	python3 -m venv --system-site-packages $@
-	.venv3/bin/pip install -r $<
+	python3 -m venv $@
+	.venv3/bin/pip3 install -r $<
 	touch $@
 
 clean:
 	rm -rf static/vendor
 	find . -name __pycache__ | xargs -r rm -r
-	
-tgz:
-	tar -czvf ../ldap-ui.tgz --exclude=.git --exclude-from=.gitignore .
 	
 edit: $(SOURCES)
 	rmate $(SOURCES)
@@ -52,3 +52,6 @@ edit: $(SOURCES)
 ci: Makefile $(SOURCES)
 	git add Makefile $(SOURCES)
 	git commit
+
+docker:
+	docker build -t dnknth/ldap-ui .

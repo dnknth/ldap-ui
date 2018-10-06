@@ -10,9 +10,10 @@ app.config.from_object( 'settings')
 # Constant to add technical attributes in LDAP search results
 WITH_OPERATIONAL_ATTRS = ('*','+')
 
-TREE_ATTRS = set( ('structuralObjectClass', 'hasSubordinates'))
+TREE_ATTRS = set( ('structuralObjectClass', 'hasSubordinates' ))
 
-UNAUTHORIZED = {'WWW-Authenticate': 'Basic realm="Login Required"'}
+# HTTP 401 headers
+UNAUTHORIZED = { 'WWW-Authenticate': 'Basic realm="Login Required"' }
 
 
 # Generator function that emits a JSON list for an iterable.
@@ -25,22 +26,21 @@ def stream_list( data) -> typing.Generator:
     try:
         r = next( chunks)
         yield flask.json.dumps( r)
+
+        # loop over remaining results
+        for r in chunks:
+            yield ',' + flask.json.dumps( r)
+
     except StopIteration:
-        # no results – close array and stop iteration
-        yield ']'
-        return
-
-    # loop over remaining results
-    for r in chunks:
-        yield ',' + flask.json.dumps( r)
-
+        pass
+        
     # close array
     yield ']'
 
 
 def api( view: typing.Callable) -> flask.Response:
-    ''' View decorator for ReST endpoints.
-        Requires authentication and emits Json.
+    ''' View decorator for JSON endpoints.
+        Requires authentication.
     '''
     @functools.wraps( view)
     def wrapped_view( **values) -> flask.Response:
@@ -54,6 +54,11 @@ def api( view: typing.Callable) -> flask.Response:
             except ldap.INVALID_CREDENTIALS:
                 return flask.Response(
                     'Please log in', 401, UNAUTHORIZED)
+            except ldap.LDAPError as err:
+                args = err.args[0]
+                flask.abort( flask.make_response( '%s: %s' % (
+                    args.get( 'desc', ''),
+                    args.get( 'info', '')), 500, []))
                 
             if type( data) is flask.Response: return data
             elif type( data) is types.GeneratorType:
@@ -96,15 +101,6 @@ def Ldap( auth:dict=None):
     if auth: connection.unbind_s()
 
 
-def _abort( err: ldap.LDAPError) -> typing.NoReturn:
-    'Send LDAP error message as 500 Internal Server Error'
-    args = err.args[0]
-    flask.abort( flask.make_response( '%s: %s' % (
-        args.get( 'desc', ''),
-        args.get( 'info', '')), 500, []))
-    assert False # Keep mypy happy
-
-
 @app.route( '/')
 def index() -> flask.Response:
     'Serve the main page'
@@ -112,7 +108,7 @@ def index() -> flask.Response:
 
 
 @app.route( '/<path:filename>')
-def static_file( filename) -> flask.Response:
+def static_file( filename: str) -> flask.Response:
     'Serve static assets'
     return app.send_static_file( filename)
 
@@ -143,7 +139,7 @@ def _decode( attrs, filters=None):
 @app.route( '/api/tree/<basedn>')
 @no_cache
 @api
-def tree( basedn:str) -> typing.Generator[dict, None, None]:
+def tree( basedn: str) -> typing.Generator[dict, None, None]:
     'List directory entries'
     
     scope = ldap.SCOPE_ONELEVEL
@@ -201,54 +197,71 @@ def entry( dn: str) -> typing.Optional[dict]:
                     for k,v in request.get_json().items()
                     if k != 'structuralObjectClass'}
         
-    try:
-        with Ldap( request.authorization) as con:
-            if request.method == 'GET':
-                res = con.search_s( dn, ldap.SCOPE_BASE)
-                return _entry( res[0]) if res else None
-        
-            elif request.method == 'POST':
-                # Get previous values from directory
-                res = con.search_s( dn, ldap.SCOPE_BASE)
-                
-                mods = { k: v for k, v in res[0][1].items() if k in req }
-                modlist = modifyModlist( mods, req)
-                
-                if modlist: # Apply changes and send changed keys back
-                    con.modify_s( dn, modlist)
-                return { 'changed' : sorted( set( m[1] for m in modlist)) }
+    with Ldap( request.authorization) as con:
+        if request.method == 'GET':
+            res = con.search_s( dn, ldap.SCOPE_BASE)
+            return _entry( res[0]) if res else None
+    
+        elif request.method == 'POST':
+            # Get previous values from directory
+            res = con.search_s( dn, ldap.SCOPE_BASE)
             
-            elif request.method == 'PUT':
-                # Create new object
-                modlist = addModlist( req)
-                if modlist: con.add_s( dn, modlist)
-                return { 'changed' : ['dn'] } # Dummy
+            mods = { k: v for k, v in res[0][1].items() if k in req }
+            modlist = modifyModlist( mods, req)
+            
+            if modlist: # Apply changes and send changed keys back
+                con.modify_s( dn, modlist)
+            return { 'changed' : sorted( set( m[1] for m in modlist)) }
+        
+        elif request.method == 'PUT':
+            # Create new object
+            modlist = addModlist( req)
+            if modlist: con.add_s( dn, modlist)
+            return { 'changed' : ['dn'] } # Dummy
+            
+        elif request.method == 'DELETE':
+            with Ldap( request.authorization) as con:
+                con.delete_s( dn)
                 
-            elif request.method == 'DELETE':
-                with Ldap( request.authorization) as con:
-                    con.delete_s( dn)
-                    
-            return None # for mypy
-                    
-    except ldap.LDAPError as err: _abort( err)
+        return None # for mypy
 
 
 @app.route( '/api/rename/<dn>/<newrdn>')
 @no_cache
 @api
-def rename( dn: str, newrdn:str) -> None:
+def rename( dn: str, newrdn: str) -> None:
     'Rename an entry'
 
-    try:
-        with Ldap( request.authorization) as con:
-            con.rename_s( dn, newrdn, delold=0)
-
-    except ldap.LDAPError as err: _abort( err)
+    with Ldap( request.authorization) as con:
+        con.rename_s( dn, newrdn, delold=0)
 
 
 def _ename( entry: dict) -> typing.Optional[str]:
     'Try to extract a CN'
     return _decode( entry['cn'][0]) if entry['cn'] else None
+
+
+@app.route( '/api/entry/<dn>/password', methods=('POST',))
+@no_cache
+@api
+def passwd( dn: str) -> None:
+    'Edit directory entries'
+    
+    if request.is_json:
+        args = request.get_json()
+        print( args)
+        if 'check' in args:
+            with Ldap() as con:
+                try:
+                    con.simple_bind_s( dn, args['check'])
+                    con.unbind_s()
+                    return True
+                except ldap.INVALID_CREDENTIALS:
+                    return False
+        elif 'new1' in args:
+            with Ldap( request.authorization) as con:
+                con.passwd_s( dn, args['old'], args['new1'])
+                return True
 
 
 @app.route( '/api/search/<q>')

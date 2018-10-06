@@ -1,15 +1,17 @@
 # Simple LDAP editor
 
-This is a *very minimal* web interface for LDAP directories. I wrote it over an extended weekend because I finally lost patience with [PHPLdapAdmin](http://phpldapadmin.sourceforge.net/).
+This is a *very minimal* web interface for LDAP directories. 
 
 Features:
 * Directory tree view
 * Entry creation / modification / deletion
 * Schema aware
 * Simple search (configurable)
-* Easy to extend (less than 1000 lines of code)
+* Available as [Docker image](https://hub.docker.com/r/dnknth/ldap-ui/)
 
-## Installation and configuration
+The app always requires authentication, even if the directory permits anonymous access. User credentials are validated against the LDAP directory. What a particular user can see (and edit) is governed entirely by directory access rules.
+
+## Manual installation and configuration
 
 Prerequisites:
 * [GNU make](https://www.gnu.org/software/make/)
@@ -22,7 +24,7 @@ Download static assets into ```static/vendor``` and set up a virtual Python envi
 
 ​    make setup
 
-Check the configuration in [settings.py](settings.py). It is very short and should be self-explaining (Python literacy helps). 
+Check the configuration in [settings.py](settings.py). It is very short and should be self-explaining. 
 
 ## Usage
 
@@ -34,30 +36,29 @@ Run the app with
 
 and head over to http://localhost:5000/.
 
-The app always requires authentication, even if the directory permits anonymous access. User credentials are validated by the LDAP directory. What a particular user can see (and edit) is governed entirely by directory access rules.
-
 ### Docker
 
-A Dockerfile is included. The container exposes port 5000. LDAP access is controlled by environment variables:
+A Dockerfile is included. The container exposes port 5000. LDAP access is controlled by these environment variables:
 
-* `LDAP_URL`: connection URL, e.g. `ldap://your.ldap.server/`
-* `BASE_DN`: search base, e.g. `dc=example,dc=org`
+* `LDAP_URL`: connection URL, e.g. `ldap://your.ldap.server/`, defaults to `ldap:///`
+* `BASE_DN`: search base, e.g. `dc=example,dc=org`. This one is required.
 * `LOGIN_ATTR`: User name attribute, defaults to `uid`
 
 ## Caveats
 
-* The software has not been thoroughly tested. It likely has bugs. Do not use for production directories (like I do).
-* It works with [OpenLdap](http://www.openldap.org) using simple authentication. Other directories and authentication schemes have not been tested.
-* Currently, only plain-text is supported for new passwords. If the LDAP server does not hash them automatically, they are stored as-is.
+* The software has not been tested extensively. Do not use for production directories (like I do).
+* It works with [OpenLdap](http://www.openldap.org) using simple authentication. Other directories have not been tested, and other authentication schemes are currently not supported.
+* Passwords are transmitted as plain text. The LDAP server is expected to hash them (like OpenLdap 2.4 does).
+* The app will trigger a HTTP Basic authentication unless the `AUTHORIZATION` request variable has been set by some upstream web server. 
 
 ## Acknowledgements
 
-The Python backend uses [Flask](http://flask.pocoo.org/). Kudos for [Armin Ronacher](http://lucumr.pocoo.org) and the [other authors](http://flask.pocoo.org/docs/1.0/license/#authors) of this beautifully simple framework!
+The Python backend uses [Flask](http://flask.pocoo.org/). Kudos for [Armin Ronacher](http://lucumr.pocoo.org) and the [other authors](http://flask.pocoo.org/docs/1.0/license/#authors) of this elegant framework!
 
-The HTML frontend uses the fantastic [Bootstrap Vue](https://bootstrap-vue.js.org) components. It was fun to write it.
+The  frontend uses [Vue.js](https://vuejs.org) with the fantastic [Bootstrap Vue](https://bootstrap-vue.js.org) components. Thanks to the authors for taking a lot of pain out of HTML.
 
 ## TODO
 
-* Add support for password algorithms
 * Add LDIF export / import
 * Add support for images (i.e inetOrgPerson)
+

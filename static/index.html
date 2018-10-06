@@ -70,16 +70,19 @@
         </b-modal>
   
         <!-- Popup for object class selection -->
-        <b-modal id="oc-modal" ref="ocRef" title="Add objectClass" @ok="addOc">
-            <b-form-select v-model="selectedOc" :options="entry ? entry.meta.aux : []" class="mb-3">
+        <b-modal ref="ocRef" title="Add objectClass" @ok="addOc">
+            <b-form-select v-model="selectedOc"
+                :options="entry ? entry.meta.aux : []"
+                id="oc-select" class="mb-3">
             </b-form-select>
         </b-modal>
   
         <!-- Add entry popup -->
-        <b-modal id="newEntry" ref="newRef" title="New entry" @ok="createEntry">
+        <b-modal ref="newRef" title="New entry" @ok="createEntry">
             <b-form-group label="Object class:" label-for="newoc">
                 <b-form-select id="newoc" v-model="newEntry.objectClass"
-                    :options="schema.structural" v-if="newEntry" class="mb-3">
+                    :options="schema.structural" v-if="newEntry"
+                    class="mb-3">
                 </b-form-select>
             </b-form-group>
             
@@ -95,7 +98,7 @@
         </b-modal>
   
         <!-- Rename entry popup -->
-        <b-modal id="rename" ref="renameRef" title="Rename entry" @ok="renameEntry">
+        <b-modal ref="renameRef" title="Rename entry" @ok="renameEntry">
             <b-form-group label="New RDN attribute:" label-for="renamerdn">
                 <b-form-select id="renamerdn" v-model="newRdn"
                     :options="entry ? Object.keys( entry.attrs) : []" class="mb-3">
@@ -104,14 +107,38 @@
         </b-modal>
   
         <!-- Popup for new attribute selection -->
-        <b-modal id="newAttr" ref="attrRef" title="Add attribute" @ok="addAttr">
-            <b-form-select v-model="newAttr" :options="attrs" class="mb-3">
+        <b-modal ref="attrRef" title="Add attribute" @ok="addAttr">
+            <b-form-select v-model="newAttr" id="newattr"
+                :options="attrs" class="mb-3">
             </b-form-select>
         </b-modal>
   
         <!-- Popup to copy an entry -->
-        <b-modal id="copy" ref="copyRef" title="Copy entry" @ok="copyEntry" @cancel="copyDn = null;">
-            <input v-model="copyDn" class="mb-3 form-control" placeholder="New DN" />
+        <b-modal ref="copyRef" title="Copy entry" @ok="copyEntry" @cancel="copyDn = null;">
+            <input v-model="copyDn" class="mb-3 form-control"
+                 placeholder="New DN" id="copyDn" />
+        </b-modal>
+  
+        <!-- Popup to verify / change passwords -->
+        <b-modal ref="pwRef" title="Change / verify password"
+            @ok="changePassword" @cancel="password={}" id="change-password">
+            
+                <small v-if="entry && user != entry.meta.dn">Optional</small>
+                <small v-if="entry && user == entry.meta.dn">Required</small>
+                <br />
+                
+                <input v-model="password.old" class="mb-3 form-control"
+                placeholder="Old password" type="password" id="oldpw"
+                @change="checkPassword" />
+                <i class="green fas fa-check-circle"
+                    v-if="passwordOk"></i>
+                <i class="red fas fa-times-circle"
+                    v-if="passwordOk == false"></i>
+
+                <input v-model="password.new1" class="mb-3 form-control"
+                    placeholder="New password" type="password" />
+                <input v-model="password.new2" class="mb-3 form-control"
+                    placeholder="Repeat new password" type="password" />
         </b-modal>
   
         <b-container fluid>
@@ -246,7 +273,7 @@
                                     <th :class="required( key) ? 'required' : 'optional'">
                                         <span class="clickable oc"
                                             @click="oc = null; attr = getAttr(key)">{{ key }}</span>
-                                        <i v-if="changed( key)" class="fas fa-check"></i>
+                                        <i v-if="changed( key)" class="fas green fa-check"></i>
                                         <span class="clickable right add-btn" v-if="!getAttr(key).single_value
                                             && !newEntry && !disabled( key)"
                                             @click="addRow( key, values)">⊕</span>
@@ -259,6 +286,8 @@
                                                     disabled: disabled( key) }" />
                                             <i class="clickable fas fa-info-circle" v-if="key == 'objectClass'"
                                                 @click="oc = getOc(val); attr = null;"></i>
+                                            <i class="clickable fas fa-question-circle" v-if="key == 'userPassword'"
+                                                @click="pwDialog"></i>
                                         </div>
                                     </td>
                                 </tr>

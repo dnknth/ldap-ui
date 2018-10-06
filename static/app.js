@@ -95,6 +95,9 @@ var app = new Vue({
         hiddenFields: ['desc', 'name', 'names',
             'no_user_mod', 'obsolete', 'oid',
             'usage', 'syntax', 'sup'],
+        
+        password: {},
+        passwordOk: false,
     },
     
     created: function() { // Runs on page load
@@ -218,6 +221,9 @@ var app = new Vue({
                 objectClass: null,
             };
             this.$refs.newRef.show();
+            Vue.nextTick( function () {
+                document.getElementById('newoc').focus();
+            });
         },
         
         // Create a new entry in the main editor
@@ -265,6 +271,9 @@ var app = new Vue({
         renameDialog: function() {
             this.newRdn = null;
             this.$refs.renameRef.show();
+            Vue.nextTick( function () {
+                document.getElementById('renamerdn').focus();
+            });
         },
         
         // Change the RDN for an entry
@@ -297,10 +306,72 @@ var app = new Vue({
         },
         
         // Pop up the copy dialog
+        pwDialog: function() {
+            this.error = {};
+            this.password = {
+                old: null,
+                new1: '',
+                new2: '',
+            };
+            this.passwordOk = null;
+            this.$refs.pwRef.show();
+            Vue.nextTick( function () {
+                document.getElementById('oldpw').focus();
+            });
+        },
+        
+        checkPassword: function() {
+            if (!this.password.old || this.password.old.length == 0) {
+                return;
+            }
+            request({
+                url:  'api/entry/' + this.entry.meta.dn + '/password',
+                method: 'POST',
+                data: JSON.stringify( { check: this.password.old }),
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8',
+                }
+            }).then( function( xhr) {
+                app.passwordOk = JSON.parse( xhr.response);
+            }).catch( function( xhr) {
+                app.showError( xhr.response);
+            });
+        },
+        
+        changePassword: function( evt) {
+            
+            // new passwords must match
+            // old password is required for current user
+            if (this.password.new1 == '' || this.password.new1 != this.password.new2
+                || (this.user == this.entry.meta.dn
+                    && (!this.password.old || this.password.old == ''))) {
+                evt.preventDefault();
+                return;
+            }
+            
+            request({
+                url:  'api/entry/' + this.entry.meta.dn + '/password',
+                method: 'POST',
+                data: JSON.stringify( this.password),
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8',
+                }
+            }).then( function( xhr) {
+                const data = JSON.parse( xhr.response);
+                console.log( data);
+            }).catch( function( xhr) {
+                app.showError( xhr.response);
+            });
+        },
+        
+        // Pop up the copy dialog
         copyDialog: function() {
             this.error = {};
             this.copyDn = this.entry.meta.dn;
             this.$refs.copyRef.show();
+            Vue.nextTick( function () {
+                document.getElementById('copyDn').focus();
+            });
         },
         
         // Load copied entry into the editor
@@ -350,7 +421,7 @@ var app = new Vue({
         },
         
         disabled: function( key) {
-            return key == this.entry.meta.dn.split( '=')[0];
+            return key == 'userPassword' || key == this.entry.meta.dn.split( '=')[0];
         },
         
         // Submit the entry form via AJAX
@@ -435,6 +506,9 @@ var app = new Vue({
         attrDialog: function() {
             this.newAttr = null;
             this.$refs.attrRef.show();
+            Vue.nextTick( function () {
+                document.getElementById('newAttr').focus();
+            });
         },
         
         // Add the selected attribute
@@ -450,7 +524,12 @@ var app = new Vue({
                 
         // Add an empty row in the entry form
         addRow: function( key, values) {
-            if (key == 'objectClass') this.$refs.ocRef.show();
+            if (key == 'objectClass') {
+                this.$refs.ocRef.show();
+                Vue.nextTick( function () {
+                    document.getElementById('oc-select').focus();
+                });
+            }
             else if (values.indexOf('') == -1) values.push('');
         },
         
