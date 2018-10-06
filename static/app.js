@@ -357,8 +357,7 @@ var app = new Vue({
                     'Content-Type': 'application/json; charset=utf-8',
                 }
             }).then( function( xhr) {
-                const data = JSON.parse( xhr.response);
-                console.log( data);
+                app.showInfo( '👍 Password changed');
             }).catch( function( xhr) {
                 app.showError( xhr.response);
             });

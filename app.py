@@ -261,7 +261,6 @@ def passwd( dn: str) -> None:
         elif 'new1' in args:
             with Ldap( request.authorization) as con:
                 con.passwd_s( dn, args['old'], args['new1'])
-                return True
 
 
 @app.route( '/api/search/<q>')
