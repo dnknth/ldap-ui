@@ -43,8 +43,7 @@ static/vendor:
 	touch $@
 
 clean:
-	rm -rf static/vendor
-	find . -name __pycache__ | xargs -r rm -r
+	rm -rf __pycache__ static/vendor
 	
 edit: $(SOURCES)
 	rmate $(SOURCES)
@@ -53,5 +52,5 @@ ci: Makefile $(SOURCES)
 	git add Makefile $(SOURCES)
 	git commit
 
-docker:
+docker: clean
 	docker build -t dnknth/ldap-ui .
