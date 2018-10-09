@@ -9,7 +9,8 @@ export LOGIN_ATTR = cn
 
 
 debug: app.py setup
-	FLASK_APP=app.py FLASK_ENV=development .venv3/bin/flask run --host=0.0.0.0
+	FLASK_APP=app.py FLASK_ENV=development \
+		.venv3/bin/flask run --host=0.0.0.0
 
 run: app.py setup
 	.venv3/bin/python3 wsgi.py 5000

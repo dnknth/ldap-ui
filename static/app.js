@@ -610,10 +610,16 @@ var app = new Vue({
         
         // Choice list of RDN attributes for a new entry
         rdn: function() {
-            return !this.newEntry || !this.newEntry.objectClass ? []
-                 : this.getOc( this.newEntry.objectClass).must.map( function( c) {
-                     return app.getAttr( c).name;
-            });
+            if (!this.newEntry || !this.newEntry.objectClass) return [];
+            let oc = this.newEntry.objectClass, structural = [];
+            while( oc) {
+                let cls = this.getOc( oc);
+                for (let i in cls.must) {
+                    structural.push( app.getAttr( cls.must[i]).name);
+                }
+                oc = cls.sup.length > 0 ? cls.sup[0] : null;
+            }
+            return structural;
         },
         
         // Choice list for new attribute selection popup
