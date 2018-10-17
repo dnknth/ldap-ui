@@ -65,6 +65,7 @@ var app = new Vue({
             person:             'user-tie',
             account:            'user-tie',
         },
+        treeOpen: true,         // Is the tree visible?
 
         // alerts
         error: {},              // status alert
@@ -205,6 +206,11 @@ var app = new Vue({
                 (item ? this.icons[ item.structuralObjectClass] : 'atom' || 'question');
         },
         
+        // Shorten a DN for readability
+        label: function( dn) {
+            return dn.split(',')[0].replace( /^cn=/, '');
+        },
+        
         // Hide / show tree elements
         toggle: function( item) {
             item.open = !item.open;
@@ -235,7 +241,6 @@ var app = new Vue({
                     return;
             }
 
-            let oc = this.getOc( this.newEntry.objectClass);
             this.entry = {
                 meta: {
                     dn: this.newEntry.rdn + '=' + this.newEntry.name + ',' + this.newEntry.parent,
@@ -250,6 +255,8 @@ var app = new Vue({
             this.entry.attrs[this.newEntry.rdn] = [this.newEntry.name];
             
             // Add required attributes and objectClass parents
+            let oc = this.getOc( this.newEntry.objectClass);
+            this.entry.attrs.objectClass.push( oc.name);
             while (oc) {
                 for (let i = 0; i < oc.must.length; ++i) {
                     let must = oc.must[i];
@@ -260,7 +267,9 @@ var app = new Vue({
                         this.entry.meta.required.push( must);
                     }
                 }
-                this.entry.attrs.objectClass.push( oc.name);
+                if (oc.kind != 'structural') {
+                    this.entry.attrs.objectClass.push( oc.name);
+                }
                 if (!oc.sup || !oc.sup.length) break;
                 oc = this.getOc( oc.sup[0]);
             }
@@ -613,7 +622,7 @@ var app = new Vue({
             if (!this.newEntry || !this.newEntry.objectClass) return [];
             let oc = this.newEntry.objectClass, structural = [];
             while( oc) {
-                let cls = this.getOc( oc);
+                const cls = this.getOc( oc);
                 for (let i in cls.must) {
                     structural.push( app.getAttr( cls.must[i]).name);
                 }
@@ -628,15 +637,20 @@ var app = new Vue({
             
             let options = [];
             for (let i = 0; i < this.entry.attrs.objectClass.length; ++i) {
-                const key = this.entry.attrs.objectClass[i],
-                    may = this.getOc( key).may;
-                for (let j = 0; j < may.length; ++j) {
-                    let a = may[j];
-                    if (options.indexOf( a) == -1 && !this.entry.attrs[a]) {
-                        options.push( a);
+                let key = this.entry.attrs.objectClass[i];
+                while (key) {
+                    const cls = this.getOc( key),
+                        may = cls.may;
+                    for (let j = 0; j < may.length; ++j) {
+                        let a = may[j];
+                        if (options.indexOf( a) == -1 && !this.entry.attrs[a]) {
+                            options.push( a);
+                        }
                     }
+                    key = cls.sup.length > 0 ? cls.sup[0] : null;
                 }
             }
+            options.sort();
             return options;
         },
     },

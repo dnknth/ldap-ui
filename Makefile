@@ -5,12 +5,11 @@ SOURCES += $(wildcard static/*.js)
 SOURCES += $(wildcard static/*.css)
 
 export BASE_DN = dc=scheer-group,dc=com
-export LOGIN_ATTR = cn
 
 
 debug: app.py setup
 	FLASK_APP=app.py FLASK_ENV=development \
-		.venv3/bin/flask run --host=0.0.0.0
+		.venv3/bin/flask run
 
 run: app.py setup
 	.venv3/bin/python3 wsgi.py 5000

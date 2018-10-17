@@ -44,9 +44,11 @@
 
             <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
 
-            <b-navbar-brand>{{ tree.length ? tree[0].dn : 'LDAP' }}</b-navbar-brand>
-
             <b-collapse is-nav id="nav_collapse">
+              <b-navbar-brand>
+                <i class="fas fa-user">&nbsp;</i>
+                <span @click="loadEntry( user)" class="tree-link">{{ user ? label( user) : '' }}</span>
+              </b-navbar-brand>
 
               <!-- Right aligned nav items -->
               <b-navbar-nav class="ml-auto">                  
@@ -62,8 +64,6 @@
             </b-collapse>
         </b-navbar>
         
-        <br />
-
         <!-- Confirmation popup -->
         <b-modal id="confirm" title="Are you sure?" @ok="remove">
             <p>This action is irreversible.</p>
@@ -146,12 +146,13 @@
                 <b-col cols="*" id="left">
                 
                     <!-- Tree view -->
-                    <b-card id="tree-view">
-                        <div slot="header"><span class="small"><i class="fas fa-user-tie">&nbsp;</i><span @click="loadEntry( user)" class="tree-link">
-                            {{ user }}</span></span>
+                    <div id="tree-view">
+                        <div class="clickable tree-toggle" @click="treeOpen = !treeOpen">
+                            <i class="fas fa-angle-up"  v-if="treeOpen"></i>
+                            <i class="fas fa-angle-double-right" v-if="!treeOpen"></i>
                         </div>
                         
-                        <ul id="tree" class="list-unstyled">
+                        <ul id="tree" class="list-unstyled" v-if="treeOpen">
                             <li v-for="item in treeItems"
                                 :id="item.dn" :class="item.structuralObjectClass">
                                     <span v-for="i in item.level" class="indent"></span>
@@ -162,12 +163,12 @@
                                     <span class="tree-link" @click="loadEntry( item.dn)"> 
                                         <i class="fas" :class="icon( item)"></i>
                                         <span :class="entry && entry.meta.dn == item.dn ? 'tree-label-active' : 'tree-label'">
-                                            {{ item.level ? item.dn.split(',')[0] : item.dn }}
+                                            {{ item.level ? label( item.dn) : item.dn }}
                                         </span>
                                     </span>
                             </li>
                         </ul>
-                    </b-card>
+                    </div>
 
                     <!-- Schema / Objectclass -->
                     <b-card v-if="oc" :title="oc.desc" title-tag="strong">
@@ -229,7 +230,7 @@
                     </b-card>
                 </b-col>
                 
-                <b-col>
+                <b-col id="main">
                     <b-alert dismissible fade :variant="error.type"
                             :show="error && error.counter" @dismissed="error.counter=0">
                         {{ error.msg }}

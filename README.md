@@ -51,6 +51,10 @@ A Dockerfile is included. The container exposes port 5000. LDAP access is contro
 * Passwords are transmitted as plain text. The LDAP server is expected to hash them (like OpenLdap 2.4 does).
 * The app will trigger a HTTP Basic authentication unless the `AUTHORIZATION` request variable has been set by some upstream web server. 
 
+## Q&A
+* Q: Why are some fields not editable?
+  * A: The RDN of an entry is read-only. To change it, rename the entry with a different RDN, then change the old RDN and rename back. To change passwords, click on the question mark icon on the right side.
+
 ## Acknowledgements
 
 The Python backend uses [Flask](http://flask.pocoo.org/). Kudos for [Armin Ronacher](http://lucumr.pocoo.org) and the [other authors](http://flask.pocoo.org/docs/1.0/license/#authors) of this elegant framework!

@@ -11,13 +11,40 @@ a, a:hover {
     text-decoration: underline;
 }
 
+#tree-view {
+    box-shadow: 4px 4px 5px 0 rgba(0,0,0,0.5);
+}
+
+ul#tree {
+    margin: 0 1em 1em 1em;
+    padding: 1em 0;
+}
+
+ul#tree li {
+    margin-top: 0.1em;
+    white-space: nowrap;
+}
+
 .tree-link, .clickable {
     cursor: pointer;
 }
 
-#left {
-    margin-left: 1em;
+.tree-link i.fas {
+    color: gray;
 }
+
+span.tree-label-active {
+    font-weight: bold;
+}
+
+.tree-toggle {
+    background-color: rgba( 0,0,0,0.03);
+    text-align: center;
+    padding: 0 0.3em;
+    border-top: 1px solid rgba( 0,0,0,0.125);
+    border-bottom: 1px solid rgba( 0,0,0,0.125);
+}
+    
 
 .right {
     float: right;
@@ -32,25 +59,8 @@ a, a:hover {
     color: green;
 }
 
-ul#tree {
-    padding: 0px;
-}
-
-ul#tree li {
-    margin-top: 0.1em;
-    white-space: nowrap;
-}
-
 span.indent {
     margin-left: 1.2em;
-}
-
-span.tree-label-active {
-    font-weight: bold;
-}
-
-.tree-link i.fas {
-    color: gray;
 }
 
 span.opener {
@@ -70,12 +80,16 @@ span.header {
     font-weight: bold;
 }
 
+#main {
+    margin-top: 1em;
+}
+
 #editor {
     max-width: 1024px;
 }
 
 #editor div.card-header {
-    padding: 0.45ex 0px;
+    padding: 0.45ex 0;
 }
 
 table#entry {
@@ -90,7 +104,7 @@ table#entry th {
     vertical-align: top;
     position: relative;
     top: 0.5ex;
-    padding-right: 0px;
+    padding-right: 0;
 }
 
 th.optional span.oc {
@@ -99,10 +113,10 @@ th.optional span.oc {
 
 table#entry input {
     width: 90%;
-    padding: 0px 0.5em;
-    border-top-width: 0px;
-    border-left-width: 0px;
-    border-right-width: 0px;
+    padding: 0 0.5em;
+    border-top-width: 0;
+    border-left-width: 0;
+    border-right-width: 0;
     position: relative;
     border-bottom: 1px solid #EEE;
     top: 0.2ex;
@@ -113,13 +127,13 @@ table#entry input:focus {
 }
 
 table#entry input.disabled {
-    border-bottom-width: 0px;
+    border-bottom-width: 0;
     background-color: white;
     color: black;
 }
 
 table#entry div.attr-value {
-    margin: 0.2em 0px;
+    margin: 0.2em 0;
 }
 
 table#entry div.button-bar {
@@ -145,7 +159,7 @@ input.structural {
 }
 
 li.nav-item.icon a.nav-link {
-    padding-right: 0px;
+    padding-right: 0;
 }
 
 li.entry-menu a.nav-link {
