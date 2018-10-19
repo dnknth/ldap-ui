@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from flask import request
 from ldap.modlist import addModlist, modifyModlist
-import flask, functools, ldap, sys, types, typing
+import flask, functools, io, ldap, ldif, sys, types, typing
 
 
 app = flask.Flask( __name__)
@@ -38,33 +38,41 @@ def stream_list( data) -> typing.Generator:
     yield ']'
 
 
+def authenticated( view: typing.Callable):
+    ''' Require authentication for a view.
+    '''
+    @functools.wraps( view)
+    def wrapped_view( **values):
+        if not request.authorization: 
+            return flask.Response(
+                'Please log in', 401, UNAUTHORIZED)
+            
+        try:
+            return view( **values)
+        except ldap.INVALID_CREDENTIALS:
+            return flask.Response(
+                'Please log in', 401, UNAUTHORIZED)
+        except ldap.LDAPError as err:
+            args = err.args[0]
+            flask.abort( flask.make_response( '%s: %s' % (
+                args.get( 'desc', ''),
+                args.get( 'info', '')), 500, []))
+    return wrapped_view
+
+
 def api( view: typing.Callable) -> flask.Response:
     ''' View decorator for JSON endpoints.
         Requires authentication.
     '''
     @functools.wraps( view)
     def wrapped_view( **values) -> flask.Response:
-        if not request.authorization: 
-            return flask.Response(
-                'Please log in', 401, UNAUTHORIZED)
+        data = authenticated( view)( **values)
             
-        else:
-            try:
-                data = view( **values)
-            except ldap.INVALID_CREDENTIALS:
-                return flask.Response(
-                    'Please log in', 401, UNAUTHORIZED)
-            except ldap.LDAPError as err:
-                args = err.args[0]
-                flask.abort( flask.make_response( '%s: %s' % (
-                    args.get( 'desc', ''),
-                    args.get( 'info', '')), 500, []))
-                
-            if type( data) is flask.Response: return data
-            elif type( data) is types.GeneratorType:
-                return flask.Response( stream_list( data),
-                    content_type='application/json')
-            return flask.jsonify( data)
+        if type( data) is flask.Response: return data
+        elif type( data) is types.GeneratorType:
+            return flask.Response( stream_list( data),
+                content_type='application/json')
+        return flask.jsonify( data)
     return wrapped_view
 
 
@@ -184,6 +192,9 @@ def _entry( res: tuple) -> dict:
 def _bytes( s: str) -> bytes:
     return s.encode( app.config['ENCODING'])
 
+def _str( s: bytes) -> str:
+    return str( s, app.config['ENCODING'])
+
 
 @app.route( '/api/entry/<dn>', methods=('GET', 'POST', 'DELETE', 'PUT'))
 @no_cache
@@ -224,6 +235,28 @@ def entry( dn: str) -> typing.Optional[dict]:
                 con.delete_s( dn)
                 
         return None # for mypy
+
+
+@app.route( '/api/ldif/<dn>', methods=('GET', 'POST'))
+@no_cache
+@authenticated
+def export( dn: str) -> flask.Response:
+    'Dump an entry as LDIF'
+    
+    with Ldap( request.authorization) as con:
+        if request.method == 'GET':            
+            res = con.search_s( dn, ldap.SCOPE_SUBTREE)
+            def to_ldif():
+                for dn, attrs in res:
+                    out = io.StringIO()
+                    ldif.LDIFWriter( out).unparse( dn, attrs)
+                    yield out.getvalue()
+                    
+            resp = flask.Response( to_ldif(),
+                content_type='text/plain')
+            resp.headers['Content-Disposition'] = \
+                'attachment; filename="%s.ldif"' % dn.split(',')[0].split('=')[1]
+            return resp
 
 
 @app.route( '/api/rename/<dn>/<newrdn>')

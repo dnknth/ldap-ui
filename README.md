@@ -63,6 +63,6 @@ The  frontend uses [Vue.js](https://vuejs.org) with the fantastic [Bootstrap Vue
 
 ## TODO
 
-* Add LDIF export / import
+* Add LDIF import
 * Add support for images (i.e inetOrgPerson)
 

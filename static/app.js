@@ -14,6 +14,7 @@ function request( opts) {
   return new Promise( function( resolve, reject) {
     var xhr = new XMLHttpRequest();
     xhr.open( opts.method || 'GET', opts.url);
+    if (opts.responseType) xhr.responseType = opts.responseType;
     xhr.onload = function () {
       if (this.status >= 200 && this.status < 300) {
         resolve(xhr);
@@ -425,6 +426,20 @@ var app = new Vue({
                         el.setAttribute( 'disabled', 'disabled');
                     });
                 });
+            });
+        },
+        
+        ldif: function() {
+            request( { url: 'api/ldif/' + this.entry.meta.dn,
+                responseType: 'blob' }).then( function( xhr) {
+                var a = document.createElement("a"),
+                    url = URL.createObjectURL( xhr.response);
+                a.href = url;
+                a.download = app.entry.meta.dn.split(',')[0].split('=')[1] + '.ldif';
+                document.body.appendChild(a);
+                a.click();
+            }).catch( function( xhr) {
+                app.showError( xhr.response);
             });
         },
         
