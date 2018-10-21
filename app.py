@@ -237,26 +237,48 @@ def entry( dn: str) -> typing.Optional[dict]:
         return None # for mypy
 
 
-@app.route( '/api/ldif/<dn>', methods=('GET', 'POST'))
+@app.route( '/api/ldif/<dn>')
 @no_cache
 @authenticated
-def export( dn: str) -> flask.Response:
+def ldifDump( dn: str) -> flask.Response:
     'Dump an entry as LDIF'
     
     with Ldap( request.authorization) as con:
-        if request.method == 'GET':            
-            res = con.search_s( dn, ldap.SCOPE_SUBTREE)
-            def to_ldif():
-                for dn, attrs in res:
-                    out = io.StringIO()
-                    ldif.LDIFWriter( out).unparse( dn, attrs)
-                    yield out.getvalue()
-                    
-            resp = flask.Response( to_ldif(),
-                content_type='text/plain')
-            resp.headers['Content-Disposition'] = \
-                'attachment; filename="%s.ldif"' % dn.split(',')[0].split('=')[1]
-            return resp
+        res = con.search_s( dn, ldap.SCOPE_SUBTREE)
+        def to_ldif():
+            for dn, attrs in res:
+                out = io.StringIO()
+                ldif.LDIFWriter( out).unparse( dn, attrs)
+                yield out.getvalue()
+                
+        resp = flask.Response( to_ldif(),
+            content_type='text/plain')
+        resp.headers['Content-Disposition'] = \
+            'attachment; filename="%s.ldif"' % dn.split(',')[0].split('=')[1]
+        return resp
+
+
+class LDIFReader( ldif.LDIFParser):
+    def __init__( self, input, con):
+        ldif.LDIFParser.__init__( self, io.BytesIO( input))
+        self.count = 0
+        self.con = con
+
+    def handle( self, dn, entry):
+        self.con.add_s( dn, addModlist( entry))
+        self.count += 1
+
+
+@app.route( '/api/ldif', methods=('POST',))
+@no_cache
+@api
+def ldifUpload() -> flask.Response:
+    'Import LDIF'
+    
+    with Ldap( request.authorization) as con:
+        reader = LDIFReader( request.data, con)
+        reader.parse()
+        return reader.count
 
 
 @app.route( '/api/rename/<dn>/<newrdn>')

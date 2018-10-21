@@ -1,3 +1,7 @@
+.navbar-brand i.fa-list-alt, .navbar-brand i.fa-list-ul {
+    margin-right: 1em;
+}
+
 div.card {
     margin-bottom: 1em;
 }
@@ -36,15 +40,6 @@ ul#tree li {
 span.tree-label-active {
     font-weight: bold;
 }
-
-.tree-toggle {
-    background-color: rgba( 0,0,0,0.03);
-    text-align: center;
-    padding: 0 0.3em;
-    border-top: 1px solid rgba( 0,0,0,0.125);
-    border-bottom: 1px solid rgba( 0,0,0,0.125);
-}
-    
 
 .right {
     float: right;

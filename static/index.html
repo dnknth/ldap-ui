@@ -41,17 +41,22 @@
     <div id="app">
 
         <b-navbar toggleable="md" type="dark" variant="info">
-
+        
             <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
+            
+            <b-navbar-brand>
+                <i class ="fas" :class="treeOpen ? 'fa-list-alt' : 'fa-list-ul'"
+                    @click="treeOpen = !treeOpen"></i>
+                <i class="fas fa-user"></i>
+                <span @click="loadEntry( user)" class="tree-link">{{ user ? label( user) : '' }}</span>
+            </b-navbar-brand>
 
             <b-collapse is-nav id="nav_collapse">
-              <b-navbar-brand>
-                <i class="fas fa-user">&nbsp;</i>
-                <span @click="loadEntry( user)" class="tree-link">{{ user ? label( user) : '' }}</span>
-              </b-navbar-brand>
-
               <!-- Right aligned nav items -->
-              <b-navbar-nav class="ml-auto">                  
+              <b-navbar-nav class="ml-auto">
+              
+                <b-nav-item @click="importDialog">Import…</b-nav-item>
+                
                 <b-nav-item-dropdown text="Schema" right>
                     <b-dropdown-item v-for="(obj, name) in schema.objectClasses"
                         :key="name" @click="oc = obj; attr = null;">{{ name }}</b-dropdown-item>
@@ -141,17 +146,20 @@
                     placeholder="Repeat new password" type="password" />
         </b-modal>
   
+        <!-- Popup for LDIF import -->
+        <b-modal ref="importRef" title="Import" @ok="importLdif">
+            <textarea v-model="ldifData" class="mb-3 form-control"
+                 placeholder="Paste or upload LDIF">
+            </textarea>
+            <input type="file" value="Upload…" @change="readLdif" />
+        </b-modal>
+  
         <b-container fluid>
             <b-row>
                 <b-col cols="*" id="left">
                 
                     <!-- Tree view -->
                     <div id="tree-view">
-                        <div class="clickable tree-toggle" @click="treeOpen = !treeOpen">
-                            <i class="fas fa-angle-up"  v-if="treeOpen"></i>
-                            <i class="fas fa-angle-double-right" v-if="!treeOpen"></i>
-                        </div>
-                        
                         <ul id="tree" class="list-unstyled" v-if="treeOpen">
                             <li v-for="item in treeItems"
                                 :id="item.dn" :class="item.structuralObjectClass">
@@ -259,9 +267,9 @@
                                     <b-nav-item-dropdown 
                                         :text="entry.attrs.cn ? entry.attrs.cn[0] : entry.meta.dn.split(',')[0]"
                                         extra-toggle-classes="nav-link-custom" right  class="entry-menu">
-                                        <b-dropdown-item @click="addDialog">Add child</b-dropdown-item>
-                                        <b-dropdown-item @click="copyDialog">Copy</b-dropdown-item>
-                                        <b-dropdown-item @click="renameDialog">Rename</b-dropdown-item>
+                                        <b-dropdown-item @click="addDialog">Add child…</b-dropdown-item>
+                                        <b-dropdown-item @click="copyDialog">Copy…</b-dropdown-item>
+                                        <b-dropdown-item @click="renameDialog">Rename…</b-dropdown-item>
                                         <b-dropdown-item @click="ldif">Export</b-dropdown-item>
                                         <b-dropdown-item v-b-modal.confirm class="red">Delete</b-dropdown-item>
                                     </b-nav-item-dropdown>
@@ -300,7 +308,7 @@
                                             <b-button type="submit" variant="primary">Submit</b-button>
                                             <b-button type="reset" v-if="!newEntry">Reset</b-button>
                                             <b-button class="right" @click="attrDialog" v-if="!newEntry">
-                                                Add attribute
+                                                Add attribute…
                                             </b-button>
                                         </div>
                                     </td>

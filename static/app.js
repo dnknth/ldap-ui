@@ -6,10 +6,10 @@
  *   method: String,
  *   url: String,
  *   data: String | Object,
- *   headers: Object
+ *   headers: Object,
+ *   responseType: String
  * }
  */
-
 function request( opts) {
   return new Promise( function( resolve, reject) {
     var xhr = new XMLHttpRequest();
@@ -100,6 +100,8 @@ var app = new Vue({
         
         password: {},
         passwordOk: false,
+        
+        ldifData: '',
     },
     
     created: function() { // Runs on page load
@@ -330,6 +332,9 @@ var app = new Vue({
             });
         },
         
+        // Verify an existing password
+        // This is optional for administrative changes
+        // but required to change the current user's password
         checkPassword: function() {
             if (!this.password.old || this.password.old.length == 0) {
                 return;
@@ -348,6 +353,7 @@ var app = new Vue({
             });
         },
         
+        // Update passwords
         changePassword: function( evt) {
             
             // new passwords must match
@@ -380,6 +386,49 @@ var app = new Vue({
             this.$refs.copyRef.show();
             Vue.nextTick( function () {
                 document.getElementById('copyDn').focus();
+            });
+        },
+        
+        // Show the LDIF import dialog
+        importDialog: function() {
+            this.error = {};
+            this.ldifData = '';
+            this.ldifFile = null;
+            this.$refs.importRef.show();
+            Vue.nextTick( function () {
+                document.getElementById('copyDn').focus();
+            });
+        },
+        
+        // Load LDIF from file
+        readLdif: function( evt) {
+            const file = evt.target.files[0],
+                reader = new FileReader();
+            reader.onload = function() {
+                app.ldifData = reader.result;
+                evt.target.value = null;
+            }
+            reader.readAsText( file);
+        },
+        
+        // Import LDIF
+        importLdif: function( evt) {
+            if (!this.ldifData) {
+                evt.preventDefault();
+                return;
+            }
+            request({
+                url:  'api/ldif',
+                method: 'POST',
+                data: this.ldifData,
+                headers: {
+                    'Content-Type': 'text/plain; charset=utf-8',
+                }
+            }).then( function( xhr) {
+                app.$refs.importRef.hide();
+                app.reload( app.tree[0].dn);
+            }).catch( function( xhr) {
+                app.showError( xhr.response);
             });
         },
         
@@ -431,7 +480,8 @@ var app = new Vue({
         
         ldif: function() {
             request( { url: 'api/ldif/' + this.entry.meta.dn,
-                responseType: 'blob' }).then( function( xhr) {
+                responseType: 'blob'
+            }).then( function( xhr) {
                 var a = document.createElement("a"),
                     url = URL.createObjectURL( xhr.response);
                 a.href = url;
@@ -478,7 +528,8 @@ var app = new Vue({
         // Delete an entry
         remove: function() {
             const dn = this.entry.meta.dn;
-            request({ url:  'api/entry/' + dn, method: 'DELETE' }).then( function() {
+            request({ url:  'api/entry/' + dn, method: 'DELETE'
+            }).then( function() {
                 app.showInfo( 'Deleted entry: ' + dn);
                 app.entry = null;
                 app.reload( app.parent( dn).dn);
@@ -583,7 +634,8 @@ var app = new Vue({
         search: function( evt) {
             const q = document.getElementById('search').value;
             
-            request( { url: 'api/search/' + q }).then( function( xhr) {
+            request( { url: 'api/search/' + q }
+            ).then( function( xhr) {
                 const response = JSON.parse( xhr.response);
                 app.searchResult = null;
                 app.error = {};

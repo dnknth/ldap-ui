@@ -1,15 +1,16 @@
 # Simple LDAP editor
 
-This is a *very minimal* web interface for LDAP directories. 
+This is a *minimal* web interface for LDAP directories. 
 
 Features:
 * Directory tree view
 * Entry creation / modification / deletion
+* LDIF import / export
 * Schema aware
 * Simple search (configurable)
 * Available as [Docker image](https://hub.docker.com/r/dnknth/ldap-ui/)
 
-The app always requires authentication, even if the directory permits anonymous access. User credentials are validated against the LDAP directory. What a particular user can see (and edit) is governed entirely by directory access rules.
+The app always requires authentication, even if the directory permits anonymous access. User credentials are validated through a `bind` on the directory. What a particular user can see (and edit) is governed entirely by directory access rules. The app shows displays the directory contents, nothing less and nothing more. 
 
 ## Manual installation and configuration
 
@@ -20,7 +21,7 @@ Prerequisites:
 * [pip](https://packaging.python.org/tutorials/installing-packages/)
 * [python-ldap](https://pypi.org/project/python-ldap/)
 
-Download static assets into ```static/vendor``` and set up a virtual Python environment in ```venv``` with:
+Download static assets into `static/vendor` and set up a virtual Python environment in `venv` with:
 
 ​    make setup
 
@@ -40,29 +41,30 @@ and head over to http://localhost:5000/.
 
 A Dockerfile is included. The container exposes port 5000. LDAP access is controlled by these environment variables:
 
-* `LDAP_URL`: connection URL, e.g. `ldap://your.ldap.server/`, defaults to `ldap:///`
-* `BASE_DN`: search base, e.g. `dc=example,dc=org`. This one is required.
+* `LDAP_URL`: connection URL, e.g. `ldap://your.ldap.server/`. This one is required.
+* `BASE_DN`: search base, e.g. `dc=example,dc=org`. This one is also required.
 * `LOGIN_ATTR`: User name attribute, defaults to `uid`
 
 ## Caveats
 
-* The software has not been tested extensively. Do not use for production directories (like I do).
-* It works with [OpenLdap](http://www.openldap.org) using simple authentication. Other directories have not been tested, and other authentication schemes are currently not supported.
-* Passwords are transmitted as plain text. The LDAP server is expected to hash them (like OpenLdap 2.4 does).
-* The app will trigger a HTTP Basic authentication unless the `AUTHORIZATION` request variable has been set by some upstream web server. 
+* The software is fairly new. I use on production directories, but you should probably test-drive it first.
+* It works with [OpenLdap](http://www.openldap.org) using simple authentication. Other directories have not been tested, and other authentication schemes are presently not supported.
+* Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLdap 2.4 does).
+* The app will trigger HTTP Basic authentication unless the `AUTHORIZATION` request variable is already set by some upstream web server. 
 
 ## Q&A
 * Q: Why are some fields not editable?
   * A: The RDN of an entry is read-only. To change it, rename the entry with a different RDN, then change the old RDN and rename back. To change passwords, click on the question mark icon on the right side.
+* Q: Why did you write this?
+  * A: [PHPLdapAdmin](http://phpldapadmin.sf.net/) has not seen updates for a few years. I needed a replacement, and wanted to try Vue.
 
 ## Acknowledgements
 
-The Python backend uses [Flask](http://flask.pocoo.org/). Kudos for [Armin Ronacher](http://lucumr.pocoo.org) and the [other authors](http://flask.pocoo.org/docs/1.0/license/#authors) of this elegant framework!
+The Python backend uses [Flask](http://flask.pocoo.org/). Kudos for [Armin Ronacher](http://lucumr.pocoo.org) and the [other authors](http://flask.pocoo.org/docs/1.0/license/#authors) of this very elegant framework!
 
 The  frontend uses [Vue.js](https://vuejs.org) with the fantastic [Bootstrap Vue](https://bootstrap-vue.js.org) components. Thanks to the authors for taking a lot of pain out of HTML.
 
 ## TODO
 
-* Add LDIF import
 * Add support for images (i.e inetOrgPerson)
 
