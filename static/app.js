@@ -7,7 +7,8 @@
  *   url: String,
  *   data: String | Object,
  *   headers: Object,
- *   responseType: String
+ *   responseType: String,
+ *   binary: Boolean,
  * }
  */
 function request( opts) {
@@ -33,7 +34,7 @@ function request( opts) {
     var params = opts.data;
     // We'll need to stringify if we've been given an object
     // If we have a string, this is skipped.
-    if (params && typeof params === 'object') {
+    if (params && typeof params === 'object' && !opts.binary) {
       params = Object.keys(params).map(function (key) {
         return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
       }).join('&');
@@ -65,6 +66,10 @@ var app = new Vue({
             posixGroup:         'user-friends',
             person:             'user-tie',
             account:            'user-tie',
+            krbContainer:       'lock',
+            krbRealmContainer:  'globe',
+            krbPrincipal:       'user-lock',
+
         },
         treeOpen: true,         // Is the tree visible?
 
@@ -106,10 +111,6 @@ var app = new Vue({
     
     created: function() { // Runs on page load
         
-        Vue.nextTick( function () {
-            document.getElementById('search').focus();
-        });
-        
         // Get the DN of the current user
         request( { url: 'api/whoami'}).then( function( xhr) {
             app.user = JSON.parse( xhr.response);
@@ -129,9 +130,21 @@ var app = new Vue({
                 }
             }
         });
+
+        this.focus('search');
     },
     
     methods: {
+        
+        // Focus an element on next draw
+        focus: function( id) {
+            Vue.nextTick( function() {
+                Vue.nextTick( function() {
+                    const el = document.getElementById( id);
+                    if (el) el.focus();
+                });
+            });
+        },
         
         // Reload the subtree at entry with given DN
         reload: function( dn) {
@@ -230,9 +243,7 @@ var app = new Vue({
                 objectClass: null,
             };
             this.$refs.newRef.show();
-            Vue.nextTick( function () {
-                document.getElementById('newoc').focus();
-            });
+            this.focus('newoc');
         },
         
         // Create a new entry in the main editor
@@ -249,6 +260,7 @@ var app = new Vue({
                     dn: this.newEntry.rdn + '=' + this.newEntry.name + ',' + this.newEntry.parent,
                     aux: [],
                     required: [],
+                    binary: [],
                 },
                 attrs: {
                     objectClass: [],
@@ -283,9 +295,7 @@ var app = new Vue({
         renameDialog: function() {
             this.newRdn = null;
             this.$refs.renameRef.show();
-            Vue.nextTick( function () {
-                document.getElementById('renamerdn').focus();
-            });
+            this.focus('renamerdn');
         },
         
         // Change the RDN for an entry
@@ -305,7 +315,7 @@ var app = new Vue({
             }
             
             const rdn = this.newRdn + '=' + rdnAttr[0];
-            request( { url: 'api/rename/' + dn + '/' + rdn }).then( function( xhr) {
+            request( { url: 'api/rename/' + rdn + '/' + dn }).then( function( xhr) {
                 app.entry = JSON.parse( xhr.response);
                 const parent = app.parent( dn),
                     dnparts = dn.split(',');
@@ -327,9 +337,7 @@ var app = new Vue({
             };
             this.passwordOk = null;
             this.$refs.pwRef.show();
-            Vue.nextTick( function () {
-                document.getElementById('oldpw').focus();
-            });
+            this.focus('oldpw');
         },
         
         // Verify an existing password
@@ -340,7 +348,7 @@ var app = new Vue({
                 return;
             }
             request({
-                url:  'api/entry/' + this.entry.meta.dn + '/password',
+                url:  'api/entry/password/' + this.entry.meta.dn,
                 method: 'POST',
                 data: JSON.stringify( { check: this.password.old }),
                 headers: {
@@ -366,7 +374,7 @@ var app = new Vue({
             }
             
             request({
-                url:  'api/entry/' + this.entry.meta.dn + '/password',
+                url:  'api/entry/password/' + this.entry.meta.dn,
                 method: 'POST',
                 data: JSON.stringify( this.password),
                 headers: {
@@ -384,9 +392,7 @@ var app = new Vue({
             this.error = {};
             this.copyDn = this.entry.meta.dn;
             this.$refs.copyRef.show();
-            Vue.nextTick( function () {
-                document.getElementById('copyDn').focus();
-            });
+            this.focus('copyDn');
         },
         
         // Show the LDIF import dialog
@@ -395,9 +401,7 @@ var app = new Vue({
             this.ldifData = '';
             this.ldifFile = null;
             this.$refs.importRef.show();
-            Vue.nextTick( function () {
-                document.getElementById('copyDn').focus();
-            });
+            this.focus('copyDn');
         },
         
         // Load LDIF from file
@@ -470,7 +474,11 @@ var app = new Vue({
             request( { url: 'api/entry/' + dn }).then( function( xhr) {
                 app.entry = JSON.parse( xhr.response);
                 app.entry.changed = changed || [];
+                app.error = {};
                 Vue.nextTick( function () {
+                    document.querySelectorAll('input').forEach( function( el) {
+                        el.removeAttribute( 'disabled');
+                    });
                     document.querySelectorAll('input.disabled').forEach( function( el) {
                         el.setAttribute( 'disabled', 'disabled');
                     });
@@ -478,6 +486,7 @@ var app = new Vue({
             });
         },
         
+        // Download LDIF
         ldif: function() {
             request( { url: 'api/ldif/' + this.entry.meta.dn,
                 responseType: 'blob'
@@ -493,8 +502,16 @@ var app = new Vue({
             });
         },
         
+        // Special fields
+        binary: function( key) {
+            return this.entry.meta.binary.indexOf( key) != -1;
+        },
+        
+        // Special fields
         disabled: function( key) {
-            return key == 'userPassword' || key == this.entry.meta.dn.split( '=')[0];
+            return this.binary( key)
+                || key == 'userPassword'
+                || key == this.entry.meta.dn.split( '=')[0];
         },
         
         // Submit the entry form via AJAX
@@ -567,7 +584,7 @@ var app = new Vue({
             if (a) return a;
 
             // brute-force search for alternative names
-            for (att in this.schema.attributes) {
+            for (let att in this.schema.attributes) {
                 const a2 = this.schema.attributes[att];
                 for (let i = 0; i < a2.names.length; ++i) {
                     let name = a2.names[i];
@@ -576,33 +593,47 @@ var app = new Vue({
             }
         },
         
+        // Get an attribute syntax
+        getSyntax: function( name) {
+            const a = this.getAttr( name);
+            if (a) return this.schema.syntaxes[ a.syntax];
+        },
+        
         // Show popup for attribute selection
         attrDialog: function() {
             this.newAttr = null;
             this.$refs.attrRef.show();
-            Vue.nextTick( function () {
-                document.getElementById('newAttr').focus();
-            });
+            this.focus('newattr');
         },
         
         // Add the selected attribute
         addAttr: function( evt) {
-            if (!this.newAttr) {
+
+            const attr = this.newAttr;
+
+            if (!attr) {
                 evt.preventDefault();
                 return;
             }
             
-            this.entry.attrs[this.newAttr] = [''];
+            // check for binary attributes
+            this.entry.attrs[attr] = [''];
+            if (this.getSyntax(attr).not_human_readable) {
+                this.entry.meta.binary.push(attr);
+            }
+
+            // Close popup
             this.newAttr = null;
+            if (attr == 'jpegPhoto') {
+                this.$refs.photoRef.show();
+            }
         },
                 
         // Add an empty row in the entry form
         addRow: function( key, values) {
             if (key == 'objectClass') {
                 this.$refs.ocRef.show();
-                Vue.nextTick( function () {
-                    document.getElementById('oc-select').focus();
-                });
+                this.focus('oc-select');
             }
             else if (values.indexOf('') == -1) values.push('');
         },
@@ -622,6 +653,43 @@ var app = new Vue({
         fieldType: function( attr) {
             return attr == 'userPassword' ? 'password'
                 : this.attrMap[ this.getAttr(attr).equality] || 'text';
+        },
+        
+        // add an image
+        addBlob: function( evt) {
+            
+            if (!evt.target.files) return;
+            
+            const fd = new FormData();
+            fd.append( "blob", evt.target.files[0])
+            request({
+                url:  'api/blob/jpegPhoto/0/' + app.entry.meta.dn,
+                method: 'PUT',
+                data: fd,
+                binary: true,
+            }).then( function( xhr) {
+                evt.target.value = null;
+                app.$refs.photoRef.hide()
+                const data = JSON.parse( xhr.response);
+                app.loadEntry( app.entry.meta.dn, data.changed);
+            }).catch( function( xhr) {
+                app.$refs.photoRef.hide();
+                app.showError( xhr.response);
+            });
+        },
+        
+        // remove an image
+        deleteBlob: function( key, index) {
+            
+            request({
+                url:  'api/blob/' + key + '/' + index + '/' + app.entry.meta.dn,
+                method: 'DELETE',
+            }).then( function( xhr) {
+                const data = JSON.parse( xhr.response);
+                app.loadEntry( app.entry.meta.dn, data.changed);
+            }).catch( function( xhr) {
+                app.showError( xhr.response);
+            });
         },
         
         // Is the given value a structural object class?
@@ -691,7 +759,10 @@ var app = new Vue({
             while( oc) {
                 const cls = this.getOc( oc);
                 for (let i in cls.must) {
-                    structural.push( app.getAttr( cls.must[i]).name);
+                    const name = app.getAttr( cls.must[i]).name;
+                    if (name != 'objectClass') {
+                        structural.push( name);
+                    }
                 }
                 oc = cls.sup.length > 0 ? cls.sup[0] : null;
             }

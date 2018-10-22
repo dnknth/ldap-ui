@@ -1,5 +1,6 @@
+.mypy_cache
 .svn
 .venv3
+.vscode/tags
 __pycache__
-.mypy_cache
 static/vendor

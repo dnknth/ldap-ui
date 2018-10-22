@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from flask import request
 from ldap.modlist import addModlist, modifyModlist
-import flask, functools, io, ldap, ldif, sys, types, typing
+import base64, flask, functools, io, ldap, ldif, sys, types, typing
 
 
 app = flask.Flask( __name__)
@@ -10,11 +10,14 @@ app.config.from_object( 'settings')
 # Constant to add technical attributes in LDAP search results
 WITH_OPERATIONAL_ATTRS = ('*','+')
 
-TREE_ATTRS = set( ('structuralObjectClass', 'hasSubordinates' ))
-
 # HTTP 401 headers
 UNAUTHORIZED = { 'WWW-Authenticate': 'Basic realm="Login Required"' }
 
+# Special fields
+PHOTO = 'jpegPhoto'
+
+# Special syntaxes
+OCTET_STRING = '1.3.6.1.4.1.1466.115.121.1.40'
 
 # Generator function that emits a JSON list for an iterable.
 # Makes most sense if data is a subgenerator
@@ -39,8 +42,8 @@ def stream_list( data) -> typing.Generator:
 
 
 def authenticated( view: typing.Callable):
-    ''' Require authentication for a view.
-    '''
+    'Require authentication for a view'
+
     @functools.wraps( view)
     def wrapped_view( **values):
         if not request.authorization: 
@@ -103,7 +106,7 @@ def Ldap( auth:dict=None):
             raise ldap.INVALID_CREDENTIALS( {
                 'desc': 'Invalid user',
                 'info': "User '%s' unknown" % auth['username']})
-        dn, attrs = res[0]
+        dn, _attrs = res[0]
         connection.simple_bind_s( dn, auth['password'])
     yield connection
     if auth: connection.unbind_s()
@@ -125,6 +128,7 @@ def static_file( filename: str) -> flask.Response:
 @no_cache
 @api
 def whoami() -> str:
+    'DN of the current user'
     with Ldap( request.authorization) as con:
         return con.whoami_s().replace( 'dn:', '')
 
@@ -132,16 +136,6 @@ def whoami() -> str:
 def dn_sort( dn: str) -> tuple:
     'Re-order DN parts for sorting'
     return tuple( reversed( dn.lower().split( ',')))
-
-def _decode( attrs, filters=None):
-    if type( attrs) is dict:
-        return { k: _decode( values, filters) for k, values in attrs.items()
-            if (not filters or k in filters)}
-    if attrs == b'TRUE':  return True
-    if attrs == b'FALSE': return False
-    if type( attrs) is list: return [ _decode( a, filters) for a in attrs ]
-    if type( attrs) is bytes: return str( attrs, app.config['ENCODING'])
-    return attrs
 
 
 @app.route( '/api/tree/<basedn>')
@@ -162,51 +156,68 @@ def tree( basedn: str) -> typing.Generator[dict, None, None]:
     # Return result generator
     # Cannot simply yield in the main tree view
     # because the Ldap bind must run in the request context
-    return ( dict( ((key, values[0])
-        for key, values in _decode( res[dn], TREE_ATTRS).items()), dn=dn)
-            for dn in sorted( res.keys(), key=dn_sort))
+    return ( { 'dn': dn,
+               'structuralObjectClass' : res[dn]['structuralObjectClass'][0].decode(),
+               'hasSubordinates': b'TRUE' == res[dn]['hasSubordinates'][0] }
+        for dn in sorted( res.keys(), key=dn_sort))
         
 
 def _entry( res: tuple) -> dict:
     'Prepare an LDAP entry for transmission'
     
     dn, attrs = res
-    ocs = set( _decode( attrs['objectClass']))
-    must_attrs, may_attrs = app.schema.attribute_types( ocs)
+    ocs = set( [ oc.decode() for oc in attrs['objectClass'] ])
+    must_attrs, _may_attrs = app.schema.attribute_types( ocs)
     soc = [ oc.names[0]
         for oc in map( lambda o: app.schema.get_obj( ldap.schema.models.ObjectClass, o), ocs)
         if oc.kind == 0]
     aux = set( app.schema.get_obj( ldap.schema.models.ObjectClass, a).names[0]
         for a in app.schema.get_applicable_aux_classes( soc[0]))
     
+    # Filter out binary attributes
+    binary = set()
+    for attr in attrs.keys():
+        obj = app.schema.get_obj( ldap.schema.models.AttributeType, attr)
+
+        # Octet strings are not used consistently.
+        # Try to decode as text and treat as binary on failure
+        if not obj.syntax or obj.syntax == OCTET_STRING:
+            try:
+                for val in attrs[attr]: val.decode()
+            except UnicodeError:
+                binary.add( attr)
+
+        else: # Check human-readable flag in schema
+            syntax = app.schema.get_obj( ldap.schema.models.LDAPSyntax, obj.syntax)
+            if syntax.not_human_readable: binary.add( attr)
+    
     return {
-        'attrs':  _decode( attrs),
+        'attrs':  { k: [ base64.b64encode( val).decode()
+                         if k in binary else val.decode()
+                         for val in values ]
+            for k, values in attrs.items() },
         'meta': {
             'dn': dn,
             'required': [ app.schema.get_obj( ldap.schema.models.AttributeType, a).names[0]
                           for a in must_attrs],
             'aux': sorted( aux - ocs),
+            'binary': sorted( binary),
         }
     }
 
-def _bytes( s: str) -> bytes:
-    return s.encode( app.config['ENCODING'])
 
-def _str( s: bytes) -> str:
-    return str( s, app.config['ENCODING'])
-
-
-@app.route( '/api/entry/<dn>', methods=('GET', 'POST', 'DELETE', 'PUT'))
+@app.route( '/api/entry/<path:dn>', methods=('GET', 'POST', 'DELETE', 'PUT'))
 @no_cache
 @api
 def entry( dn: str) -> typing.Optional[dict]:
     'Edit directory entries'
     
     if request.is_json:
+        json = request.get_json()
         # Copy JSON payload into a dictionary of non-empty byte strings
-        req  = { k: list( map( _bytes, filter( None, v)))
-                    for k,v in request.get_json().items()
-                    if k != 'structuralObjectClass'}
+        req  = { k: [ s.encode() for s in filter( None, v) ]
+                    for k,v in json.items()
+                    if k != PHOTO}
         
     with Ldap( request.authorization) as con:
         if request.method == 'GET':
@@ -231,13 +242,47 @@ def entry( dn: str) -> typing.Optional[dict]:
             return { 'changed' : ['dn'] } # Dummy
             
         elif request.method == 'DELETE':
-            with Ldap( request.authorization) as con:
-                con.delete_s( dn)
-                
+            con.delete_s( dn)
+        
         return None # for mypy
 
 
-@app.route( '/api/ldif/<dn>')
+@app.route( '/api/blob/<attr>/<int:index>/<path:dn>', methods=( 'GET', 'DELETE', 'PUT'))
+@no_cache
+@api
+def blob( attr: str, index: int, dn: str):
+    with Ldap( request.authorization) as con:
+
+        res = con.search_s( dn, ldap.SCOPE_BASE)
+        if not res: flask.abort( 404)
+        _dn, attrs = res[0]
+
+        if request.method == 'GET':
+            if attr not in attrs or len( attrs[attr]) <= index:
+                flask.abort( 404)
+            resp = flask.Response( attrs[attr][index],
+                content_type='application/octet-stream')
+            resp.headers['Content-Disposition'] = \
+                'attachment; filename="%s-%d.bin"' % (attr, index)
+            return resp
+ 
+        elif request.method == 'PUT':
+            data = [request.files['blob'].read()]
+            if attr in attrs:
+                con.modify_s( dn, [(1, attr, None), (0, attr, data + attrs[attr])])
+            else: con.modify_s( dn, [(0, attr, data)])
+    
+        elif request.method == 'DELETE':
+            if attr not in attrs or len( attrs[attr]) <= index:
+                flask.abort( 404)
+            con.modify_s( dn, [(1, attr, None)])
+            data = attrs[attr][:index] + attrs[attr][index + 1:]
+            if data: con.modify_s( dn, [(0, attr, data)])
+
+        return { 'changed' : [attr] } # dummy
+    
+
+@app.route( '/api/ldif/<path:dn>')
 @no_cache
 @authenticated
 def ldifDump( dn: str) -> flask.Response:
@@ -281,7 +326,7 @@ def ldifUpload() -> flask.Response:
         return reader.count
 
 
-@app.route( '/api/rename/<dn>/<newrdn>')
+@app.route( '/api/rename/<newrdn>/<path:dn>')
 @no_cache
 @api
 def rename( dn: str, newrdn: str) -> None:
@@ -293,10 +338,10 @@ def rename( dn: str, newrdn: str) -> None:
 
 def _ename( entry: dict) -> typing.Optional[str]:
     'Try to extract a CN'
-    return _decode( entry['cn'][0]) if entry['cn'] else None
+    return entry['cn'][0].decode() if entry['cn'] else None
 
 
-@app.route( '/api/entry/<dn>/password', methods=('POST',))
+@app.route( '/api/entry/password/<path:dn>', methods=('POST',))
 @no_cache
 @api
 def passwd( dn: str) -> None:
@@ -304,7 +349,6 @@ def passwd( dn: str) -> None:
     
     if request.is_json:
         args = request.get_json()
-        print( args)
         if 'check' in args:
             with Ldap() as con:
                 try:
@@ -318,7 +362,8 @@ def passwd( dn: str) -> None:
                 con.passwd_s( dn, args['old'], args['new1'])
 
 
-@app.route( '/api/search/<q>')
+@app.route( '/api/search/<path:q>')
+@no_cache
 @api
 def search( q: str) -> typing.Iterable[ dict]:
     'Search the directory'
@@ -344,7 +389,7 @@ def get_schema() -> ldap.schema.SubSchema:
             ldap.SCOPE_BASE, attrlist=WITH_OPERATIONAL_ATTRS)
 
         # See: https://www.python-ldap.org/en/latest/reference/ldap-schema.html
-        dn, subschema_entry = res[0]
+        _dn, subschema_entry = res[0]
         return ldap.schema.SubSchema( subschema_entry, check_uniqueness=2)
 
 
@@ -356,7 +401,8 @@ def _schema( schema_class):
     'Get all objects from the schema for type'
     for oid in app.schema.listall( schema_class):
         obj = app.schema.get_obj( schema_class, oid)
-        if not obj.obsolete: yield obj
+        if schema_class is ldap.schema.models.LDAPSyntax or not obj.obsolete:
+            yield obj
 
 def _el( obj) -> dict:
     'Basic information about an schema element'
@@ -409,16 +455,27 @@ def _at( obj) -> dict:
     })
     return r
 
+def _syntax( obj) -> dict:
+    'Additional information about an attribute syntax'
+    return {
+        'oid'      : obj.oid,
+        'desc'     : obj.desc,
+        'not_human_readable' : bool( obj.not_human_readable), 
+    }
+
 def _dict( key: str, items) -> dict:
     'Create an dictionary with a given key'
     return { obj[key].lower() : obj for obj in items }
 
 
 @app.route( '/api/schema')
+@no_cache
 @api
 def schema() -> dict:
     'Dump the schema'
     return dict( attributes = _dict( 'name', map( _at, 
                             _schema( ldap.schema.models.AttributeType))),
               objectClasses = _dict( 'name', map( _oc,
-                            _schema( ldap.schema.models.ObjectClass))))
+                            _schema( ldap.schema.models.ObjectClass))),
+                   syntaxes = _dict( 'oid', map( _syntax,
+                            _schema( ldap.schema.models.LDAPSyntax))))

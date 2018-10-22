@@ -4,7 +4,7 @@ SOURCES += $(wildcard static/*.html)
 SOURCES += $(wildcard static/*.js)
 SOURCES += $(wildcard static/*.css)
 
-export BASE_DN = dc=scheer-group,dc=com
+export BASE_DN = dc=krachbumm,dc=de
 
 
 debug: app.py setup

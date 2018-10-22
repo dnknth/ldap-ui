@@ -63,7 +63,7 @@
                 </b-nav-item-dropdown>
 
                 <b-nav-form @submit.prevent="search">
-                    <input size="sm" class="mr-sm-2 form-control" id="search" name="q" placeholder="Search" />
+                    <input size="sm" class="mr-sm-2 form-control" id="search" name="q" autofocus placeholder="Search" />
                 </b-nav-form>
               </b-navbar-nav>
             </b-collapse>
@@ -133,8 +133,8 @@
                 <br />
                 
                 <input v-model="password.old" class="mb-3 form-control"
-                placeholder="Old password" type="password" id="oldpw"
-                @change="checkPassword" />
+                    placeholder="Old password" type="password" id="oldpw"
+                    @change="checkPassword" />
                 <i class="green fas fa-check-circle"
                     v-if="passwordOk"></i>
                 <i class="red fas fa-times-circle"
@@ -145,13 +145,19 @@
                 <input v-model="password.new2" class="mb-3 form-control"
                     placeholder="Repeat new password" type="password" />
         </b-modal>
+        
+        <!-- Popup for image upload -->
+        <b-modal ref="photoRef" title="Upload photo">
+            <input type="file" name="photo" accept="image/jpeg" @change="addBlob" />
+            <div slot="modal-footer"></div>
+        </b-modal>
   
         <!-- Popup for LDIF import -->
         <b-modal ref="importRef" title="Import" @ok="importLdif">
             <textarea v-model="ldifData" class="mb-3 form-control"
                  placeholder="Paste or upload LDIF">
             </textarea>
-            <input type="file" value="Upload…" @change="readLdif" />
+            <input type="file" value="Upload…" @change="readLdif" accept=".ldif" />
         </b-modal>
   
         <b-container fluid>
@@ -274,29 +280,48 @@
                                         <b-dropdown-item v-b-modal.confirm class="red">Delete</b-dropdown-item>
                                     </b-nav-item-dropdown>
                                 </b-nav>
-                                <span class="close-box" @click="entry = newEntry = null;">⊗</span>
                             </div>
                             
                             <table id="entry">
-                                <tr v-for="(values, key) in entry.attrs" v-if="!getAttr(key).no_user_mod" class="attr">
+                                <tr v-for="(values, key) in entry.attrs"
+                                    v-if="!getAttr(key).no_user_mod" class="attr">
                                     
                                     <th :class="required( key) ? 'required' : 'optional'">
                                         <span class="clickable oc"
                                             @click="oc = null; attr = getAttr(key)">{{ key }}</span>
                                         <i v-if="changed( key)" class="fas green fa-check"></i>
-                                        <span class="clickable right add-btn" v-if="!getAttr(key).single_value
-                                            && !newEntry && !disabled( key)"
+                                        <span class="clickable right add-btn"
+                                            v-if="!getAttr(key).single_value && !newEntry && !disabled( key)"
                                             @click="addRow( key, values)">⊕</span>
+                                        <span class="clickable right add-btn"
+                                            v-if="key == 'jpegPhoto'"
+                                            @click="$refs.photoRef.show()">⊕</span>
                                     </th>
                                     <td>
                                         <div v-for="(val, index) in values" class="attr-value">
-                                            <input v-model="entry.attrs[key][index]"
+                                            <span v-if="key == 'jpegPhoto' && val.length"
+                                                class="photo">
+                                                <img :src="'data:image/jpeg;base64,'
+                                                    + entry.attrs[key][index]" />
+                                                <span class="clickable remove-btn"
+                                                    @click="deleteBlob( 'jpegPhoto', index)">⊖</span>
+                                            </span>
+                                            <span v-else-if="binary( key)">
+                                                <a v-if="val" :title="key + ':' + index"
+                                                    :href="'api/blob/' + key + '/' + index + '/' + entry.meta.dn">
+                                                    {{ index }}
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                            </span>
+                                            <input v-else v-model="entry.attrs[key][index]"
                                                 :type="fieldType( key)" 
                                                 :class="{ structural: isStructural( key, val),
-                                                    disabled: disabled( key) }" />
-                                            <i class="clickable fas fa-info-circle" v-if="key == 'objectClass'"
+                                                    disabled: disabled( key) || isStructural( key, val) }" />
+                                            <i v-if="key == 'objectClass'"
+                                                class="clickable fas fa-info-circle"
                                                 @click="oc = getOc(val); attr = null;"></i>
-                                            <i class="clickable fas fa-question-circle" v-if="key == 'userPassword'"
+                                            <i v-if="key == 'userPassword'"
+                                                class="clickable fas fa-question-circle"
                                                 @click="pwDialog"></i>
                                         </div>
                                     </td>

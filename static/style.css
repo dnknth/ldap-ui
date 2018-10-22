@@ -135,11 +135,26 @@ table#entry div.button-bar {
     width: 90%;
 }
 
+table#entry span.photo img {
+    max-width: 120px;
+    max-height: 120px;
+    border: 1px solid #CCC;
+    padding: 2px;
+}
+
 .add-btn {
     font-size: 150%;
     position: relative;
     top: -0.5ex;
     color: LightGray;
+}
+
+.remove-btn {
+    font-size: 150%;
+    color: LightGray;
+    vertical-align: top;
+    position: relative;
+    top: -0.5ex;
 }
 
 table#entry td i.fas {
@@ -162,9 +177,7 @@ li.entry-menu a.nav-link {
 }
 
 #change-password input {
-    width: 90%;
     display: inline;
-    break: left;
 }
 
 #change-password i {

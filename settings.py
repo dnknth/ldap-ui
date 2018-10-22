@@ -8,7 +8,6 @@ SECRET_KEY = os.urandom( 16)
 LDAP_URL = os.environ.get( 'LDAP_URL', 'ldap:///')
 BASE_DN = os.environ.get( 'BASE_DN')
 SCHEMA_DN = 'cn=subschema'
-ENCODING = 'UTF8'
 
 # Attribute to check for user login
 LOGIN_ATTR = os.environ.get( 'LOGIN_ATTR', 'uid')
