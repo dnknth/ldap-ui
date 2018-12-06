@@ -468,14 +468,15 @@ var app = new Vue({
         
         // Load an entry into the editing form
         loadEntry: function( dn, changed) {
+            const oldEntry = this.entry;
             this.newEntry = null;
             this.searchResult = null;
             this.reveal( dn);
             request( { url: 'api/entry/' + dn }).then( function( xhr) {
                 app.entry = JSON.parse( xhr.response);
                 app.entry.changed = changed || [];
-                app.error = {};
                 Vue.nextTick( function () {
+                    // Work-around partial rendering bug
                     document.querySelectorAll('input').forEach( function( el) {
                         el.removeAttribute( 'disabled');
                     });
@@ -483,6 +484,10 @@ var app = new Vue({
                         el.setAttribute( 'disabled', 'disabled');
                     });
                 });
+                // Clear notifications on DN change
+                if (oldEntry && oldEntry.meta && oldEntry.meta.dn != dn) {
+                    app.error = {};
+                }
             });
         },
         
