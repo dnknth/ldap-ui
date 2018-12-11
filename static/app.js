@@ -490,6 +490,12 @@ var app = new Vue({
                 }
             });
         },
+
+        // auto-complete form values
+        complete: function( evt) {
+            console.log( evt);
+            // FIXME: stub
+        },
         
         // Download LDIF
         ldif: function() {
@@ -724,6 +730,8 @@ var app = new Vue({
                     app.entry = null;
                     app.searchResult = response;
                 }
+            }).catch( function( xhr) {
+                app.showError( xhr.response);
             });
         },
 

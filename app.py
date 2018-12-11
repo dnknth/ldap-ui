@@ -362,16 +362,23 @@ def passwd( dn: str) -> None:
                 con.passwd_s( dn, args['old'], args['new1'])
 
 
-@app.route( '/api/search/<path:q>')
+@app.route( '/api/search/<path:query>')
 @no_cache
 @api
-def search( q: str) -> typing.Iterable[ dict]:
+def search( query: str) -> typing.Iterable[ dict]:
     'Search the directory'
-    
+
+    q = query
+    patterns = app.config['SEARCH_PATTERNS']
+
+    # Make a custom search for given attr
+    if '=' in query:
+        attr, q = query.split( '=', 1)
+        patterns = ['(%s=%%s*)' % attr]
+
     # Build query
     if len(q) < app.config['SEARCH_QUERY_MIN']: return []
-    query = '(|%s)' % ''.join( pattern % q
-            for pattern in app.config['SEARCH_PATTERNS'])
+    query = '(|%s)' % ''.join( pattern % q for pattern in patterns)
     
     with Ldap( request.authorization) as con:
         res = con.search_s(

@@ -301,8 +301,7 @@
                                         <div v-for="(val, index) in values" class="attr-value">
                                             <span v-if="key == 'jpegPhoto' && val.length"
                                                 class="photo">
-                                                <img :src="'data:image/jpeg;base64,'
-                                                    + entry.attrs[key][index]" />
+                                                <img :src="'data:image/jpeg;base64,' + val" />
                                                 <span class="clickable remove-btn"
                                                     @click="deleteBlob( 'jpegPhoto', index)">⊖</span>
                                             </span>
@@ -314,13 +313,14 @@
                                                 </a>
                                             </span>
                                             <input v-else v-model="entry.attrs[key][index]"
-                                                :type="fieldType( key)" 
+                                                :type="fieldType( key)" :id="key + '-' + index"
                                                 :class="{ structural: isStructural( key, val),
-                                                    disabled: disabled( key) || isStructural( key, val) }" />
+                                                    disabled: disabled( key) || isStructural( key, val) }"
+                                                    @change="complete" />
                                             <i v-if="key == 'objectClass'"
                                                 class="clickable fas fa-info-circle"
                                                 @click="oc = getOc(val); attr = null;"></i>
-                                            <i v-if="key == 'userPassword'"
+                                            <i v-else-if="key == 'userPassword'"
                                                 class="clickable fas fa-question-circle"
                                                 @click="pwDialog"></i>
                                         </div>
