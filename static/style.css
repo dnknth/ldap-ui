@@ -183,3 +183,20 @@ li.entry-menu a.nav-link {
 #change-password i {
     margin-left: 0.5em;
 }
+
+ul.dropdown {
+    margin-top: 2px;
+    list-style-type: none;
+    width: 90%;
+    border: 1px solid #CCC;
+    padding: 0;
+}
+
+ul.dropdown li {
+    padding: 0 0.5em;
+}
+
+ul.dropdown li:hover {
+    background-color: #CCC;
+    cursor: pointer;
+}

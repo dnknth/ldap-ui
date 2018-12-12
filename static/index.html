@@ -316,13 +316,19 @@
                                                 :type="fieldType( key)" :id="key + '-' + index"
                                                 :class="{ structural: isStructural( key, val),
                                                     disabled: disabled( key) || isStructural( key, val) }"
-                                                    @change="complete" />
+                                                    @keyup="complete" />
                                             <i v-if="key == 'objectClass'"
                                                 class="clickable fas fa-info-circle"
                                                 @click="oc = getOc(val); attr = null;"></i>
                                             <i v-else-if="key == 'userPassword'"
                                                 class="clickable fas fa-question-circle"
                                                 @click="pwDialog"></i>
+                                            <ul class="dropdown" v-if="dropdownId == (key + '-' + index)
+                                                && dropdownChoices.length > 0">
+                                                <li v-for="val in dropdownChoices" @click="selectCompletion">
+                                                    {{val}}
+                                                </li>
+                                            </ul>
                                         </div>
                                     </td>
                                 </tr>

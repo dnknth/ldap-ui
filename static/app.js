@@ -107,6 +107,9 @@ var app = new Vue({
         passwordOk: false,
         
         ldifData: '',
+
+        dropdownChoices: ['one', 'two', 'three'],
+        dropdownId: null,
     },
     
     created: function() { // Runs on page load
@@ -493,8 +496,42 @@ var app = new Vue({
 
         // auto-complete form values
         complete: function( evt) {
-            console.log( evt);
-            // FIXME: stub
+            // reset choice list on focus change
+            if (this.dropdownId != evt.target.id) {
+                this.dropdownChoices = [];
+                this.dropdownId = null;
+            }
+
+            // Avoid AJAX calls without results
+            const q = evt.target.value;
+            if (q.length < 2 || q.indexOf(',') != -1) {
+                this.dropdownChoices = [];
+                return;
+            }
+
+            const attr = evt.target.id.split('-', 1);
+            if (attr == 'member') {
+                this.dropdownId = evt.target.id;
+                request( { url: 'api/search/' + q }
+                ).then( function( xhr) {
+                    const response = JSON.parse( xhr.response);
+                    app.dropdownChoices = [];
+                    for (let i = 0; i < response.length; ++i) {
+                        app.dropdownChoices.push( response[i].dn);
+                    }
+                }).catch( function( xhr) {
+                    app.dropdownChoices = [];
+                });
+            }
+        },
+
+        // use an auto-completion choice
+        selectCompletion: function( evt) {
+            const el = document.getElementById( this.dropdownId),
+                attr = this.dropdownId.split( '-')[0], 
+                index = this.dropdownId.split( '-')[1];
+            this.entry.attrs[attr][index] = el.value = evt.target.innerText;
+            this.focus( this.dropdownId);
         },
         
         // Download LDIF
@@ -646,7 +683,10 @@ var app = new Vue({
                 this.$refs.ocRef.show();
                 this.focus('oc-select');
             }
-            else if (values.indexOf('') == -1) values.push('');
+            else if (values.indexOf('') == -1) {
+                values.push('');
+                this.focus( key + '-' + (values.length -1));
+            }
         },
         
         // Check for required fields by key

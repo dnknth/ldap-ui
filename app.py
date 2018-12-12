@@ -371,7 +371,7 @@ def search( query: str) -> typing.Iterable[ dict]:
     q = query
     patterns = app.config['SEARCH_PATTERNS']
 
-    # Make a custom search for given attr
+    # Search for an attribute prefix
     if '=' in query:
         attr, q = query.split( '=', 1)
         patterns = ['(%s=%%s*)' % attr]

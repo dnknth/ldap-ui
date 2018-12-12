@@ -26,7 +26,7 @@ Download static assets into `static/vendor` and set up a virtual Python environm
 
 ​    make setup
 
-Check the configuration in [settings.py](settings.py). It is very short and should be self-explaining. 
+Check the configuration in [settings.py](settings.py). It is very short and hopefully self-explaining. 
 
 ## Usage
 
@@ -52,7 +52,6 @@ A Dockerfile is included. The container exposes port 5000. LDAP access is contro
 * It works with [OpenLdap](http://www.openldap.org) using simple authentication. Other directories have not been tested, and other authentication schemes are presently not supported.
 * Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLdap 2.4 does).
 * The app will trigger HTTP Basic authentication unless the `AUTHORIZATION` request variable is already set by some upstream web server.
-* Only one photo is supported for `inetOrgPerson`. Other binary fields are not implemented.
 
 ## Q&A
 * Q: Why are some fields not editable?
