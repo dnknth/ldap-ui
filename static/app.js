@@ -50,6 +50,10 @@ var app = new Vue({
     el: "#app",
     
     data: {
+
+        // default atribute syntax (constant)
+        directoryString: '1.3.6.1.4.1.1466.115.121.1.15',
+
         // authentication
         user: null,             // logged in user
         
@@ -644,7 +648,7 @@ var app = new Vue({
         // Get an attribute syntax
         getSyntax: function( name) {
             const a = this.getAttr( name);
-            if (a) return this.schema.syntaxes[ a.syntax];
+            if (a) return this.schema.syntaxes[ a.syntax || this.directoryString];
         },
         
         // Show popup for attribute selection
