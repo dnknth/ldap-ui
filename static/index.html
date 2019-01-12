@@ -63,7 +63,9 @@
                 </b-nav-item-dropdown>
 
                 <b-nav-form @submit.prevent="search">
-                    <input size="sm" class="mr-sm-2 form-control" id="search" name="q" autofocus placeholder="Search" />
+                    <input size="sm" class="mr-sm-2 form-control" id="search"
+                        name="q" autofocus placeholder="Search"
+                        accesskey="f" />
                 </b-nav-form>
               </b-navbar-nav>
             </b-collapse>
@@ -75,7 +77,7 @@
         </b-modal>
   
         <!-- Popup for object class selection -->
-        <b-modal ref="ocRef" title="Add objectClass" @ok="addOc">
+        <b-modal ref="ocRef" title="Add objectClass" @ok="addOc" @shown="focus('oc-select')">
             <b-form-select v-model="selectedOc"
                 :options="entry ? entry.meta.aux : []"
                 id="oc-select" class="mb-3">
@@ -83,7 +85,7 @@
         </b-modal>
   
         <!-- Add entry popup -->
-        <b-modal ref="newRef" title="New entry" @ok="createEntry">
+        <b-modal ref="newRef" title="New entry" @ok="createEntry" @shown="focus('newoc')">
             <b-form-group label="Object class:" label-for="newoc">
                 <b-form-select id="newoc" v-model="newEntry.objectClass"
                     :options="schema.structural" v-if="newEntry"
@@ -99,34 +101,38 @@
             </b-form-group>
 
             <input v-if="newEntry && newEntry.objectClass" class="form-control"
-                v-model="newEntry.name" class="mb-3" placeholder="RDN value" />
+                v-model="newEntry.name" class="mb-3" placeholder="RDN value"
+                @keyup.enter="dismiss('newRef')" />
         </b-modal>
   
         <!-- Rename entry popup -->
-        <b-modal ref="renameRef" title="Rename entry" @ok="renameEntry">
+        <b-modal ref="renameRef" title="Rename entry" @ok="renameEntry" @shown="focus('renamerdn')">
             <b-form-group label="New RDN attribute:" label-for="renamerdn">
-                <b-form-select id="renamerdn" v-model="newRdn"
-                    :options="entry ? Object.keys( entry.attrs) : []" class="mb-3">
+                <b-form-select id="renamerdn" v-model="newRdn" class="mb-3"
+                    :options="entry ? Object.keys( entry.attrs) : []">
                 </b-form-select>
             </b-form-group>
         </b-modal>
   
         <!-- Popup for new attribute selection -->
-        <b-modal ref="attrRef" title="Add attribute" @ok="addAttr">
+        <b-modal ref="attrRef" title="Add attribute" @ok="addAttr" @shown="focus('newattr')">
             <b-form-select v-model="newAttr" id="newattr"
                 :options="attrs" class="mb-3">
             </b-form-select>
         </b-modal>
   
         <!-- Popup to copy an entry -->
-        <b-modal ref="copyRef" title="Copy entry" @ok="copyEntry" @cancel="copyDn = null;">
+        <b-modal ref="copyRef" title="Copy entry" @ok="copyEntry"
+                @cancel="copyDn = null;" @shown="focus('copyDn')">
             <input v-model="copyDn" class="mb-3 form-control"
-                 placeholder="New DN" id="copyDn" />
+                 placeholder="New DN" id="copyDn" 
+                 @keyup.enter="dismiss('copyRef')" />
         </b-modal>
   
         <!-- Popup to verify / change passwords -->
         <b-modal ref="pwRef" title="Change / verify password"
-            @ok="changePassword" @cancel="password={}" id="change-password">
+            @ok="changePassword" @cancel="password={}"
+            id="change-password" @shown="focus('oldpw')">
             
                 <small v-if="entry && user != entry.meta.dn">Optional</small>
                 <small v-if="entry && user == entry.meta.dn">Required</small>
@@ -134,16 +140,21 @@
                 
                 <input v-model="password.old" class="mb-3 form-control"
                     placeholder="Old password" type="password" id="oldpw"
-                    @change="checkPassword" />
+                    @change="checkOldPassword" />
                 <i class="green fas fa-check-circle"
                     v-if="passwordOk"></i>
                 <i class="red fas fa-times-circle"
-                    v-if="passwordOk == false"></i>
+                    v-else-if="passwordOk == false"></i>
+                <span v-else class="pad">&nbsp;</span>
 
                 <input v-model="password.new1" class="mb-3 form-control"
-                    placeholder="New password" type="password" />
+                    placeholder="New password" type="password"
+                    @keyup="checkNewPassword" />
                 <input v-model="password.new2" class="mb-3 form-control"
-                    placeholder="Repeat new password" type="password" />
+                    placeholder="Repeat new password" type="password"
+                    @keyup="checkNewPassword" @keyup.enter="dismiss('pwRef')" />
+                <i class="green fas fa-check-circle"
+                    v-if="passwordsMatch"></i>
         </b-modal>
         
         <!-- Popup for image upload -->
@@ -153,9 +164,9 @@
         </b-modal>
   
         <!-- Popup for LDIF import -->
-        <b-modal ref="importRef" title="Import" @ok="importLdif">
+        <b-modal ref="importRef" title="Import" @ok="importLdif" @shown="focus('ldif-data')">
             <textarea v-model="ldifData" class="mb-3 form-control"
-                 placeholder="Paste or upload LDIF">
+                 id="ldif-data" placeholder="Paste or upload LDIF">
             </textarea>
             <input type="file" value="Upload…" @change="readLdif" accept=".ldif" />
         </b-modal>
@@ -305,8 +316,8 @@
                                                 <span class="clickable remove-btn"
                                                     @click="deleteBlob( 'jpegPhoto', index)">⊖</span>
                                             </span>
-                                            <span v-else-if="binary( key)">
-                                                <a v-if="val" :title="key + ':' + index"
+                                            <span v-else-if="binary( key) && val">
+                                                <a :title="key + ':' + index"
                                                     :href="'api/blob/' + key + '/' + index + '/' + entry.meta.dn">
                                                     {{ index }}
                                                     <i class="fas fa-download"></i>
@@ -336,9 +347,9 @@
                                     <th></th>
                                     <td>
                                         <div class="button-bar">
-                                            <b-button type="submit" variant="primary">Submit</b-button>
+                                            <b-button type="submit" variant="primary" accesskey="s">Submit</b-button>
                                             <b-button type="reset" v-if="!newEntry">Reset</b-button>
-                                            <b-button class="right" @click="attrDialog" v-if="!newEntry">
+                                            <b-button class="right" @click="attrDialog" v-if="!newEntry" accesskey="a">
                                                 Add attribute…
                                             </b-button>
                                         </div>

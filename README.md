@@ -42,9 +42,9 @@ and head over to http://localhost:5000/.
 
 A Dockerfile is included. The container exposes port 5000. LDAP access is controlled by these environment variables:
 
-* `LDAP_URL`: connection URL, e.g. `ldap://your.ldap.server/`. This one is required.
-* `BASE_DN`: search base, e.g. `dc=example,dc=org`. This one is also required.
-* `LOGIN_ATTR`: User name attribute, defaults to `uid`
+* `LDAP_URL`: connection URL (required), e.g. `ldap://your.ldap.server/`.
+* `BASE_DN`: search base (required), e.g. `dc=example,dc=org`.
+* `LOGIN_ATTR`: User name attribute (optional), defaults to `uid`
 
 ## Caveats
 
@@ -63,4 +63,4 @@ A Dockerfile is included. The container exposes port 5000. LDAP access is contro
 
 The Python backend uses [Flask](http://flask.pocoo.org/). Kudos for [Armin Ronacher](http://lucumr.pocoo.org) and the [other authors](http://flask.pocoo.org/docs/1.0/license/#authors) of this very elegant framework!
 
-The  frontend uses [Vue.js](https://vuejs.org) with the fantastic [Bootstrap Vue](https://bootstrap-vue.js.org) components. Thanks to the authors for taking a lot of pain out of HTML.
+The UI uses [Vue.js](https://vuejs.org) with the excellent [Bootstrap Vue](https://bootstrap-vue.js.org) components. Thanks to the authors for taking a lot of pain out of frontend work.

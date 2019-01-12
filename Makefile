@@ -38,7 +38,7 @@ static/vendor:
 	rm -f /tmp/fontawesome-free-5.3.1-web.zip
 
 .venv3: requirements.txt
-	python3 -m venv $@
+	python3 -m venv --system-site-packages $@
 	.venv3/bin/pip3 install -r $<
 	touch $@
 

@@ -108,7 +108,8 @@ var app = new Vue({
             'usage', 'syntax', 'sup'],
         
         password: {},
-        passwordOk: false,
+        passwordOk: false, // old password verified?
+        passwordsMatch: false, // new password matches repetition?
         
         ldifData: '',
 
@@ -146,11 +147,14 @@ var app = new Vue({
         // Focus an element on next draw
         focus: function( id) {
             Vue.nextTick( function() {
-                Vue.nextTick( function() {
-                    const el = document.getElementById( id);
-                    if (el) el.focus();
-                });
+                const el = document.getElementById( id);
+                if (el) el.focus();
             });
+        },
+
+        // Dismiss a modal
+        dismiss: function( ref) {
+            this.$refs[ ref].hide( 'ok');
         },
         
         // Reload the subtree at entry with given DN
@@ -250,7 +254,6 @@ var app = new Vue({
                 objectClass: null,
             };
             this.$refs.newRef.show();
-            this.focus('newoc');
         },
         
         // Create a new entry in the main editor
@@ -283,7 +286,7 @@ var app = new Vue({
                 for (let i = 0; i < oc.must.length; ++i) {
                     let must = oc.must[i];
                     if (!this.entry.attrs[ must]) {
-                        this.entry.attrs[ must] = ['']
+                        this.entry.attrs[ must] = [''];
                     }
                     if (this.entry.meta.required.indexOf( must) == -1) {
                         this.entry.meta.required.push( must);
@@ -302,7 +305,6 @@ var app = new Vue({
         renameDialog: function() {
             this.newRdn = null;
             this.$refs.renameRef.show();
-            this.focus('renamerdn');
         },
         
         // Change the RDN for an entry
@@ -344,13 +346,12 @@ var app = new Vue({
             };
             this.passwordOk = null;
             this.$refs.pwRef.show();
-            this.focus('oldpw');
         },
         
         // Verify an existing password
         // This is optional for administrative changes
         // but required to change the current user's password
-        checkPassword: function() {
+        checkOldPassword: function() {
             if (!this.password.old || this.password.old.length == 0) {
                 return;
             }
@@ -366,6 +367,13 @@ var app = new Vue({
             }).catch( function( xhr) {
                 app.showError( xhr.response);
             });
+        },
+        
+        // Verify that the new password is repeated correctly
+        checkNewPassword: function() {
+            this.passwordsMatch = this.password.new1
+                && this.password.new1.length > 0
+                && this.password.new1 == this.password.new2;
         },
         
         // Update passwords
@@ -399,7 +407,6 @@ var app = new Vue({
             this.error = {};
             this.copyDn = this.entry.meta.dn;
             this.$refs.copyRef.show();
-            this.focus('copyDn');
         },
         
         // Show the LDIF import dialog
@@ -408,7 +415,6 @@ var app = new Vue({
             this.ldifData = '';
             this.ldifFile = null;
             this.$refs.importRef.show();
-            this.focus('copyDn');
         },
         
         // Load LDIF from file
@@ -478,6 +484,8 @@ var app = new Vue({
             const oldEntry = this.entry;
             this.newEntry = null;
             this.searchResult = null;
+            this.dropdownChoices = [];
+
             this.reveal( dn);
             request( { url: 'api/entry/' + dn }).then( function( xhr) {
                 app.entry = JSON.parse( xhr.response);
@@ -536,6 +544,7 @@ var app = new Vue({
                 index = this.dropdownId.split( '-')[1];
             this.entry.attrs[attr][index] = el.value = evt.target.innerText;
             this.focus( this.dropdownId);
+            this.dropdownChoices = [];
         },
         
         // Download LDIF
@@ -655,7 +664,6 @@ var app = new Vue({
         attrDialog: function() {
             this.newAttr = null;
             this.$refs.attrRef.show();
-            this.focus('newattr');
         },
         
         // Add the selected attribute
@@ -685,7 +693,6 @@ var app = new Vue({
         addRow: function( key, values) {
             if (key == 'objectClass') {
                 this.$refs.ocRef.show();
-                this.focus('oc-select');
             }
             else if (values.indexOf('') == -1) {
                 values.push('');
