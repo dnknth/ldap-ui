@@ -1,10 +1,6 @@
-SOURCES =  $(wildcard *.md)
-SOURCES += $(wildcard *.py)
-SOURCES += $(wildcard static/*.html)
-SOURCES += $(wildcard static/*.js)
-SOURCES += $(wildcard static/*.css)
-
 export BASE_DN = dc=krachbumm,dc=de
+
+.PHONY: debug run setup clean tidy docker
 
 
 debug: app.py setup
@@ -14,27 +10,16 @@ debug: app.py setup
 run: app.py setup
 	.venv3/bin/python3 wsgi.py 5000
 
-shell: app.py
-	.venv3/bin/python3 -i $<
-	
-setup: .venv3 static/vendor
+setup: .venv3 static/vendor static/node_modules
+
+static/node_modules: static/package.json
+	cd static ; npm install
+	touch $@
 
 static/vendor:
-	mkdir -p $@
-	cd $@; wget -c -q https://unpkg.com/babel-polyfill@7.0.0-beta.3/dist/polyfill.min.js
-	cd $@; wget -c -q https://cdn.jsdelivr.net/npm/vue/dist/vue.js
-	cd $@; wget -c -q https://cdn.jsdelivr.net/npm/vue/dist/vue.min.js
-	#
-	cd $@; wget -c -q https://unpkg.com/bootstrap@4.1.3/dist/css/bootstrap.min.css
-	cd $@; wget -c -q https://unpkg.com/bootstrap@4.1.3/dist/css/bootstrap.min.css.map
-	cd $@; wget -c -q https://unpkg.com/bootstrap-vue@2.0.0-rc.11/dist/bootstrap-vue.min.css
-	cd $@; wget -c -q https://unpkg.com/bootstrap-vue@2.0.0-rc.11/dist/bootstrap-vue.min.js
-	cd $@; wget -c -q https://unpkg.com/bootstrap-vue@2.0.0-rc.11/dist/bootstrap-vue.min.js.map
-	#
-	#
 	mkdir -p $@/fonts
 	cd /tmp; wget -c -q https://use.fontawesome.com/releases/v5.3.1/fontawesome-free-5.3.1-web.zip
-	unzip -q -o -d $@/fonts /tmp/fontawesome-free-5.3.1-web.zip
+	unzip -q -o -d $@ /tmp/fontawesome-free-5.3.1-web.zip
 	rm -f /tmp/fontawesome-free-5.3.1-web.zip
 
 .venv3: requirements.txt
@@ -43,14 +28,10 @@ static/vendor:
 	touch $@
 
 clean:
-	rm -rf __pycache__ static/vendor
-	
-edit: $(SOURCES)
-	rmate $(SOURCES)
+	rm -rf __pycache__ static/vendor static/node_modules
 
-ci: Makefile $(SOURCES)
-	git add Makefile $(SOURCES)
-	git commit
+tidy: clean
+	rm -rf .venv
 
 docker: clean
 	docker build -t dnknth/ldap-ui .

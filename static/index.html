@@ -23,15 +23,16 @@
     <link rel="apple-touch-icon" href="icons/152px.png">
 
     <!-- Bootstrap CSS -->
-    <link type="text/css" rel="stylesheet" href="vendor/bootstrap.min.css" />
-    <link type="text/css" rel="stylesheet" href="vendor/bootstrap-vue.min.css" />
+    <link type="text/css" rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="node_modules/bootstrap-vue/dist/bootstrap-vue.min.css" />
     
-    <link type="text/css" rel="stylesheet" href="vendor/fonts/fontawesome-free-5.3.1-web/css/all.css" />
+    <!-- link rel="stylesheet" href="node_modules/font-awesome/css/font-awesome.css" / -->
+    <link rel="stylesheet" href="vendor/fontawesome-free-5.3.1-web/css/all.css" />
     <link type="text/css" rel="stylesheet" href="style.css"/>
     
-    <script src="vendor/vue.js"></script>
-    <script src="vendor/polyfill.min.js"></script>
-    <script src="vendor/bootstrap-vue.min.js"></script>
+    <script src="node_modules/vue/dist/vue.min.js"></script>
+    <script src="node_modules/babel-polyfill/dist/polyfill.min.js"></script>
+    <script src="node_modules/bootstrap-vue/dist/bootstrap-vue.min.js"></script>
 
     <title>Directory</title>
   </head>
@@ -63,9 +64,7 @@
                 </b-nav-item-dropdown>
 
                 <b-nav-form @submit.prevent="search">
-                    <input size="sm" class="mr-sm-2 form-control" id="search"
-                        name="q" autofocus placeholder="Search"
-                        accesskey="f" />
+                    <input size="sm" class="mr-sm-2 form-control" id="search" name="q" placeholder="Search" />
                 </b-nav-form>
               </b-navbar-nav>
             </b-collapse>
@@ -101,15 +100,14 @@
             </b-form-group>
 
             <input v-if="newEntry && newEntry.objectClass" class="form-control"
-                v-model="newEntry.name" class="mb-3" placeholder="RDN value"
-                @keyup.enter="dismiss('newRef')" />
+                v-model="newEntry.name" class="mb-3" placeholder="RDN value" />
         </b-modal>
   
         <!-- Rename entry popup -->
         <b-modal ref="renameRef" title="Rename entry" @ok="renameEntry" @shown="focus('renamerdn')">
             <b-form-group label="New RDN attribute:" label-for="renamerdn">
-                <b-form-select id="renamerdn" v-model="newRdn" class="mb-3"
-                    :options="entry ? Object.keys( entry.attrs) : []">
+                <b-form-select id="renamerdn" v-model="newRdn"
+                    :options="entry ? Object.keys( entry.attrs) : []" class="mb-3">
                 </b-form-select>
             </b-form-group>
         </b-modal>
@@ -122,17 +120,14 @@
         </b-modal>
   
         <!-- Popup to copy an entry -->
-        <b-modal ref="copyRef" title="Copy entry" @ok="copyEntry"
-                @cancel="copyDn = null;" @shown="focus('copyDn')">
+        <b-modal ref="copyRef" title="Copy entry" @ok="copyEntry" @cancel="copyDn = null;">
             <input v-model="copyDn" class="mb-3 form-control"
-                 placeholder="New DN" id="copyDn" 
-                 @keyup.enter="dismiss('copyRef')" />
+                 placeholder="New DN" id="copyDn" />
         </b-modal>
   
         <!-- Popup to verify / change passwords -->
         <b-modal ref="pwRef" title="Change / verify password"
-            @ok="changePassword" @cancel="password={}"
-            id="change-password" @shown="focus('oldpw')">
+            @ok="changePassword" @cancel="password={}" id="change-password">
             
                 <small v-if="entry && user != entry.meta.dn">Optional</small>
                 <small v-if="entry && user == entry.meta.dn">Required</small>
@@ -144,17 +139,12 @@
                 <i class="green fas fa-check-circle"
                     v-if="passwordOk"></i>
                 <i class="red fas fa-times-circle"
-                    v-else-if="passwordOk == false"></i>
-                <span v-else class="pad">&nbsp;</span>
+                    v-if="passwordOk == false"></i>
 
                 <input v-model="password.new1" class="mb-3 form-control"
-                    placeholder="New password" type="password"
-                    @keyup="checkNewPassword" />
+                    placeholder="New password" type="password" />
                 <input v-model="password.new2" class="mb-3 form-control"
-                    placeholder="Repeat new password" type="password"
-                    @keyup="checkNewPassword" @keyup.enter="dismiss('pwRef')" />
-                <i class="green fas fa-check-circle"
-                    v-if="passwordsMatch"></i>
+                    placeholder="Repeat new password" type="password" />
         </b-modal>
         
         <!-- Popup for image upload -->
@@ -291,6 +281,7 @@
                                         <b-dropdown-item v-b-modal.confirm class="red">Delete</b-dropdown-item>
                                     </b-nav-item-dropdown>
                                 </b-nav>
+                                <span class="close-box" @click="entry = newEntry = null;">⊗</span>
                             </div>
                             
                             <table id="entry">
@@ -310,36 +301,23 @@
                                     </th>
                                     <td>
                                         <div v-for="(val, index) in values" class="attr-value">
-                                            <span v-if="key == 'jpegPhoto' && val.length"
-                                                class="photo">
-                                                <img :src="'data:image/jpeg;base64,' + val" />
+                                            <input v-model="entry.attrs[key][index]"
+                                                :type="fieldType( key)" 
+                                                :class="{ structural: isStructural( key, val),
+                                                    disabled: disabled( key) }"
+                                                    v-if="key != 'jpegPhoto'" />
+                                            <span class="photo" v-if="key == 'jpegPhoto' && val">
+                                                <img :src="'api/entry/' + entry.meta.dn + '/photo?'
+                                                    + (+ new Date())" />
                                                 <span class="clickable remove-btn"
                                                     @click="deleteBlob( 'jpegPhoto', index)">⊖</span>
                                             </span>
-                                            <span v-else-if="binary( key) && val">
-                                                <a :title="key + ':' + index"
-                                                    :href="'api/blob/' + key + '/' + index + '/' + entry.meta.dn">
-                                                    {{ index }}
-                                                    <i class="fas fa-download"></i>
-                                                </a>
-                                            </span>
-                                            <input v-else v-model="entry.attrs[key][index]"
-                                                :type="fieldType( key)" :id="key + '-' + index"
-                                                :class="{ structural: isStructural( key, val),
-                                                    disabled: disabled( key) || isStructural( key, val) }"
-                                                    @keyup="complete" />
-                                            <i v-if="key == 'objectClass'"
-                                                class="clickable fas fa-info-circle"
+                                            <i class="clickable fas fa-info-circle"
+                                                v-if="key == 'objectClass'"
                                                 @click="oc = getOc(val); attr = null;"></i>
-                                            <i v-else-if="key == 'userPassword'"
-                                                class="clickable fas fa-question-circle"
+                                            <i class="clickable fas fa-question-circle"
+                                                v-if="key == 'userPassword'"
                                                 @click="pwDialog"></i>
-                                            <ul class="dropdown" v-if="dropdownId == (key + '-' + index)
-                                                && dropdownChoices.length > 0">
-                                                <li v-for="val in dropdownChoices" @click="selectCompletion">
-                                                    {{val}}
-                                                </li>
-                                            </ul>
                                         </div>
                                     </td>
                                 </tr>

@@ -4,3 +4,4 @@
 .vscode/tags
 __pycache__
 static/vendor
+node_modules
