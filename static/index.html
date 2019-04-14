@@ -307,8 +307,8 @@
                                                     disabled: disabled( key) }"
                                                     v-if="key != 'jpegPhoto'" />
                                             <span class="photo" v-if="key == 'jpegPhoto' && val">
-                                                <img :src="'api/entry/' + entry.meta.dn + '/photo?'
-                                                    + (+ new Date())" />
+                                                <img :src="'api/blob/jpegPhoto/' + index + '/' + entry.meta.dn
+                                                    + '?' + (+ new Date())" />
                                                 <span class="clickable remove-btn"
                                                     @click="deleteBlob( 'jpegPhoto', index)">⊖</span>
                                             </span>
