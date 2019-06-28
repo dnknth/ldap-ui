@@ -9,6 +9,7 @@ Features:
 * JPEG support for `inetOrgPerson`
 * Schema aware
 * Simple search (configurable)
+* Asynchronous LDAP backend with decent scalability
 * Available as [Docker image](https://hub.docker.com/r/dnknth/ldap-ui/)
 
 The app always requires authentication, even if the directory permits anonymous access. User credentials are validated through a `bind` on the directory. What a particular user can see (and edit) is governed entirely by directory access rules. The app shows displays the directory contents, nothing less and nothing more. 
@@ -54,6 +55,7 @@ A Dockerfile is included. The container exposes port 5000. LDAP access is contro
 * The app will trigger HTTP Basic authentication unless the `AUTHORIZATION` request variable is already set by some upstream web server.
 
 ## Q&A
+
 * Q: Why are some fields not editable?
   * A: The RDN of an entry is read-only. To change it, rename the entry with a different RDN, then change the old RDN and rename back. To change passwords, click on the question mark icon on the right side.
 * Q: Why did you write this?
@@ -61,6 +63,6 @@ A Dockerfile is included. The container exposes port 5000. LDAP access is contro
 
 ## Acknowledgements
 
-The Python backend uses [Flask](http://flask.pocoo.org/). Kudos for [Armin Ronacher](http://lucumr.pocoo.org) and the [other authors](http://flask.pocoo.org/docs/1.0/license/#authors) of this very elegant framework!
+The Python backend uses [Quart](https://pgjones.gitlab.io/quart/index.html) which is an asynchronous [Flask](http://flask.pocoo.org/). Kudos for the authors of these elegant frameworks!
 
 The UI uses [Vue.js](https://vuejs.org) with the excellent [Bootstrap Vue](https://bootstrap-vue.js.org) components. Thanks to the authors for taking a lot of pain out of frontend work.

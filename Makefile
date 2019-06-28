@@ -4,11 +4,11 @@ export BASE_DN = dc=krachbumm,dc=de
 
 
 debug: app.py setup
-	FLASK_APP=app.py FLASK_ENV=development \
-		.venv3/bin/flask run
+	QUART_APP=app.py QUART_ENV=development \
+		.venv3/bin/quart run
 
 run: app.py setup
-	.venv3/bin/python3 wsgi.py 5000
+	.venv3/bin/hypercorn -b 0.0.0.0:5000 app:app
 
 setup: .venv3 static/vendor static/node_modules
 
@@ -17,13 +17,14 @@ static/node_modules: static/package.json
 	touch $@
 
 static/vendor:
-	mkdir -p $@/fonts
+	mkdir -p $@
 	cd /tmp; wget -c -q https://use.fontawesome.com/releases/v5.3.1/fontawesome-free-5.3.1-web.zip
 	unzip -q -o -d $@ /tmp/fontawesome-free-5.3.1-web.zip
 	rm -f /tmp/fontawesome-free-5.3.1-web.zip
 
 .venv3: requirements.txt
 	python3 -m venv --system-site-packages $@
+	.venv3/bin/pip3 install wheel
 	.venv3/bin/pip3 install -r $<
 	touch $@
 
