@@ -314,8 +314,7 @@
                                                 </li>
                                             </ul>
                                             <span class="photo" v-if="key == 'jpegPhoto' && val">
-                                                <img :src="'api/blob/jpegPhoto/' + index + '/' + entry.meta.dn
-                                                    + '?' + (+ new Date())" />
+                                                <img :src="'data:image/jpeg;base64, ' + val" />
                                                 <span class="clickable remove-btn"
                                                     @click="deleteBlob( 'jpegPhoto', index)">⊖</span>
                                             </span>
