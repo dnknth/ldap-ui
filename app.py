@@ -312,7 +312,7 @@ class LDIFReader( ldif.LDIFParser):
         self.con = con
 
     def handle( self, dn, entry):
-        self.request.ldap.add_s( dn, addModlist( entry))
+        self.con.add_s( dn, addModlist( entry))
         self.count += 1
 
 
@@ -322,7 +322,7 @@ class LDIFReader( ldif.LDIFParser):
 async def ldifUpload() -> quart.Response:
     'Import LDIF'
     
-    reader = LDIFReader( request.data, request.ldap)
+    reader = LDIFReader( await request.data, request.ldap)
     reader.parse()
     return reader.count
 
