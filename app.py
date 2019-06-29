@@ -1,7 +1,7 @@
-from aiocontext import async_contextmanager
 from quart import request
 from ldap.modlist import addModlist, modifyModlist
-import asyncio, base64, quart, functools, io, ldap, ldif, sys, types, typing
+import asyncio, base64, quart, functools, io, ldap, ldif, sys, types
+from typing import *
 
 
 app = quart.Quart( __name__)
@@ -20,8 +20,12 @@ PHOTO = 'jpegPhoto'
 OCTET_STRING = '1.3.6.1.4.1.1466.115.121.1.40'
 
 
-def authenticated( view: typing.Callable):
-    'Require authentication for a view'
+def authenticated( view: Callable):
+    ''' Require authentication for a view,
+        set up the LDAP connection
+        and authenticate against the directory
+        with a simple_bind
+    '''
 
     @functools.wraps( view)
     async def wrapped_view( **values):
@@ -30,21 +34,45 @@ def authenticated( view: typing.Callable):
                 'Please log in', 401, UNAUTHORIZED)
             
         try:
-            return await view( **values)
+            # Set up LDAP connection
+            request.ldap = ldap.initialize( app.config['LDAP_URL'])
+
+            # Search user in HTTP headers
+            res = await result_list( request.ldap.search( 
+                app.config['BASE_DN'],
+                ldap.SCOPE_SUBTREE,
+                '(%s=%s)' % (app.config['LOGIN_ATTR'], request.authorization.username)))
+            if len( res) != 1:
+                raise ldap.INVALID_CREDENTIALS( {
+                    'desc': 'Invalid user',
+                    'info': "User '%s' unknown" % request.authorization.username})
+
+            # Found one, try authenticating
+            dn, _attrs = res[0]
+            await discard( 
+                request.ldap.simple_bind( dn, request.authorization.password))
+
+            # On success, call the view function and release connection
+            data = await view( **values)
+            request.ldap.unbind_s()
+            return data
+
         except ldap.INVALID_CREDENTIALS:
             return quart.Response(
                 'Please log in', 401, UNAUTHORIZED)
+
         except ldap.LDAPError as err:
             args = err.args[0]
             quart.abort( quart.make_response( '%s: %s' % (
                 args.get( 'desc', ''),
                 args.get( 'info', '')), 500, []))
+
     return wrapped_view
 
 
-def api( view: typing.Callable) -> quart.Response:
+def api( view: Callable) -> quart.Response:
     ''' View decorator for JSON endpoints.
-        Requires authentication.
+        Forces authentication.
     '''
     @functools.wraps( view)
     async def wrapped_view( **values) -> quart.Response:
@@ -71,40 +99,23 @@ def no_cache( view: types.FunctionType) -> quart.Response:
     return wrapped_view
 
 
-async def result( con, msgid: int) -> typing.AsyncGenerator[dict, None]:
+async def result( msgid: int) -> AsyncGenerator[dict, None]:
     'Concurrently gather results'
     while True:
-        r_type, r_data = con.result( msgid=msgid, all=0, timeout=0)
+        r_type, r_data = request.ldap.result( msgid=msgid, all=0, timeout=0)
         if r_type is None: await asyncio.sleep( 0.01)
         elif r_data == []: break
         else: yield r_data[0]
 
 
-async def result_list( con, msgid: int) -> typing.List[dict]:
+async def result_list( msgid: int) -> List[dict]:
     'Concurrently collect a result list'
-    return [ r async for r in result( con, msgid)]
+    return [ r async for r in result( msgid)]
 
 
-@async_contextmanager
-async def Ldap( auth:quart.datastructures.Authorization=None):
-    'Context manager for authenticated LDAP connections'
-    
-    connection = ldap.initialize( app.config['LDAP_URL'])
-    if auth:
-        res = await result_list( connection, connection.search( 
-            app.config['BASE_DN'],
-            ldap.SCOPE_SUBTREE,
-            '(%s=%s)' % (app.config['LOGIN_ATTR'], auth.username)))
-        if len( res) != 1:
-            raise ldap.INVALID_CREDENTIALS( {
-                'desc': 'Invalid user',
-                'info': "User '%s' unknown" % auth.username})
-        dn, _attrs = res[0]
-        await result_list( connection, 
-            connection.simple_bind( dn, auth.password))
-    yield connection
-    if auth:
-        connection.unbind_s()
+async def discard( msgid: int) -> None:
+    'Concurrently discard results'
+    async for _r in result( msgid): pass
 
 
 @app.route( '/')
@@ -124,8 +135,7 @@ async def static_file( filename: str) -> quart.Response:
 @api
 async def whoami() -> str:
     'DN of the current user'
-    async with Ldap( request.authorization) as con:
-        return con.whoami_s().replace( 'dn:', '')
+    return request.ldap.whoami_s().replace( 'dn:', '')
 
 
 def dn_sort( dn: str) -> tuple:
@@ -136,7 +146,7 @@ def dn_sort( dn: str) -> tuple:
 @app.route( '/api/tree/<basedn>')
 @no_cache
 @api
-async def tree( basedn: str) -> typing.Generator[dict, None, None]:
+async def tree( basedn: str) -> Generator[dict, None, None]:
     'List directory entries'
     
     scope = ldap.SCOPE_ONELEVEL
@@ -144,9 +154,8 @@ async def tree( basedn: str) -> typing.Generator[dict, None, None]:
         scope = ldap.SCOPE_BASE
         basedn = app.config['BASE_DN']
             
-    async with Ldap( request.authorization) as con:
-        res = dict( await result_list( con, con.search( basedn, scope,
-            attrlist=WITH_OPERATIONAL_ATTRS)))
+    res = { k: v async for k, v in result( request.ldap.search(
+        basedn, scope, attrlist=WITH_OPERATIONAL_ATTRS))}
 
     # Return result generator
     # Cannot simply yield in the main tree view
@@ -157,7 +166,7 @@ async def tree( basedn: str) -> typing.Generator[dict, None, None]:
         for dn in sorted( res.keys(), key=dn_sort))
         
 
-def _entry( res: tuple) -> dict:
+def _entry( res: Tuple[ str, Any]) -> Dict[ str, Any]:
     'Prepare an LDAP entry for transmission'
     
     dn, attrs = res
@@ -204,7 +213,7 @@ def _entry( res: tuple) -> dict:
 @app.route( '/api/entry/<path:dn>', methods=('GET', 'POST', 'DELETE', 'PUT'))
 @no_cache
 @api
-async def entry( dn: str) -> typing.Optional[dict]:
+async def entry( dn: str) -> Optional[dict]:
     'Edit directory entries'
     
     if request.is_json:
@@ -214,69 +223,66 @@ async def entry( dn: str) -> typing.Optional[dict]:
                     for k,v in json.items()
                     if k != PHOTO}
         
-    async with Ldap( request.authorization) as con:
-        if request.method == 'GET':
-            res = await result_list( con, con.search( dn, ldap.SCOPE_BASE))
-            return _entry( res[0]) if res else None
+    if request.method == 'GET':
+        res = await result_list( request.ldap.search( dn, ldap.SCOPE_BASE))
+        return _entry( res[0]) if res else None
+
+    elif request.method == 'POST':
+        # Get previous values from directory
+        res = await result_list( request.ldap.search( dn, ldap.SCOPE_BASE))
+        
+        mods = { k: v for k, v in res[0][1].items() if k in req }
+        modlist = modifyModlist( mods, req)
+        
+        if modlist: # Apply changes and send changed keys back
+            await discard( request.ldap.modify( dn, modlist))
+        return { 'changed' : sorted( set( m[1] for m in modlist)) }
     
-        elif request.method == 'POST':
-            # Get previous values from directory
-            res = await result_list( con, con.search( dn, ldap.SCOPE_BASE))
-            
-            mods = { k: v for k, v in res[0][1].items() if k in req }
-            modlist = modifyModlist( mods, req)
-            
-            if modlist: # Apply changes and send changed keys back
-                await result_list( con, con.modify( dn, modlist))
-            return { 'changed' : sorted( set( m[1] for m in modlist)) }
+    elif request.method == 'PUT':
+        # Create new object
+        modlist = addModlist( req)
+        if modlist:
+            await discard( request.ldap.add( dn, modlist))
+        return { 'changed' : ['dn'] } # Dummy
         
-        elif request.method == 'PUT':
-            # Create new object
-            modlist = addModlist( req)
-            if modlist:
-                await result_list( con, con.add( dn, modlist))
-            return { 'changed' : ['dn'] } # Dummy
-            
-        elif request.method == 'DELETE':
-            await result_list( con, con.delete( dn))
-        
-        return None # for mypy
+    elif request.method == 'DELETE':
+        await discard( request.ldap.delete( dn))
+    
+    return None # for mypy
 
 
 @app.route( '/api/blob/<attr>/<int:index>/<path:dn>', methods=( 'GET', 'DELETE', 'PUT'))
 @no_cache
 @api
 async def blob( attr: str, index: int, dn: str):
-    async with Ldap( request.authorization) as con:
+    res = await result_list( request.ldap.search( dn, ldap.SCOPE_BASE))
+    if not res: quart.abort( 404)
+    _dn, attrs = res[0]
 
-        res = await result_list( con, con.search( dn, ldap.SCOPE_BASE))
-        if not res: quart.abort( 404)
-        _dn, attrs = res[0]
+    if request.method == 'GET':
+        if attr not in attrs or len( attrs[attr]) <= index:
+            quart.abort( 404)
+        resp = quart.Response( attrs[attr][index],
+            content_type='application/octet-stream')
+        resp.headers['Content-Disposition'] = \
+            'attachment; filename="%s-%d.bin"' % (attr, index)
+        return resp
 
-        if request.method == 'GET':
-            if attr not in attrs or len( attrs[attr]) <= index:
-                quart.abort( 404)
-            resp = quart.Response( attrs[attr][index],
-                content_type='application/octet-stream')
-            resp.headers['Content-Disposition'] = \
-                'attachment; filename="%s-%d.bin"' % (attr, index)
-            return resp
- 
-        elif request.method == 'PUT':
-            data = [(await request.files)['blob'].read()]
-            if attr in attrs:
-                await result_list( con,
-                    con.modify( dn, [(1, attr, None), (0, attr, data + attrs[attr])]))
-            else: await result_list( con, con.modify( dn, [(0, attr, data)]))
-    
-        elif request.method == 'DELETE':
-            if attr not in attrs or len( attrs[attr]) <= index:
-                quart.abort( 404)
-            await result_list( con, con.modify( dn, [(1, attr, None)]))
-            data = attrs[attr][:index] + attrs[attr][index + 1:]
-            if data: await result_list( con, con.modify( dn, [(0, attr, data)]))
+    elif request.method == 'PUT':
+        data = [(await request.files)['blob'].read()]
+        if attr in attrs:
+            await discard(
+                request.ldap.modify( dn, [(1, attr, None), (0, attr, data + attrs[attr])]))
+        else: await discard( request.ldap.modify( dn, [(0, attr, data)]))
 
-        return { 'changed' : [attr] } # dummy
+    elif request.method == 'DELETE':
+        if attr not in attrs or len( attrs[attr]) <= index:
+            quart.abort( 404)
+        await discard( request.ldap.modify( dn, [(1, attr, None)]))
+        data = attrs[attr][:index] + attrs[attr][index + 1:]
+        if data: await discard( request.ldap.modify( dn, [(0, attr, data)]))
+
+    return { 'changed' : [attr] } # dummy
     
 
 @app.route( '/api/ldif/<path:dn>')
@@ -285,19 +291,18 @@ async def blob( attr: str, index: int, dn: str):
 async def ldifDump( dn: str) -> quart.Response:
     'Dump an entry as LDIF'
     
-    async with Ldap( request.authorization) as con:
-        res = await result_list( con, con.search( dn, ldap.SCOPE_SUBTREE))
-        def to_ldif():
-            for dn, attrs in res:
-                out = io.StringIO()
-                ldif.LDIFWriter( out).unparse( dn, attrs)
-                yield out.getvalue()
-                
-        resp = quart.Response( "".join( to_ldif()),
-            content_type='text/plain')
-        resp.headers['Content-Disposition'] = \
-            'attachment; filename="%s.ldif"' % dn.split(',')[0].split('=')[1]
-        return resp
+    res = await result_list( request.ldap.search( dn, ldap.SCOPE_SUBTREE))
+    def to_ldif():
+        for dn, attrs in res:
+            out = io.StringIO()
+            ldif.LDIFWriter( out).unparse( dn, attrs)
+            yield out.getvalue()
+            
+    resp = quart.Response( "".join( to_ldif()),
+        content_type='text/plain')
+    resp.headers['Content-Disposition'] = \
+        'attachment; filename="%s.ldif"' % dn.split(',')[0].split('=')[1]
+    return resp
 
 
 class LDIFReader( ldif.LDIFParser):
@@ -307,7 +312,7 @@ class LDIFReader( ldif.LDIFParser):
         self.con = con
 
     def handle( self, dn, entry):
-        self.con.add_s( dn, addModlist( entry))
+        self.request.ldap.add_s( dn, addModlist( entry))
         self.count += 1
 
 
@@ -317,10 +322,9 @@ class LDIFReader( ldif.LDIFParser):
 async def ldifUpload() -> quart.Response:
     'Import LDIF'
     
-    async with Ldap( request.authorization) as con:
-        reader = LDIFReader( request.data, con)
-        reader.parse()
-        return reader.count
+    reader = LDIFReader( request.data, request.ldap)
+    reader.parse()
+    return reader.count
 
 
 @app.route( '/api/rename/<newrdn>/<path:dn>')
@@ -329,11 +333,10 @@ async def ldifUpload() -> quart.Response:
 async def rename( dn: str, newrdn: str) -> None:
     'Rename an entry'
 
-    async with Ldap( request.authorization) as con:
-        await result_list( con, con.rename( dn, newrdn, delold=0))
+    await discard( request.ldap.rename( dn, newrdn, delold=0))
 
 
-def _ename( entry: dict) -> typing.Optional[str]:
+def _ename( entry: dict) -> Optional[str]:
     'Try to extract a CN'
     return entry['cn'][0].decode() if entry['cn'] else None
 
@@ -341,29 +344,29 @@ def _ename( entry: dict) -> typing.Optional[str]:
 @app.route( '/api/entry/password/<path:dn>', methods=('POST',))
 @no_cache
 @api
-async def passwd( dn: str) -> None:
+async def passwd( dn: str) -> Optional[bool]:
     'Edit directory entries'
     
     if request.is_json:
         args = await request.get_json()
         if 'check' in args:
-            async with Ldap() as con:
-                try:
-                    await result_list( con, con.simple_bind( dn, args['check']))
-                    con.unbind_s()
-                    return True
-                except ldap.INVALID_CREDENTIALS:
-                    return False
+            try:
+                con = ldap.initialize( app.config['LDAP_URL'])
+                con.simple_bind_s( dn, args['check'])
+                con.unbind_s()
+                return True
+            except ldap.INVALID_CREDENTIALS:
+                return False
         elif 'new1' in args:
-            async with Ldap( request.authorization) as con:
-                await result_list( con,
-                    con.passwd( dn, args['old'], args['new1']))
+            await discard( request.ldap.passwd( dn, args['old'], args['new1']))
+
+    return None # mypy
 
 
 @app.route( '/api/search/<path:query>')
 @no_cache
 @api
-async def search( query: str) -> typing.Iterable[ dict]:
+async def search( query: str) -> Iterable[ dict]:
     'Search the directory'
 
     q = query
@@ -378,9 +381,8 @@ async def search( query: str) -> typing.Iterable[ dict]:
     if len(q) < app.config['SEARCH_QUERY_MIN']: return []
     query = '(|%s)' % ''.join( pattern % q for pattern in patterns)
     
-    async with Ldap( request.authorization) as con:
-        res = await result_list( con, con.search(
-            app.config['BASE_DN'], ldap.SCOPE_SUBTREE, query))
+    res = await result_list( request.ldap.search(
+        app.config['BASE_DN'], ldap.SCOPE_SUBTREE, query))
     
     return ( { 'dn': dn, 'name': _ename( attrs) or dn }
         for dn, attrs in res[:app.config['SEARCH_MAX']])
@@ -470,13 +472,12 @@ async def schema() -> dict:
     # Load schema into the app
     if app.schema is None:
         # See: https://hub.packtpub.com/python-ldap-applications-part-4-ldap-schema/
-        async with Ldap() as con:
-            res = await result_list( con, con.search( app.config['SCHEMA_DN'],
-                ldap.SCOPE_BASE, attrlist=WITH_OPERATIONAL_ATTRS))
+        res = await result_list( request.ldap.search( app.config['SCHEMA_DN'],
+            ldap.SCOPE_BASE, attrlist=WITH_OPERATIONAL_ATTRS))
 
-            # See: https://www.python-ldap.org/en/latest/reference/ldap-schema.html
-            _dn, subschema_entry = res[0]
-            app.schema = ldap.schema.SubSchema( subschema_entry, check_uniqueness=2)
+        # See: https://www.python-ldap.org/en/latest/reference/ldap-schema.html
+        _dn, subschema_entry = res[0]
+        app.schema = ldap.schema.SubSchema( subschema_entry, check_uniqueness=2)
 
 
     return dict( attributes = _dict( 'name', map( _at, 
