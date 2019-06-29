@@ -305,7 +305,14 @@
                                                 :type="fieldType( key)" 
                                                 :class="{ structural: isStructural( key, val),
                                                     disabled: disabled( key) }"
+                                                    :id="key + '-' + index"
+                                                    @keyUp="complete"
                                                     v-if="key != 'jpegPhoto'" />
+                                            <ul class="dropdown" v-if="dropdownId == key + '-' + index">
+                                                <li v-for="dn in dropdownChoices">
+                                                    <span class="clickable" @click="selectCompletion">{{ dn }}</span>
+                                                </li>
+                                            </ul>
                                             <span class="photo" v-if="key == 'jpegPhoto' && val">
                                                 <img :src="'api/blob/jpegPhoto/' + index + '/' + entry.meta.dn
                                                     + '?' + (+ new Date())" />
