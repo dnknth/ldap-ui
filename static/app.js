@@ -467,7 +467,7 @@ var app = new Vue({
                 rdnpart = parts[0].split('='), 
                 rdn = rdnpart[0];
 
-            if (rdnpart.length != 2 || this.entry.meta.required.indexOf( rdn) == -1) {
+            if (rdnpart.length != 2) {
                 this.copyDn = null;
                 this.showError( 'Invalid RDN: ' + parts[0]);
                 return;
