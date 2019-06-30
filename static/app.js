@@ -306,16 +306,24 @@ var app = new Vue({
             this.newRdn = null;
             this.$refs.renameRef.show();
         },
+
+        // Choice list of possible rdns
+        renameRdns: function() {
+            if (!this.entry) return []
+
+            const dn = this.entry.meta.dn,
+                rdn = dn.split('=')[0];
+            return Object.keys( this.entry.attrs).filter( 
+                function( e) {
+                    return e != rdn;
+                }
+            );
+        },
         
         // Change the RDN for an entry
         renameEntry: function( evt) {
             const dn = this.entry.meta.dn;
                 
-            if (!this.newRdn || this.newRdn == dn.split('=')[0]) {
-                evt.preventDefault();
-                return;
-            }
-            
             const rdnAttr = this.entry.attrs[this.newRdn];
             if (!rdnAttr || !rdnAttr[0]) {
                 showWarning( 'Illegal value for: ' + this.newRdn)

@@ -107,7 +107,7 @@
         <b-modal ref="renameRef" title="Rename entry" @ok="renameEntry" @shown="focus('renamerdn')">
             <b-form-group label="New RDN attribute:" label-for="renamerdn">
                 <b-form-select id="renamerdn" v-model="newRdn"
-                    :options="entry ? Object.keys( entry.attrs) : []" class="mb-3">
+                    :options="renameRdns()" class="mb-3">
                 </b-form-select>
             </b-form-group>
         </b-modal>
