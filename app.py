@@ -20,29 +20,6 @@ PHOTO = 'jpegPhoto'
 OCTET_STRING = '1.3.6.1.4.1.1466.115.121.1.40'
 
 
-# See: https://blog.al4.co.nz/2016/01/streaming-json-with-flask/
-async def stream_list( data: Generator) -> AsyncGenerator:
-    ''' Generator function that emits a JSON list for an iterable.
-        Makes most sense if data is a subgenerator. '''
-
-    yield b'['
-
-    chunks = data.__iter__()
-    try:
-        r = next( chunks)
-        yield quart.json.dumps( r).encode()
-
-        # loop over remaining results
-        for r in chunks:
-            yield b',' + quart.json.dumps( r).encode()
-
-    except StopIteration:
-        pass
-
-    # close array
-    yield b']'
-
-
 def authenticated( view: Callable):
     ''' Require authentication for a view,
         set up the LDAP connection
@@ -168,35 +145,22 @@ async def whoami() -> str:
     return request.ldap.whoami_s().replace( 'dn:', '')
 
 
-def dn_sort( dn: str) -> tuple:
-    'Re-order DN parts for sorting'
-    return tuple( reversed( dn.lower().split( ',')))
-
-
 @app.route( '/api/tree/<basedn>')
 @no_cache
-@authenticated
-async def tree( basedn: str) -> Generator[dict, None, None]:
+@api
+async def tree( basedn: str) -> List[ Dict[ str, Any]]:
     'List directory entries'
     
     scope = ldap.SCOPE_ONELEVEL
     if basedn == 'base':
         scope = ldap.SCOPE_BASE
         basedn = app.config['BASE_DN']
-            
-    res = { k: v async for k, v in result( request.ldap.search(
-        basedn, scope, attrlist=WITH_OPERATIONAL_ATTRS))}
-
-    # Return result generator
-    # Cannot simply yield in the main tree view
-    # because the Ldap bind must run in the request context
-    data = ( { 'dn': dn,
-               'structuralObjectClass' : res[dn]['structuralObjectClass'][0].decode(),
-               'hasSubordinates': b'TRUE' == res[dn]['hasSubordinates'][0] }
-        for dn in sorted( res.keys(), key=dn_sort))
-
-    return quart.Response( stream_list( data),
-        content_type='application/json', timeout=None)
+    
+    return [ { 'dn': dn,
+               'structuralObjectClass' : attrs['structuralObjectClass'][0].decode(),
+               'hasSubordinates': b'TRUE' == attrs['hasSubordinates'][0] }
+        async for dn, attrs in result( request.ldap.search(
+            basedn, scope, attrlist=WITH_OPERATIONAL_ATTRS)) ]
         
 
 def _entry( res: Tuple[ str, Any]) -> Dict[ str, Any]:

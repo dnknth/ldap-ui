@@ -163,6 +163,10 @@ var app = new Vue({
             let pos = this.tree.indexOf( this.treeMap[ dn]);
             return request( { url: 'api/tree/' + dn }).then( function( xhr) {
                 const response = JSON.parse( xhr.response);
+
+                response.sort( function( a, b) {
+                    return a.dn.toLowerCase().localeCompare( b.dn.toLowerCase());
+                });
                 
                 if (pos >= 0) app.tree[pos].loaded = true;
                 ++pos;
