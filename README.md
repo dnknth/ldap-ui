@@ -18,10 +18,9 @@ The app always requires authentication, even if the directory permits anonymous 
 
 Prerequisites:
 * [GNU make](https://www.gnu.org/software/make/)
-* [wget](https://www.gnu.org/software/wget/)
 * [npm](https://docs.npmjs.com/cli/npm)
 * [Python3](https://www.python.org)
-* [pip](https://packaging.python.org/tutorials/installing-packages/)
+* [pip3](https://packaging.python.org/tutorials/installing-packages/)
 * [python-ldap](https://pypi.org/project/python-ldap/)
 
 Download static assets and set up a virtual Python environment in `venv` with:
@@ -53,7 +52,7 @@ A Dockerfile is included. The container exposes port 5000. LDAP access is contro
 * The software is fairly new. I use on production directories, but you should probably test-drive it first.
 * It works with [OpenLdap](http://www.openldap.org) using simple authentication. Other directories have not been tested, and other authentication schemes are presently not supported.
 * Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLdap 2.4 does).
-* The app will trigger HTTP Basic authentication unless the `AUTHORIZATION` request variable is already set by some upstream web server.
+* The app will trigger HTTP Basic authentication unless the `AUTHORIZATION` request variable is already set by some upstream HTTP server.
 
 ## Q&A
 
