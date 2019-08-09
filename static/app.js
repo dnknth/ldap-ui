@@ -63,16 +63,16 @@ var app = new Vue({
         icons: {                // OC -> icon mapping in tree
             inetOrgPerson:      'address-book',
             organization:       'globe',
-            organizationalRole: 'robot',
+            organizationalRole: 'android',
             organizationalUnit: 'sitemap',
-            groupOfNames:       'user-friends',
-            groupOfUniqueNames: 'user-friends',
-            posixGroup:         'user-friends',
-            person:             'user-tie',
-            account:            'user-tie',
+            groupOfNames:       'users',
+            groupOfUniqueNames: 'users',
+            posixGroup:         'users',
+            person:             'user',
+            account:            'user',
             krbContainer:       'lock',
             krbRealmContainer:  'globe',
-            krbPrincipal:       'user-lock',
+            krbPrincipal:       'user-o',
 
         },
         treeOpen: true,         // Is the tree visible?
@@ -113,7 +113,7 @@ var app = new Vue({
         
         ldifData: '',
 
-        dropdownChoices: ['one', 'two', 'three'],
+        dropdownChoices: [],
         dropdownId: null,
     },
     

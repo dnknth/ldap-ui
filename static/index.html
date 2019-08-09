@@ -26,8 +26,7 @@
     <link type="text/css" rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css" />
     <link type="text/css" rel="stylesheet" href="node_modules/bootstrap-vue/dist/bootstrap-vue.min.css" />
     
-    <!-- link rel="stylesheet" href="node_modules/font-awesome/css/font-awesome.css" / -->
-    <link rel="stylesheet" href="vendor/fontawesome-free-5.3.1-web/css/all.css" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" crossorigin="anonymous">
     <link type="text/css" rel="stylesheet" href="style.css"/>
     
     <script src="node_modules/vue/dist/vue.min.js"></script>
@@ -46,9 +45,9 @@
             <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
             
             <b-navbar-brand>
-                <i class ="fas" :class="treeOpen ? 'fa-list-alt' : 'fa-list-ul'"
+                <i class="fa" :class="treeOpen ? 'fa-list-alt' : 'fa-list-ul'"
                     @click="treeOpen = !treeOpen"></i>
-                <i class="fas fa-user"></i>
+                <i class="fa fa-user"></i>
                 <span @click="loadEntry( user)" class="tree-link">{{ user ? label( user) : '' }}</span>
             </b-navbar-brand>
 
@@ -136,9 +135,9 @@
                 <input v-model="password.old" class="mb-3 form-control"
                     placeholder="Old password" type="password" id="oldpw"
                     @change="checkOldPassword" />
-                <i class="green fas fa-check-circle"
+                <i class="green fa fa-check-circle"
                     v-if="passwordOk"></i>
-                <i class="red fas fa-times-circle"
+                <i class="red fa fa-times-circle"
                     v-if="passwordOk == false"></i>
 
                 <input v-model="password.new1" class="mb-3 form-control"
@@ -172,11 +171,11 @@
                                 :id="item.dn" :class="item.structuralObjectClass">
                                     <span v-for="i in item.level" class="indent"></span>
                                     <span v-if="item.hasSubordinates" class="clickable opener"
-                                        @click="toggle(item)"><i :class="'fas  fa-chevron-circle-'
+                                        @click="toggle(item)"><i :class="'fa fa-chevron-circle-'
                                             + (item.open ? 'down' : 'right')"></i></span>
                                     <span v-else class="indent"></span>
                                     <span class="tree-link" @click="loadEntry( item.dn)"> 
-                                        <i class="fas" :class="icon( item)"></i>
+                                        <i class="fa" :class="icon( item)"></i>
                                         <span :class="entry && entry.meta.dn == item.dn ? 'tree-label-active' : 'tree-label'">
                                             {{ item.level ? label( item.dn) : item.dn }}
                                         </span>
@@ -269,7 +268,7 @@
                             <div class="header" slot="header">
                                 <b-nav>
                                     <b-nav-item class="icon">
-                                        <i class="fas" :class="icon( treeMap[entry.meta.dn])"></i>
+                                        <i class="fa" :class="icon( treeMap[entry.meta.dn])"></i>
                                     </b-nav-item>
                                     <b-nav-item-dropdown 
                                         :text="entry.attrs.cn ? entry.attrs.cn[0] : entry.meta.dn.split(',')[0]"
@@ -291,7 +290,7 @@
                                     <th :class="required( key) ? 'required' : 'optional'">
                                         <span class="clickable oc"
                                             @click="oc = null; attr = getAttr(key)">{{ key }}</span>
-                                        <i v-if="changed( key)" class="fas green fa-check"></i>
+                                        <i v-if="changed( key)" class="fa green fa-check"></i>
                                         <span class="clickable right add-btn"
                                             v-if="!getAttr(key).single_value && !newEntry && !disabled( key)"
                                             @click="addRow( key, values)">⊕</span>
@@ -318,10 +317,10 @@
                                                 <span class="clickable remove-btn"
                                                     @click="deleteBlob( 'jpegPhoto', index)">⊖</span>
                                             </span>
-                                            <i class="clickable fas fa-info-circle"
+                                            <i class="clickable fa fa-info-circle"
                                                 v-if="key == 'objectClass'"
                                                 @click="oc = getOc(val); attr = null;"></i>
-                                            <i class="clickable fas fa-question-circle"
+                                            <i class="clickable fa fa-question-circle"
                                                 v-if="key == 'userPassword'"
                                                 @click="pwDialog"></i>
                                         </div>

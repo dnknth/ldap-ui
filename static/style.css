@@ -33,7 +33,7 @@ ul#tree li {
     cursor: pointer;
 }
 
-.tree-link i.fas {
+.tree-link i.fa {
     color: gray;
 }
 
@@ -157,8 +157,8 @@ table#entry span.photo img {
     top: -0.5ex;
 }
 
-table#entry td i.fas {
-    opacity: 0.1;
+table#entry td i.fa {
+    opacity: 0.3;
     margin-right: 0.1em;
     position: relative;
     top: 0.3ex;

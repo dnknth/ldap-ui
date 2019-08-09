@@ -10,17 +10,11 @@ debug: app.py setup
 run: app.py setup
 	.venv3/bin/hypercorn -b 0.0.0.0:5000 app:app
 
-setup: .venv3 static/vendor static/node_modules
+setup: .venv3 static/node_modules
 
 static/node_modules: static/package.json
 	cd static ; npm install
 	touch $@
-
-static/vendor:
-	mkdir -p $@
-	cd /tmp; wget -c -q https://use.fontawesome.com/releases/v5.3.1/fontawesome-free-5.3.1-web.zip
-	unzip -q -o -d $@ /tmp/fontawesome-free-5.3.1-web.zip
-	rm -f /tmp/fontawesome-free-5.3.1-web.zip
 
 .venv3: requirements.txt
 	python3 -m venv --system-site-packages $@
@@ -29,10 +23,10 @@ static/vendor:
 	touch $@
 
 clean:
-	rm -rf __pycache__ static/vendor static/node_modules
+	rm -rf __pycache__ static/node_modules
 
 tidy: clean
-	rm -rf .venv
+	rm -rf .venv3
 
 docker: clean
 	docker build -t dnknth/ldap-ui .
