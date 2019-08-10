@@ -18,12 +18,11 @@ The app always requires authentication, even if the directory permits anonymous 
 
 Prerequisites:
 * [GNU make](https://www.gnu.org/software/make/)
-* [npm](https://docs.npmjs.com/cli/npm)
 * [Python3](https://www.python.org)
 * [pip3](https://packaging.python.org/tutorials/installing-packages/)
 * [python-ldap](https://pypi.org/project/python-ldap/)
 
-Download static assets and set up a virtual Python environment in `venv` with:
+To set up a virtual Python environment in `.venv3` with:
 
 ​    make setup
 

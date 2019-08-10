@@ -147,8 +147,12 @@ var app = new Vue({
         // Focus an element on next draw
         focus: function( id) {
             Vue.nextTick( function() {
-                const el = document.getElementById( id);
-                if (el) el.focus();
+                Vue.nextTick( function() {
+                    const el = document.getElementById( id);
+                    if (el) {
+                        el.focus();
+                    }
+                });
             });
         },
 

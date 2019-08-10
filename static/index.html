@@ -11,7 +11,7 @@
     
     <link rel="icon" type="image/png" sizes="32x32" href="icons/32px.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="icons/16px.png" />
-    <!--[if IE]><link rel="shortcut icon" href="/static/img/icons/favicon.ico"><![endif]-->
+    <!--[if IE]><link rel="shortcut icon" href="icons/favicon.ico"><![endif]-->
     
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="aliceblue" />
@@ -23,15 +23,18 @@
     <link rel="apple-touch-icon" href="icons/152px.png">
 
     <!-- Bootstrap CSS -->
-    <link type="text/css" rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css" />
-    <link type="text/css" rel="stylesheet" href="node_modules/bootstrap-vue/dist/bootstrap-vue.min.css" />
-    
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" crossorigin="anonymous">
+    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css" crossorigin="anonymous" />
+    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.css" crossorigin="anonymous" />
+        
+    <link rel="stylesheet" href="//stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" crossorigin="anonymous">
     <link type="text/css" rel="stylesheet" href="style.css"/>
     
-    <script src="node_modules/vue/dist/vue.min.js"></script>
-    <script src="node_modules/babel-polyfill/dist/polyfill.min.js"></script>
-    <script src="node_modules/bootstrap-vue/dist/bootstrap-vue.min.js"></script>
+    <!-- Load polyfills to support older browsers -->
+    <script src="//polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver" crossorigin="anonymous"></script>
+
+    <!-- Load Vue followed by BootstrapVue -->
+    <script src="//unpkg.com/vue@latest/dist/vue.min.js" crossorigin="anonymous"></script>
+    <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.js" crossorigin="anonymous"></script>
 
     <title>Directory</title>
   </head>
@@ -119,13 +122,13 @@
         </b-modal>
   
         <!-- Popup to copy an entry -->
-        <b-modal ref="copyRef" title="Copy entry" @ok="copyEntry" @cancel="copyDn = null;">
+        <b-modal ref="copyRef" title="Copy entry" @ok="copyEntry" @cancel="copyDn = null;" @shown="focus('copyDn')">
             <input v-model="copyDn" class="mb-3 form-control"
                  placeholder="New DN" id="copyDn" />
         </b-modal>
   
         <!-- Popup to verify / change passwords -->
-        <b-modal ref="pwRef" title="Change / verify password"
+        <b-modal ref="pwRef" title="Change / verify password" @shown="focus('oldpw')"
             @ok="changePassword" @cancel="password={}" id="change-password">
             
                 <small v-if="entry && user != entry.meta.dn">Optional</small>
@@ -147,8 +150,8 @@
         </b-modal>
         
         <!-- Popup for image upload -->
-        <b-modal ref="photoRef" title="Upload photo">
-            <input type="file" name="photo" accept="image/jpeg" @change="addBlob" />
+        <b-modal ref="photoRef" title="Upload photo" @shown="focus('addPhoto')">
+            <input type="file" name="photo" id="addPhoto" accept="image/jpeg" @change="addBlob" />
             <div slot="modal-footer"></div>
         </b-modal>
   
@@ -277,7 +280,7 @@
                                         <b-dropdown-item @click="copyDialog">Copy…</b-dropdown-item>
                                         <b-dropdown-item @click="renameDialog">Rename…</b-dropdown-item>
                                         <b-dropdown-item @click="ldif">Export</b-dropdown-item>
-                                        <b-dropdown-item v-b-modal.confirm class="red">Delete</b-dropdown-item>
+                                        <b-dropdown-item v-b-modal.confirm><span class="red">Delete…</span></b-dropdown-item>
                                     </b-nav-item-dropdown>
                                 </b-nav>
                                 <span class="close-box" @click="entry = newEntry = null;">⊗</span>

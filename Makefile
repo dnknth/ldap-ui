@@ -10,11 +10,7 @@ debug: app.py setup
 run: app.py setup
 	.venv3/bin/hypercorn -b 0.0.0.0:5000 app:app
 
-setup: .venv3 static/node_modules
-
-static/node_modules: static/package.json
-	cd static ; npm install
-	touch $@
+setup: .venv3
 
 .venv3: requirements.txt
 	python3 -m venv --system-site-packages $@
@@ -23,7 +19,7 @@ static/node_modules: static/package.json
 	touch $@
 
 clean:
-	rm -rf __pycache__ static/node_modules
+	rm -rf __pycache__
 
 tidy: clean
 	rm -rf .venv3
