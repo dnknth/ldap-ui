@@ -1,0 +1,17 @@
+[Unit]
+Description=ldapui
+After=network.target auditd.service
+
+[Service]
+WorkingDirectory=/opt/ldap-ui
+Environment="BASE_DN=dc=example,dc=com"
+ExecStart=/opt/ldap-ui/.venv3/bin/hypercorn -b 127.0.0.1:5000 app:app
+Type=simple
+User=www-data
+Group=www-data
+Restart=always
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=multi-user.target
