@@ -348,7 +348,7 @@ var app = new Vue({
                 dnparts.splice( 0, 1, rdn);
                 app.loadEntry( dnparts.join(','));
             }).catch( function( xhr) {
-                app.showError( xhr.response);
+                app.showException( xhr.response);
             });
         },
         
@@ -381,7 +381,7 @@ var app = new Vue({
             }).then( function( xhr) {
                 app.passwordOk = JSON.parse( xhr.response);
             }).catch( function( xhr) {
-                app.showError( xhr.response);
+                app.showException( xhr.response);
             });
         },
         
@@ -414,7 +414,7 @@ var app = new Vue({
             }).then( function( xhr) {
                 app.showInfo( '👍 Password changed');
             }).catch( function( xhr) {
-                app.showError( xhr.response);
+                app.showException( xhr.response);
             });
         },
         
@@ -461,7 +461,7 @@ var app = new Vue({
                 app.$refs.importRef.hide();
                 app.reload( app.tree[0].dn);
             }).catch( function( xhr) {
-                app.showError( xhr.response);
+                app.showException( xhr.response);
             });
         },
         
@@ -575,7 +575,7 @@ var app = new Vue({
                 document.body.appendChild(a);
                 a.click();
             }).catch( function( xhr) {
-                app.showError( xhr.response);
+                app.showException( xhr.response);
             });
         },
         
@@ -615,7 +615,7 @@ var app = new Vue({
                 app.newEntry = null;
                 app.loadEntry( dn, data.changed);
             }).catch( function( xhr) {
-                app.showError( xhr.response);
+                app.showException( xhr.response);
             });
         },
         
@@ -628,7 +628,7 @@ var app = new Vue({
                 app.entry = null;
                 app.reload( app.parent( dn).dn);
             }).catch( function( xhr) {
-                app.showError( xhr.response);
+                app.showException( xhr.response);
             });
         },
         
@@ -766,7 +766,7 @@ var app = new Vue({
                 const data = JSON.parse( xhr.response);
                 app.loadEntry( app.entry.meta.dn, data.changed);
             }).catch( function( xhr) {
-                app.showError( xhr.response);
+                app.showException( xhr.response);
             });
         },
         
@@ -798,7 +798,7 @@ var app = new Vue({
                     app.searchResult = response;
                 }
             }).catch( function( xhr) {
-                app.showError( xhr.response);
+                app.showException( xhr.response);
             });
         },
 
@@ -815,6 +815,22 @@ var app = new Vue({
         // Report an error
         showError: function( msg) {
             this.error = { counter: 60, type: 'danger', msg: '⛔ ' + msg }
+        },
+
+        showException: function( msg) {
+            const span = document.createElement('span');
+            span.innerHTML = msg;
+            const titles = span.getElementsByTagName('title');
+            for (let i = 0; i < titles.length; ++i) {
+                span.removeChild( titles[i]);
+            }
+            let text = '';
+            const headlines = span.getElementsByTagName('h1');
+            for (let i = 0; i < headlines.length; ++i) {
+                text = text + headlines[i].textContent + ': ';
+                span.removeChild( headlines[i]);
+            }
+            this.showError( text + span.textContent);
         },
         
     },

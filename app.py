@@ -1,4 +1,5 @@
 from quart import request
+from quart.exceptions import HTTPException
 from ldap.modlist import addModlist, modifyModlist
 import asyncio, base64, quart, functools, io, ldap, ldif, sys, types
 from typing import *
@@ -63,9 +64,8 @@ def authenticated( view: Callable):
 
         except ldap.LDAPError as err:
             args = err.args[0]
-            quart.abort( quart.make_response( '%s: %s' % (
-                args.get( 'desc', ''),
-                args.get( 'info', '')), 500, []))
+            raise HTTPException( 500, args.get( 'info', ''),
+                args.get( 'desc', ''))
 
     return wrapped_view
 
