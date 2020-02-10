@@ -392,7 +392,7 @@ var app = new Vue({
                 && this.password.new1 == this.password.new2;
         },
         
-        // Update passwords
+        // Update password
         changePassword: function( evt) {
             
             // new passwords must match
@@ -416,6 +416,13 @@ var app = new Vue({
             }).catch( function( xhr) {
                 app.showException( xhr.response);
             });
+        },
+        
+        // Update password
+        deletePassword: function( evt) {
+            if (this.user != this.entry.meta.dn) {
+                this.entry.attrs['userPassword'] = [];
+            }
         },
         
         // Pop up the copy dialog

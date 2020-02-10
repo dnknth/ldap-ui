@@ -300,6 +300,9 @@
                                         <span class="clickable right add-btn"
                                             v-if="key == 'jpegPhoto'"
                                             @click="$refs.photoRef.show()">⊕</span>
+                                        <span class="clickable right add-btn"
+                                            v-if="key == 'userPassword' && user != entry.meta.dn"
+                                            @click="deletePassword()">⊖</span>
                                     </th>
                                     <td>
                                         <div v-for="(val, index) in values" class="attr-value">
