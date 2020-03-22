@@ -274,7 +274,7 @@
                                         <i class="fa" :class="icon( treeMap[entry.meta.dn])"></i>
                                     </b-nav-item>
                                     <b-nav-item-dropdown 
-                                        :text="entry.attrs.cn ? entry.attrs.cn[0] : entry.meta.dn.split(',')[0]"
+                                        :text="label( entry.meta.dn)"
                                         extra-toggle-classes="nav-link-custom" right  class="entry-menu">
                                         <b-dropdown-item @click="addDialog">Add child…</b-dropdown-item>
                                         <b-dropdown-item @click="copyDialog">Copy…</b-dropdown-item>
@@ -283,7 +283,7 @@
                                         <b-dropdown-item v-b-modal.confirm><span class="red">Delete…</span></b-dropdown-item>
                                     </b-nav-item-dropdown>
                                 </b-nav>
-                                <span class="close-box" @click="entry = newEntry = null;">⊗</span>
+                                <span class="close-box" @click="entry = newEntry = null; document.title = 'Directory';">⊗</span>
                             </div>
                             
                             <table id="entry">

@@ -243,7 +243,7 @@ var app = new Vue({
         
         // Shorten a DN for readability
         label: function( dn) {
-            return dn.split(',')[0].replace( /^cn=/, '');
+            return dn.split(',')[0].replace( /^cn=/, '').replace( /^krbPrincipalName=/, '');
         },
         
         // Hide / show tree elements
@@ -334,7 +334,7 @@ var app = new Vue({
                 
             const rdnAttr = this.entry.attrs[this.newRdn];
             if (!rdnAttr || !rdnAttr[0]) {
-                showWarning( 'Illegal value for: ' + this.newRdn)
+                this.showWarning( 'Illegal value for: ' + this.newRdn)
                 evt.preventDefault();
                 return;
             }
@@ -526,6 +526,7 @@ var app = new Vue({
                 if (oldEntry && oldEntry.meta && oldEntry.meta.dn != dn) {
                     app.error = {};
                 }
+                document.title = dn.split( ',')[0].split( '=')[1];
             });
         },
 
@@ -588,7 +589,8 @@ var app = new Vue({
         
         // Special fields
         binary: function( key) {
-            return this.entry.meta.binary.indexOf( key) != -1;
+            return this.entry.meta.binary.indexOf( key) != -1
+                || key == 'krbExtraData';
         },
         
         // Special fields

@@ -1,7 +1,5 @@
+.activate
 .mypy_cache
-.svn
-.venv3
+.venv*
 .vscode/tags
 __pycache__
-static/vendor
-node_modules
