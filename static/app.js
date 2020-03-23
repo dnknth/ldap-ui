@@ -73,8 +73,8 @@ var app = new Vue({
             krbContainer:       'lock',
             krbRealmContainer:  'globe',
             krbPrincipal:       'user-o',
-
         },
+
         treeOpen: true,         // Is the tree visible?
 
         // alerts
@@ -82,6 +82,9 @@ var app = new Vue({
         
         // search
         searchResult: null,
+        searchFields: [ 'member', 'uniqueMember',
+            'krbSubTrees', 'krbPrincContainerRef',
+            'owner' ],
         
         // entry editor
         newEntry: null,         // set by addDialog()
@@ -103,9 +106,9 @@ var app = new Vue({
         },
         oc: null,               // objectclass in side panel
         attr: null,             // attribute in side panel
-        hiddenFields: ['desc', 'name', 'names',
+        hiddenFields: [ 'desc', 'name', 'names',
             'no_user_mod', 'obsolete', 'oid',
-            'usage', 'syntax', 'sup'],
+            'usage', 'syntax', 'sup' ],
         
         password: {},
         passwordOk: false, // old password verified?
@@ -507,6 +510,7 @@ var app = new Vue({
             this.newEntry = null;
             this.searchResult = null;
             this.dropdownChoices = [];
+            document.activeElement.blur();
 
             this.reveal( dn);
             request( { url: 'api/entry/' + dn }).then( function( xhr) {
@@ -545,7 +549,7 @@ var app = new Vue({
             }
 
             const attr = evt.target.id.split('-', 1);
-            if (attr == 'member') {
+            if (this.searchFields.indexOf( attr[0]) != -1) {
                 this.dropdownId = evt.target.id;
                 request( { url: 'api/search/' + q }
                 ).then( function( xhr) {

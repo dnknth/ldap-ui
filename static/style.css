@@ -119,6 +119,7 @@ table#entry input {
 
 table#entry input:focus {
     border-bottom: 2px solid #17a2b8;
+    outline: none;
 }
 
 table#entry input.disabled {
