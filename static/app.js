@@ -334,7 +334,6 @@ var app = new Vue({
                 
             const rdnAttr = this.entry.attrs[this.newRdn];
             if (!rdnAttr || !rdnAttr[0]) {
-                this.showWarning( 'Illegal value for: ' + this.newRdn)
                 evt.preventDefault();
                 return;
             }
