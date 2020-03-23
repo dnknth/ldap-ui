@@ -102,7 +102,8 @@
             </b-form-group>
 
             <input v-if="newEntry && newEntry.objectClass" class="form-control"
-                v-model="newEntry.name" class="mb-3" placeholder="RDN value" />
+                v-model="newEntry.name" class="mb-3" placeholder="RDN value"
+                @keyup.enter="createEntry" />
         </b-modal>
   
         <!-- Rename entry popup -->
@@ -124,7 +125,7 @@
         <!-- Popup to copy an entry -->
         <b-modal ref="copyRef" title="Copy entry" @ok="copyEntry" @cancel="copyDn = null;" @shown="focus('copyDn')">
             <input v-model="copyDn" class="mb-3 form-control"
-                 placeholder="New DN" id="copyDn" />
+                 placeholder="New DN" id="copyDn" @keyup.enter="copyEntry" />
         </b-modal>
   
         <!-- Popup to verify / change passwords -->
@@ -146,7 +147,8 @@
                 <input v-model="password.new1" class="mb-3 form-control"
                     placeholder="New password" type="password" />
                 <input v-model="password.new2" class="mb-3 form-control"
-                    placeholder="Repeat new password" type="password" />
+                    placeholder="Repeat new password" type="password"
+                    @keyup.enter="changePassword" />
         </b-modal>
         
         <!-- Popup for image upload -->
@@ -273,7 +275,7 @@
                                     <b-nav-item class="icon">
                                         <i class="fa" :class="icon( treeMap[entry.meta.dn])"></i>
                                     </b-nav-item>
-                                    <b-nav-item-dropdown 
+                                    <b-nav-item-dropdown
                                         :text="label( entry.meta.dn)"
                                         extra-toggle-classes="nav-link-custom" right  class="entry-menu">
                                         <b-dropdown-item @click="addDialog">Add child…</b-dropdown-item>

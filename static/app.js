@@ -310,6 +310,19 @@ var app = new Vue({
                 oc = this.getOc( oc.sup[0]);
             }
             this.entry.meta.aux = [];
+            this.$refs.newRef.hide();
+
+            // Focus on first empty field
+            Vue.nextTick( function () {
+                const keys = Object.keys( app.entry.attrs);
+                for (let i = 0; i < keys.length; ++i) {
+                    const key = keys[i],
+                        val = app.entry.attrs[key];
+                    if (val == '') {
+                        app.focus( key + '-0');
+                    }
+                }
+            });
         },
         
         // Bring up the 'rename' dialog
@@ -415,6 +428,7 @@ var app = new Vue({
                 }
             }).then( function( xhr) {
                 app.showInfo( '👍 Password changed');
+                app.$refs.pwRef.hide();
             }).catch( function( xhr) {
                 app.showException( xhr.response);
             });
@@ -502,6 +516,7 @@ var app = new Vue({
             this.entry.meta.dn = this.copyDn;
             this.newEntry = { dn: this.copyDn }
             this.copyDn = null;
+            this.$refs.copyRef.hide();
         },
         
         // Load an entry into the editing form
