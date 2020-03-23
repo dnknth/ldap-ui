@@ -250,7 +250,7 @@ var app = new Vue({
         toggle: function( item) {
             item.open = !item.open;
             this.tree = this.tree.slice(); // force redraw
-            if (!item.loaded) this.reload( item.dn);
+            if (item.open) this.reload( item.dn);
         },
         
         // Populate the "New Entry" form
