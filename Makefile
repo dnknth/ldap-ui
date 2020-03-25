@@ -5,7 +5,7 @@ export BASE_DN = dc=scheer-group,dc=com
 
 debug: app.py setup
 	QUART_APP=app.py QUART_ENV=development \
-		.venv3/bin/quart run
+		.venv3/bin/python3 .venv3/bin/quart run
 
 run: app.py setup
 	.venv3/bin/hypercorn -b 0.0.0.0:5000 app:app
