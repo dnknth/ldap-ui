@@ -82,9 +82,6 @@ var app = new Vue({
         
         // search
         searchResult: null,
-        searchFields: [ 'member', 'uniqueMember',
-            'krbSubTrees', 'krbPrincContainerRef',
-            'owner' ],
         
         // entry editor
         newEntry: null,         // set by addDialog()
@@ -564,7 +561,8 @@ var app = new Vue({
             }
 
             const attr = evt.target.id.split('-', 1);
-            if (this.searchFields.indexOf( attr[0]) != -1) {
+            const attr_cls = attr ? this.getAttr( attr[0]) : undefined;
+            if ( this.getField( attr_cls, 'equality') == 'distinguishedNameMatch') {
                 this.dropdownId = evt.target.id;
                 request( { url: 'api/search/' + q }
                 ).then( function( xhr) {
@@ -696,11 +694,20 @@ var app = new Vue({
                 }
             }
         },
+
+        // look up a field, traversing suberclasses
+        getField: function( attr, name) {
+            do {
+                const val = attr[name];
+                if (val) return val;
+                attr = this.getAttr( attr.sup[0]);
+            } while (attr);
+        },
         
         // Get an attribute syntax
         getSyntax: function( name) {
             const a = this.getAttr( name);
-            if (a) return this.schema.syntaxes[ a.syntax || this.directoryString];
+            if (a) return this.schema.syntaxes[ this.getField( a, 'syntax') || this.directoryString];
         },
         
         // Show popup for attribute selection
