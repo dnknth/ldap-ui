@@ -562,7 +562,7 @@ var app = new Vue({
 
             const attr = evt.target.id.split('-', 1);
             const attr_cls = attr ? this.getAttr( attr[0]) : undefined;
-            if ( this.getField( attr_cls, 'equality') == 'distinguishedNameMatch') {
+            if (this.getField( attr_cls, 'equality') == 'distinguishedNameMatch') {
                 this.dropdownId = evt.target.id;
                 request( { url: 'api/search/' + q }
                 ).then( function( xhr) {

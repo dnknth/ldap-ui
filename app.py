@@ -30,7 +30,7 @@ def authenticated( view: Callable):
 
     @functools.wraps( view)
     async def wrapped_view( **values):
-        if not request.authorization: 
+        if not request.authorization and not app.config['BIND_DN']:
             return quart.Response(
                 'Please log in', 401, UNAUTHORIZED)
             
@@ -38,20 +38,24 @@ def authenticated( view: Callable):
             # Set up LDAP connection
             request.ldap = ldap.initialize( app.config['LDAP_URL'])
 
-            # Search user in HTTP headers
-            try:
-                dn, _attrs = await unique( request.ldap.search( 
-                    app.config['BASE_DN'],
-                    ldap.SCOPE_SUBTREE,
-                    '(%s=%s)' % (app.config['LOGIN_ATTR'], request.authorization.username)))
-            except ValueError:
-                raise ldap.INVALID_CREDENTIALS( {
-                    'desc': 'Invalid user',
-                    'info': "User '%s' unknown" % request.authorization.username})
+            if app.config['BIND_DN']:
+                dn = app.config['BIND_DN']
+                pw = app.config['BIND_PASSWORD']
+
+            else: # Search user in HTTP headers
+                pw = request.authorization.password
+                try:
+                    dn, _attrs = await unique( request.ldap.search( 
+                        app.config['BASE_DN'],
+                        ldap.SCOPE_SUBTREE,
+                        '(%s=%s)' % (app.config['LOGIN_ATTR'], request.authorization.username)))
+                except ValueError:
+                    raise ldap.INVALID_CREDENTIALS( {
+                        'desc': 'Invalid user',
+                        'info': "User '%s' unknown" % request.authorization.username})
 
             # Try authenticating
-            await empty( request.ldap.simple_bind(
-                dn, request.authorization.password))
+            await empty( request.ldap.simple_bind( dn, pw))
 
             # On success, call the view function and release connection
             data = await view( **values)

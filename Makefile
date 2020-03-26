@@ -1,5 +1,3 @@
-export BASE_DN = dc=scheer-group,dc=com
-
 .PHONY: debug run setup clean tidy docker
 
 

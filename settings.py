@@ -12,6 +12,13 @@ SCHEMA_DN = 'cn=subschema'
 # Attribute to check for user login
 LOGIN_ATTR = os.environ.get( 'LOGIN_ATTR', 'uid')
 
+# Binding
+# If the two following attributes are set in the environment,
+# the UI will NOT ask for a login.
+# You need to secure it otherwise!
+BIND_DN = os.environ.get( 'BIND_DN')
+BIND_PASSWORD = os.environ.get( 'BIND_PASSWORD')
+
 # Searches
 SEARCH_PATTERNS = ( # for search field
     '(%s=%%s)' % LOGIN_ATTR, 
