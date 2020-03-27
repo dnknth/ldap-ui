@@ -77,10 +77,12 @@
             <p class="strong">This action is irreversible.</p>
 
             <div v-if="subtree && subtree.length">
-                <span class="red">The following child nodes will be also deleted:</span>
-                <ul>
-                    <li v-for="node in subtree">{{ node }}</li>
-                </ul>
+                <p class="red">The following child nodes will be also deleted:</p>
+                <div v-for="node in subtree">
+                    <span v-for="i in node.level" class="indent"></span>
+                    <i class="fa" :class="icon( node)"></i>
+                    {{ node.dn.split(',')[0] }}
+                </div>
             </div>
         </b-modal>
   

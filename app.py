@@ -159,7 +159,13 @@ async def tree( basedn: str) -> List[ Dict[ str, Any]]:
     if basedn == 'base':
         scope = ldap.SCOPE_BASE
         basedn = app.config['BASE_DN']
-    
+
+    return await _tree( basedn, scope)
+
+
+async def _tree( basedn: str, scope: int) -> List[ Dict[ str, Any]]:
+    'Get all nodes below a DN (including the DN) within the given scope'
+
     return [ { 'dn': dn,
                'structuralObjectClass' : attrs['structuralObjectClass'][0].decode(),
                'hasSubordinates': b'TRUE' == attrs['hasSubordinates'][0] }
@@ -244,13 +250,12 @@ async def entry( dn: str) -> Optional[dict]:
     elif request.method == 'PUT':
         # Create new object
         modlist = addModlist( req)
-        if modlist:
-            await empty( request.ldap.add( dn, modlist))
+        if modlist: await empty( request.ldap.add( dn, modlist))
         return { 'changed' : ['dn'] } # Dummy
         
     elif request.method == 'DELETE':
-        for subdn in reversed( await _subtree( dn)):
-            await empty( request.ldap.delete( subdn))
+        for entry in reversed( sorted( await _tree( dn, ldap.SCOPE_SUBTREE)), key=_dn_order):
+            await empty( request.ldap.delete( entry['dn']))
     
     return None # for mypy
 
@@ -392,11 +397,9 @@ async def search( query: str) -> List[ dict]:
     return res
 
 
-async def _subtree( base_dn: str):
-    'Get all elements under a DN, including the base DN'
-    return sorted( [ dn async for dn, attrs in result(
-        request.ldap.search( base_dn, ldap.SCOPE_SUBTREE, 'objectClass=*'))],
-        key=lambda d: tuple( reversed( d.split( ','))))
+def _dn_order( node):
+    'Reverse DN parts for tree ordering'
+    return tuple( reversed( node['dn'].lower().split( ',')))
 
 
 @app.route( '/api/subtree/<path:dn>')
@@ -405,7 +408,12 @@ async def _subtree( base_dn: str):
 async def subtree( dn: str) -> List[ str]:
     'List the subtree below a dn'
 
-    return list( await _subtree( dn))[1:]
+    result, start = [], len( dn.split( ','))
+    for node in sorted( await _tree( dn, ldap.SCOPE_SUBTREE), key=_dn_order):
+        if node['dn'] == dn: continue
+        node['level'] = len( node['dn'].split( ',')) - start
+        result.append( node)
+    return result
 
 
 ### LDAP Schema ###

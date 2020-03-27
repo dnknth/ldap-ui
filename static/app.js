@@ -651,9 +651,6 @@ var app = new Vue({
             request({ url:  'api/subtree/' + dn
             }).then( function( xhr) {
                 app.subtree = JSON.parse( xhr.response);
-                for (let i = 0; i < app.subtree.length; ++i) {
-                    app.subtree[i] = app.subtree[i].replace( ',' + dn, '');
-                }
             }).catch( function( xhr) {
                 app.showException( xhr.response);
             });
