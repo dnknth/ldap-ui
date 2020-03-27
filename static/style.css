@@ -71,7 +71,7 @@ span.opener {
     cursor: pointer;
 }
 
-span.header {
+span.header, p.strong {
     font-weight: bold;
 }
 

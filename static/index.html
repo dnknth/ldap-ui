@@ -73,8 +73,15 @@
         </b-navbar>
         
         <!-- Confirmation popup -->
-        <b-modal id="confirm" title="Are you sure?" @ok="remove">
-            <p>This action is irreversible.</p>
+        <b-modal id="confirm" title="Are you sure?" @ok="remove" @show="getSubtree">
+            <p class="strong">This action is irreversible.</p>
+
+            <div v-if="subtree && subtree.length">
+                <span class="red">The following child nodes will be also deleted:</span>
+                <ul>
+                    <li v-for="node in subtree">{{ node }}</li>
+                </ul>
+            </div>
         </b-modal>
   
         <!-- Popup for object class selection -->

@@ -249,7 +249,8 @@ async def entry( dn: str) -> Optional[dict]:
         return { 'changed' : ['dn'] } # Dummy
         
     elif request.method == 'DELETE':
-        await empty( request.ldap.delete( dn))
+        for subdn in reversed( await _subtree( dn)):
+            await empty( request.ldap.delete( subdn))
     
     return None # for mypy
 
@@ -338,7 +339,7 @@ async def rename( dn: str, newrdn: str) -> None:
 
 def _ename( entry: dict) -> Optional[str]:
     'Try to extract a CN'
-    return entry['cn'][0].decode() if entry['cn'] else None
+    return entry['cn'][0].decode() if 'cn' in entry and entry['cn'] else None
 
 
 @app.route( '/api/entry/password/<path:dn>', methods=('POST',))
@@ -389,6 +390,22 @@ async def search( query: str) -> List[ dict]:
             res.append ( { 'dn': dn, 'name': _ename( attrs) or dn })
             if len( res) == app.config['SEARCH_MAX']: break
     return res
+
+
+async def _subtree( base_dn: str):
+    'Get all elements under a DN, including the base DN'
+    return sorted( [ dn async for dn, attrs in result(
+        request.ldap.search( base_dn, ldap.SCOPE_SUBTREE, 'objectClass=*'))],
+        key=lambda d: tuple( reversed( d.split( ','))))
+
+
+@app.route( '/api/subtree/<path:dn>')
+@no_cache
+@api
+async def subtree( dn: str) -> List[ str]:
+    'List the subtree below a dn'
+
+    return list( await _subtree( dn))[1:]
 
 
 ### LDAP Schema ###

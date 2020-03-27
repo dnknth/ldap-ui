@@ -51,7 +51,7 @@ var app = new Vue({
     
     data: {
 
-        // default atribute syntax (constant)
+        // default attribute syntax (constant)
         directoryString: '1.3.6.1.4.1.1466.115.121.1.15',
 
         // authentication
@@ -115,6 +115,7 @@ var app = new Vue({
 
         dropdownChoices: [],
         dropdownId: null,
+        subtree: null,
     },
     
     created: function() { // Runs on page load
@@ -639,6 +640,20 @@ var app = new Vue({
                 }
                 app.newEntry = null;
                 app.loadEntry( dn, data.changed);
+            }).catch( function( xhr) {
+                app.showException( xhr.response);
+            });
+        },
+
+        // List subordinate elements of a DN
+        getSubtree: function() {
+            const dn = this.entry.meta.dn;
+            request({ url:  'api/subtree/' + dn
+            }).then( function( xhr) {
+                app.subtree = JSON.parse( xhr.response);
+                for (let i = 0; i < app.subtree.length; ++i) {
+                    app.subtree[i] = app.subtree[i].replace( ',' + dn, '');
+                }
             }).catch( function( xhr) {
                 app.showException( xhr.response);
             });
