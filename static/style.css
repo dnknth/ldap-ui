@@ -185,19 +185,52 @@ li.entry-menu a.nav-link {
     margin-left: 0.5em;
 }
 
-ul.dropdown {
+#dropdown, #search-popup {
     margin-top: 2px;
-    list-style-type: none;
-    width: 90%;
     border: 1px solid #17a2b8;
+    border-radius: 4px;
+    z-index: 99;
+    background-color: white;
+    box-shadow: 2px 2px 2px 0 rgba(0,0,0,0.3);
+}
+
+#dropdown, #search-popup ul {
+    list-style-type: none;
     padding: 0;
 }
 
-ul.dropdown li {
+.hidden {
+    display: none;
+}
+
+#dropdown li, #search-popup li {
     padding: 0 0.5em;
 }
 
-ul.dropdown li:hover {
+#dropdown li:hover, #search-popup li:hover {
     background-color: #CCC;
     cursor: pointer;
+}
+
+#search-popup ul {
+    font-weight: bold;
+    margin: 0.5em;
+}
+
+
+#arrow, #arrow::before {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  z-index: -1;
+}
+
+#arrow::before {
+  content: '';
+  transform: rotate(45deg);
+  background: white;
+}
+
+#search-popup[data-popper-placement^='bottom'] > #arrow {
+    top: -4px;
 }

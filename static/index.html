@@ -35,13 +35,14 @@
     <!-- Load Vue followed by BootstrapVue -->
     <script src="//unpkg.com/vue@latest/dist/vue.min.js" crossorigin="anonymous"></script>
     <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.js" crossorigin="anonymous"></script>
+    <script src="//unpkg.com/@popperjs/core@2" crossorigin="anonymous"></script>
 
     <title>Directory</title>
   </head>
   
 <body>
 
-    <div id="app">
+    <div id="app" @focusin="rootEventHandler" @click="rootEventHandler">
 
         <b-navbar toggleable="md" type="dark" variant="info">
         
@@ -66,17 +67,25 @@
                 </b-nav-item-dropdown>
 
                 <b-nav-form @submit.prevent="search">
-                    <input size="sm" class="mr-sm-2 form-control" id="search" name="q" placeholder="🔎" />
+                    <input size="sm" class="mr-sm-2 form-control" id="search"
+                        name="q" placeholder="🔎" />
                 </b-nav-form>
               </b-navbar-nav>
             </b-collapse>
         </b-navbar>
+
+        <div id="search-popup" class="hidden">
+            <div id="arrow" data-popper-arrow></div>
+            <ul>
+                <li v-for="entry in searchResult" class="clickable search-item" @click="loadEntry(entry.dn)">{{ entry.name }}</li>
+            </ul>
+        </div>
         
         <!-- Confirmation popup -->
         <b-modal id="confirm" title="Are you sure?" @ok="remove" @show="getSubtree">
             <p class="strong">This action is irreversible.</p>
 
-            <div v-if="subtree && subtree.length">
+            <div v-if="subtree &amp;&amp; subtree.length">
                 <p class="red">The following child nodes will be also deleted:</p>
                 <div v-for="node in subtree">
                     <span v-for="i in node.level" class="indent"></span>
@@ -104,13 +113,13 @@
             </b-form-group>
             
             <b-form-group label="RDN attribute:" label-for="newrdn"
-                v-if="newEntry && newEntry.objectClass">
+                v-if="newEntry &amp;&amp; newEntry.objectClass">
                 <b-form-select id="newrdn" v-model="newEntry.rdn"
                     :options="rdn" class="mb-3">
                 </b-form-select>
             </b-form-group>
 
-            <input v-if="newEntry && newEntry.objectClass" class="form-control"
+            <input v-if="newEntry &amp;&amp; newEntry.objectClass" class="form-control"
                 v-model="newEntry.name" class="mb-3" placeholder="RDN value"
                 @keyup.enter="createEntry" />
         </b-modal>
@@ -141,8 +150,8 @@
         <b-modal ref="pwRef" title="Change / verify password" @shown="focus('oldpw')"
             @ok="changePassword" @cancel="password={}" id="change-password">
             
-                <small v-if="entry && user != entry.meta.dn">Optional</small>
-                <small v-if="entry && user == entry.meta.dn">Required</small>
+                <small v-if="entry &amp;&amp; user != entry.meta.dn">Optional</small>
+                <small v-if="entry &amp;&amp; user == entry.meta.dn">Required</small>
                 <br />
                 
                 <input v-model="password.old" class="mb-3 form-control"
@@ -190,7 +199,7 @@
                                     <span v-else class="indent"></span>
                                     <span class="tree-link" @click="loadEntry( item.dn)"> 
                                         <i class="fa" :class="icon( item)"></i>
-                                        <span :class="entry && entry.meta.dn == item.dn ? 'tree-label-active' : 'tree-label'">
+                                        <span :class="entry &amp;&amp; entry.meta.dn == item.dn ? 'tree-label-active' : 'tree-label'">
                                             {{ item.level ? label( item.dn) : item.dn }}
                                         </span>
                                     </span>
@@ -242,7 +251,7 @@
                         
                         <ul>
                             <li v-for="(val, key) in attr"
-                                v-if="val !== null && hiddenFields.indexOf( key) == -1">
+                                v-if="val !== null &amp;&amp; hiddenFields.indexOf( key) == -1">
                                 {{ key }}: {{ val }}
                             </li>
                         </ul>
@@ -260,22 +269,10 @@
                 
                 <b-col id="main">
                     <b-alert dismissible fade :variant="error.type"
-                            :show="error && error.counter" @dismissed="error.counter=0">
+                            :show="error &amp;&amp; error.counter" @dismissed="error.counter=0">
                         {{ error.msg }}
                     </b-alert>
                     
-                    <b-card v-if="searchResult">
-                        <span class="header" slot="header">
-                            Search results
-                        </span>
-                        
-                        <ul class="search-result">
-                            <li v-for="entry in searchResult">
-                                <span class="clickable u" @click="loadEntry(entry.dn)">{{ entry.name }}</span>
-                            </li>
-                        </ul>
-                    </b-card>
-                
                     <!-- Entry editor form -->
                     <b-form @submit.prevent="change" @reset="loadEntry( entry.meta.dn);">
                         <b-card v-if="entry" id="editor">
@@ -306,13 +303,13 @@
                                             @click="oc = null; attr = getAttr(key)">{{ key }}</span>
                                         <i v-if="changed( key)" class="fa green fa-check"></i>
                                         <span class="clickable right add-btn"
-                                            v-if="!getAttr(key).single_value && !newEntry && !disabled( key)"
+                                            v-if="!getAttr(key).single_value &amp;&amp; !newEntry &amp;&amp; !disabled( key)"
                                             @click="addRow( key, values)">⊕</span>
                                         <span class="clickable right add-btn"
                                             v-if="key == 'jpegPhoto'"
                                             @click="$refs.photoRef.show()">⊕</span>
                                         <span class="clickable right add-btn"
-                                            v-if="key == 'userPassword' && user != entry.meta.dn"
+                                            v-if="key == 'userPassword' &amp;&amp; user != entry.meta.dn"
                                             @click="deletePassword()">⊖</span>
                                     </th>
                                     <td>
@@ -321,15 +318,11 @@
                                                 :type="fieldType( key)" 
                                                 :class="{ structural: isStructural( key, val),
                                                     disabled: disabled( key) }"
-                                                    :id="key + '-' + index"
-                                                    @keyUp="complete"
-                                                    v-if="key != 'jpegPhoto'" />
-                                            <ul class="dropdown" v-if="dropdownId == key + '-' + index">
-                                                <li v-for="dn in dropdownChoices">
-                                                    <span class="clickable" @click="selectCompletion">{{ dn }}</span>
-                                                </li>
-                                            </ul>
-                                            <span class="photo" v-if="key == 'jpegPhoto' && val">
+                                                :id="key + '-' + index"
+                                                @keyUp="complete"
+                                                @keyup.esc="clearDropdown"
+                                                v-if="key != 'jpegPhoto'" />
+                                            <span class="photo" v-if="key == 'jpegPhoto' &amp;&amp; val">
                                                 <img :src="'data:image/jpeg;base64, ' + val" />
                                                 <span class="clickable remove-btn"
                                                     @click="deleteBlob( 'jpegPhoto', index)">⊖</span>
@@ -356,6 +349,11 @@
                                     </td>
                                 </tr>
                             </table>
+                            <ul id="dropdown" class="hidden">
+                                <li v-for="dn in dropdownChoices" class="clickable dropdown-item"
+                                    @click="selectCompletion">{{ dn }}
+                                </li>
+                            </ul>
                             
                         </b-card>
                     </b-form>

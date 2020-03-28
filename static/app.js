@@ -81,7 +81,8 @@ var app = new Vue({
         error: {},              // status alert
         
         // search
-        searchResult: null,
+        searchResult: null,     // search result data
+        searchPopup: null,      // search result HTML popup
         
         // entry editor
         newEntry: null,         // set by addDialog()
@@ -103,19 +104,22 @@ var app = new Vue({
         },
         oc: null,               // objectclass in side panel
         attr: null,             // attribute in side panel
-        hiddenFields: [ 'desc', 'name', 'names',
+        hiddenFields: [         // not shown in schema panel
+            'desc', 'name', 'names',
             'no_user_mod', 'obsolete', 'oid',
             'usage', 'syntax', 'sup' ],
         
         password: {},
-        passwordOk: false, // old password verified?
-        passwordsMatch: false, // new password matches repetition?
+        passwordOk: false,      // old password verified?
+        passwordsMatch: false,  // new password matches repetition?
         
         ldifData: '',
 
-        dropdownChoices: [],
-        dropdownId: null,
-        subtree: null,
+        dropdownChoices: [],    // list of search results for DN attributes
+        dropdownId: null,       // focused DN input ID
+        dropdownMenu: null,     // <ul> with completions
+
+        subtree: null,          // subordinate elements in delete confirmation
     },
     
     created: function() { // Runs on page load
@@ -155,6 +159,18 @@ var app = new Vue({
                     }
                 });
             });
+        },
+
+        // Clean up UI state on focus changes and clicks
+        rootEventHandler: function( evt) {
+            const el = event.target,
+                cl = el.classList;
+            if (el.id != 'search' && !cl.contains( 'search-item')) {
+                this.clearSearch();
+            }
+            if (el.id != this.dropdownId && !cl.contains( 'dropdown-item')) {
+                this.clearDropdown();
+            }
         },
 
         // Dismiss a modal
@@ -521,8 +537,8 @@ var app = new Vue({
         loadEntry: function( dn, changed) {
             const oldEntry = this.entry;
             this.newEntry = null;
-            this.searchResult = null;
-            this.dropdownChoices = [];
+            this.clearSearch();
+            this.clearDropdown();
             document.activeElement.blur();
 
             this.reveal( dn);
@@ -539,41 +555,49 @@ var app = new Vue({
                     });
                 });
                 // Clear notifications on DN change
-                if (oldEntry && oldEntry.meta && oldEntry.meta.dn != dn) {
-                    app.error = {};
-                }
-                document.title = dn.split( ',')[0].split( '=')[1];
+                if (oldEntry && oldEntry.meta && oldEntry.meta.dn != dn) app.error = {};
+                document.title = dn.split( ',')[0];
             });
         },
 
         // auto-complete form values
         complete: function( evt) {
-            // reset choice list on focus change
-            if (this.dropdownId != evt.target.id) {
-                this.dropdownChoices = [];
-                this.dropdownId = null;
-            }
 
             // Avoid AJAX calls without results
             const q = evt.target.value;
             if (q.length < 2 || q.indexOf(',') != -1) {
-                this.dropdownChoices = [];
+                this.clearDropdown();
                 return;
             }
 
             const attr = evt.target.id.split('-', 1);
             const attr_cls = attr ? this.getAttr( attr[0]) : undefined;
-            if (this.getField( attr_cls, 'equality') == 'distinguishedNameMatch') {
+            if (evt.key.length == 1 && this.getField( attr_cls, 'equality') == 'distinguishedNameMatch') {
                 this.dropdownId = evt.target.id;
                 request( { url: 'api/search/' + q }
                 ).then( function( xhr) {
                     const response = JSON.parse( xhr.response);
-                    app.dropdownChoices = [];
+                    app.clearDropdown();
                     for (let i = 0; i < response.length; ++i) {
                         app.dropdownChoices.push( response[i].dn);
                     }
+                    Vue.nextTick( function() {
+                        const dropdown = document.getElementById( 'dropdown');
+                        if (app.dropdownChoices.length) {
+                            dropdown.className = '';
+                            app.dropdownMenu = Popper.createPopper(
+                                document.getElementById( app.dropdownId),
+                                dropdown, {
+                                    modifiers: [ {
+                                        name: 'offset',
+                                        options: { offset: [0, -8] },
+                                    } ]
+                                });
+                            dropdown.setAttribute( 'data-show', '');
+                        }
+                    });
                 }).catch( function( xhr) {
-                    app.dropdownChoices = [];
+                    app.clearDropdown();
                 });
             }
         },
@@ -585,9 +609,21 @@ var app = new Vue({
                 index = this.dropdownId.split( '-')[1];
             this.entry.attrs[attr][index] = el.value = evt.target.innerText;
             this.focus( this.dropdownId);
-            this.dropdownChoices = [];
+            this.clearDropdown();
         },
         
+        // reset choice list
+        clearDropdown: function( evt) {
+            if (this.dropdownMenu) this.dropdownMenu.destroy();
+            this.dropdownMenu = null;
+            this.dropdownChoices = [];
+            const dropdown = document.getElementById( 'dropdown');
+            if (dropdown) {
+                dropdown.removeAttribute( 'data-show');
+                dropdown.className = 'hidden';
+            }
+        },
+
         // Download LDIF
         ldif: function() {
             request( { url: 'api/ldif/' + this.entry.meta.dn,
@@ -829,7 +865,7 @@ var app = new Vue({
             request( { url: 'api/search/' + q }
             ).then( function( xhr) {
                 const response = JSON.parse( xhr.response);
-                app.searchResult = null;
+                app.clearSearch();
                 app.error = {};
 
                 if (!response || !response.length) {
@@ -840,12 +876,35 @@ var app = new Vue({
                     app.loadEntry( response[0].dn);
                 }
                 else { // multiple results
-                    app.entry = null;
                     app.searchResult = response;
+                    Vue.nextTick( function() {
+                        const popup = document.getElementById( 'search-popup');
+                        popup.className = '';
+                        app.searchPopup = Popper.createPopper(
+                            document.getElementById( 'search'),
+                            popup, {
+                                modifiers: [ {
+                                    name: 'offset',
+                                    options: { offset: [0, 4] },
+                                } ]
+                            });
+                        popup.setAttribute( 'data-show', '');
+                    });
                 }
             }).catch( function( xhr) {
                 app.showException( xhr.response);
             });
+        },
+
+        clearSearch: function( evt) {
+            if (this.searchPopup) this.searchPopup.destroy();
+            this.searchPopup = null;
+            app.searchResult = null;
+            const popup = document.getElementById( 'search-popup');
+            if (popup) {
+                popup.removeAttribute( 'data-show');
+                popup.className = 'hidden';
+            }
         },
 
         // Display an info popup
