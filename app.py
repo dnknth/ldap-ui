@@ -254,7 +254,7 @@ async def entry( dn: str) -> Optional[dict]:
         return { 'changed' : ['dn'] } # Dummy
         
     elif request.method == 'DELETE':
-        for entry in reversed( sorted( await _tree( dn, ldap.SCOPE_SUBTREE)), key=_dn_order):
+        for entry in reversed( sorted( await _tree( dn, ldap.SCOPE_SUBTREE), key=_dn_order)):
             await empty( request.ldap.delete( entry['dn']))
     
     return None # for mypy
