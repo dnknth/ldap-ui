@@ -42,7 +42,7 @@
   
 <body>
 
-    <div id="app" @focusin="rootEventHandler" @click="rootEventHandler">
+    <div id="app" @focusin="focusHandler" @click="focusHandler">
 
         <b-navbar toggleable="md" type="dark" variant="info">
         
@@ -77,7 +77,9 @@
         <div id="search-popup" class="hidden">
             <div id="arrow" data-popper-arrow></div>
             <ul>
-                <li v-for="entry in searchResult" class="clickable search-item" @click="loadEntry(entry.dn)">{{ entry.name }}</li>
+                <li v-for="entry in searchResult" class="clickable search-item"
+                    @click="loadEntry(entry.dn)">{{ entry.name }}
+                </li>
             </ul>
         </div>
         
@@ -125,7 +127,9 @@
         </b-modal>
   
         <!-- Rename entry popup -->
-        <b-modal ref="renameRef" title="Rename entry" @ok="renameEntry" @shown="focus('renamerdn')">
+        <b-modal ref="renameRef" title="Rename entry"
+            @ok="renameEntry" @shown="focus('renamerdn')">
+
             <b-form-group label="New RDN attribute:" label-for="renamerdn">
                 <b-form-select id="renamerdn" v-model="newRdn"
                     :options="renameRdns()" class="mb-3">
@@ -133,22 +137,25 @@
             </b-form-group>
         </b-modal>
   
-        <!-- Popup for new attribute selection -->
-        <b-modal ref="attrRef" title="Add attribute" @ok="addAttr" @shown="focus('newattr')">
-            <b-form-select v-model="newAttr" id="newattr"
-                :options="attrs" class="mb-3">
+        <!-- Popup to add a new attribute -->
+        <b-modal ref="attrRef" title="Add attribute" @ok="addAttr"
+            @shown="focus('newattr')" return-focus="#dummy-element">
+
+            <b-form-select v-model="newAttr" id="newattr" :options="attrs" class="mb-3">
             </b-form-select>
         </b-modal>
   
         <!-- Popup to copy an entry -->
-        <b-modal ref="copyRef" title="Copy entry" @ok="copyEntry" @cancel="copyDn = null;" @shown="focus('copyDn')">
+        <b-modal ref="copyRef" title="Copy entry"
+            @ok="copyEntry" @cancel="copyDn = null;" @shown="focus('copyDn')">
+
             <input v-model="copyDn" class="mb-3 form-control"
                  placeholder="New DN" id="copyDn" @keyup.enter="copyEntry" />
         </b-modal>
   
         <!-- Popup to verify / change passwords -->
-        <b-modal ref="pwRef" title="Change / verify password" @shown="focus('oldpw')"
-            @ok="changePassword" @cancel="password={}" id="change-password">
+        <b-modal ref="pwRef" title="Change / verify password" id="change-password"
+            @shown="focus('oldpw')" @ok="changePassword" @cancel="password={}">
             
                 <small v-if="entry &amp;&amp; user != entry.meta.dn">Optional</small>
                 <small v-if="entry &amp;&amp; user == entry.meta.dn">Required</small>
@@ -274,7 +281,7 @@
                     </b-alert>
                     
                     <!-- Entry editor form -->
-                    <b-form @submit.prevent="change" @reset="loadEntry( entry.meta.dn);">
+                    <b-form id="entry-form" @submit.prevent="change" @reset="loadEntry( entry.meta.dn);">
                         <b-card v-if="entry" id="editor">
                             <div class="header" slot="header">
                                 <b-nav>
@@ -295,11 +302,11 @@
                             </div>
                             
                             <table id="entry">
-                                <tr v-for="(values, key) in entry.attrs"
-                                    v-if="!getAttr(key).no_user_mod" class="attr">
+                                <tr v-for="(values, key) in entry.attrs" class="attr"
+                                    v-if="key == 'jpegPhoto' || (!getAttr(key).no_user_mod &amp;&amp; !binary( key))">
                                     
                                     <th :class="required( key) ? 'required' : 'optional'">
-                                        <span class="clickable oc"
+                                        <span class="clickable oc" :title="getAttr(key).desc"
                                             @click="oc = null; attr = getAttr(key)">{{ key }}</span>
                                         <i v-if="changed( key)" class="fa green fa-check"></i>
                                         <span class="clickable right add-btn"

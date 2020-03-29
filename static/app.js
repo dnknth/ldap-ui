@@ -120,6 +120,8 @@ var app = new Vue({
         dropdownMenu: null,     // <ul> with completions
 
         subtree: null,          // subordinate elements in delete confirmation
+
+        focused: null,          // currently focused input
     },
     
     created: function() { // Runs on page load
@@ -149,20 +151,18 @@ var app = new Vue({
     
     methods: {
         
-        // Focus an element on next draw
+        // Focus an element on second next draw
         focus: function( id) {
             Vue.nextTick( function() {
                 Vue.nextTick( function() {
                     const el = document.getElementById( id);
-                    if (el) {
-                        el.focus();
-                    }
+                    if (el) el.focus();
                 });
             });
         },
 
         // Clean up UI state on focus changes and clicks
-        rootEventHandler: function( evt) {
+        focusHandler: function( evt) {
             const el = event.target,
                 cl = el.classList;
             if (el.id != 'search' && !cl.contains( 'search-item')) {
@@ -171,13 +171,12 @@ var app = new Vue({
             if (el.id != this.dropdownId && !cl.contains( 'dropdown-item')) {
                 this.clearDropdown();
             }
+
+            if (el.tagName == 'INPUT' && el.id && el.form.id == 'entry-form')  {
+                this.focused = el.id;
+            }
         },
 
-        // Dismiss a modal
-        dismiss: function( ref) {
-            this.$refs[ ref].hide( 'ok');
-        },
-        
         // Reload the subtree at entry with given DN
         reload: function( dn) {
             const treesize = this.tree.length;
@@ -298,16 +297,20 @@ var app = new Vue({
                     binary: [],
                 },
                 attrs: {
-                    objectClass: [],
+                    objectClass: [ this.newEntry.objectClass],
                 },
             };
             
             this.entry.attrs[this.newEntry.rdn] = [this.newEntry.name];
             
-            // Add required attributes and objectClass parents
-            let oc = this.getOc( this.newEntry.objectClass);
-            this.entry.attrs.objectClass.push( oc.name);
-            while (oc) {
+            // Traverse objectClass parents
+            for( let oc = this.getOc( this.newEntry.objectClass); oc; ) {
+                
+                if (oc.kind != 'structural') {
+                    this.entry.attrs.objectClass.push( oc.name);
+                }
+
+                // Add required attributes
                 for (let i = 0; i < oc.must.length; ++i) {
                     let must = oc.must[i];
                     if (!this.entry.attrs[ must]) {
@@ -317,26 +320,19 @@ var app = new Vue({
                         this.entry.meta.required.push( must);
                     }
                 }
-                if (oc.kind != 'structural') {
-                    this.entry.attrs.objectClass.push( oc.name);
-                }
-                if (!oc.sup || !oc.sup.length) break;
+                if (!oc.sup || !oc.sup.length || oc.sup[0] == 'top') break;
                 oc = this.getOc( oc.sup[0]);
             }
-            this.entry.meta.aux = [];
             this.$refs.newRef.hide();
 
             // Focus on first empty field
-            Vue.nextTick( function () {
-                const keys = Object.keys( app.entry.attrs);
-                for (let i = 0; i < keys.length; ++i) {
-                    const key = keys[i],
-                        val = app.entry.attrs[key];
-                    if (val == '') {
-                        app.focus( key + '-0');
-                    }
+            const keys = Object.keys( this.entry.attrs);
+            for (let i = 0; i < keys.length; ++i) {
+                const key = keys[i];
+                if (this.entry.attrs[key] == '') {
+                    this.focus( key + '-0');
                 }
-            });
+            }
         },
         
         // Bring up the 'rename' dialog
@@ -537,9 +533,7 @@ var app = new Vue({
         loadEntry: function( dn, changed) {
             const oldEntry = this.entry;
             this.newEntry = null;
-            this.clearSearch();
             this.clearDropdown();
-            document.activeElement.blur();
 
             this.reveal( dn);
             request( { url: 'api/entry/' + dn }).then( function( xhr) {
@@ -553,9 +547,16 @@ var app = new Vue({
                     document.querySelectorAll('input.disabled').forEach( function( el) {
                         el.setAttribute( 'disabled', 'disabled');
                     });
+                    // Focus on last focused input or first editable attribute
+                    const input = document.querySelector( '#' + app.focused)
+                        || document.querySelector( '#entry input:not([disabled])');
+                    if (input) input.focus();
                 });
                 // Clear notifications on DN change
-                if (oldEntry && oldEntry.meta && oldEntry.meta.dn != dn) app.error = {};
+                if (oldEntry && oldEntry.meta && oldEntry.meta.dn != dn) {
+                    app.error = {};
+                    app.focused = null;
+                }
                 document.title = dn.split( ',')[0];
             });
         },
@@ -571,8 +572,7 @@ var app = new Vue({
             }
 
             const attr = evt.target.id.split('-', 1);
-            const attr_cls = attr ? this.getAttr( attr[0]) : undefined;
-            if (evt.key.length == 1 && this.getField( attr_cls, 'equality') == 'distinguishedNameMatch') {
+            if (evt.key.length == 1 && this.getEquality( attr[0]) == 'distinguishedNameMatch') {
                 this.dropdownId = evt.target.id;
                 request( { url: 'api/search/' + q }
                 ).then( function( xhr) {
@@ -643,7 +643,8 @@ var app = new Vue({
         // Special fields
         binary: function( key) {
             return this.entry.meta.binary.indexOf( key) != -1
-                || key == 'krbExtraData';
+                || this.getEquality( key) == 'octetStringMatch';
+                    
         },
         
         // Special fields
@@ -755,7 +756,13 @@ var app = new Vue({
         // Get an attribute syntax
         getSyntax: function( name) {
             const a = this.getAttr( name);
-            if (a) return this.schema.syntaxes[ this.getField( a, 'syntax') || this.directoryString];
+            if (a) return this.schema.syntaxes[
+                this.getField( a, 'syntax') || this.directoryString];
+        },
+
+        // Get the equality rule name for an attribute
+        getEquality: function( name) {
+            return this.getField( this.getAttr( name), 'equality');
         },
         
         // Show popup for attribute selection
@@ -768,17 +775,17 @@ var app = new Vue({
         addAttr: function( evt) {
 
             const attr = this.newAttr;
-
             if (!attr) {
                 evt.preventDefault();
                 return;
             }
             
             // check for binary attributes
-            this.entry.attrs[attr] = [''];
-            if (this.getSyntax(attr).not_human_readable) {
-                this.entry.meta.binary.push(attr);
+            this.entry.attrs[ attr] = [''];
+            if (this.getSyntax( attr).not_human_readable) {
+                this.entry.meta.binary.push( attr);
             }
+            this.focus( attr + '-0');
 
             // Close popup
             this.newAttr = null;
