@@ -642,6 +642,7 @@ var app = new Vue({
         
         // Special fields
         binary: function( key) {
+            if (key == 'userPassword') return false; // Special case with octetStringMatch
             return this.entry.meta.binary.indexOf( key) != -1
                 || this.getEquality( key) == 'octetStringMatch';
                     

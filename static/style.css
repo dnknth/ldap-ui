@@ -29,7 +29,7 @@ ul#tree li {
     white-space: nowrap;
 }
 
-.tree-link, .clickable {
+.tree-link, .clickable, .navbar-toggler {
     cursor: pointer;
 }
 
