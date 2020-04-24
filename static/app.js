@@ -129,7 +129,10 @@ var app = new Vue({
         // Get the DN of the current user
         request( { url: 'api/whoami'}).then( function( xhr) {
             app.user = JSON.parse( xhr.response);
+        }).catch( function( xhr) {
+            app.showException( xhr.response);
         });
+
         
         // Populate the tree view
         this.reload( 'base');
