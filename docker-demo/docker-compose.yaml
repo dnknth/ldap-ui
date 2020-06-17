@@ -1,0 +1,26 @@
+version: '3'
+services:
+
+    ldap:
+        image: mwaeckerlin/openldap
+        ports:
+            - 127.0.0.1:389:389
+        volumes:  
+            - ./data:/var/restore
+        environment:
+            DOMAIN: flintstones.com
+            DEBUG: 256
+        restart: unless-stopped
+        
+    ldap-ui:
+        image: dnknth/ldap-ui
+        ports:
+            - 127.0.0.1:5000:5000
+        links:
+          - ldap
+        environment:
+            LDAP_URL: "ldap://ldap/"
+            BASE_DN: "dc=flintstones,dc=com"
+            BIND_DN: "cn=Fred Flintstone,ou=People,dc=flintstones,dc=com"
+            BIND_PASSWORD: yabbadabbado
+        restart: unless-stopped

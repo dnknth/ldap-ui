@@ -51,6 +51,12 @@ A Dockerfile is included. The container exposes port 5000. LDAP access is contro
 For the impatient: Run it with
 
     docker run -e LDAP_URL=ldap://your.ldap.server/ -e BASE_DN=dc=example,dc=org dnknth/ldap-ui
+    
+For the even more impatient: A demo is provided in [docker-demo](docker-demo). Run it with
+
+    docker-demo/start.sh
+
+You are automatically logged in as `Fred Flintstone`.
 
 ## Caveats
 
