@@ -6,7 +6,9 @@ SECRET_KEY = os.urandom( 16)
 
 # LDAP settings
 LDAP_URL = os.environ.get( 'LDAP_URL', 'ldap:///')
-BASE_DN = os.environ.get( 'BASE_DN')
+BASE_DN = os.environ.get( 'BASE_DN') # Always required
+assert BASE_DN, "BASE_DN environment variable must be set"
+
 SCHEMA_DN = 'cn=subschema'
 
 # Attribute to check for user login

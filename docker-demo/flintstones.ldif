@@ -6,6 +6,14 @@ objectclass: dcObject
 objectclass: top
 objectclass: organization
 
+dn: cn=admin,dc=flintstones,dc=com
+cn: admin
+uid: admin
+userpassword: bedrock
+objectclass: organizationalRole
+objectclass: simpleSecurityObject
+objectclass: uidObject
+
 # Entry 2: cn=Flintstones-PG,dc=flintstones,dc=com
 dn: cn=flintstones-pg,dc=flintstones,dc=com
 cn: flintstones-pg

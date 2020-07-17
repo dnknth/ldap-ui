@@ -771,7 +771,7 @@ var app = new Vue({
         
         // Show popup for attribute selection
         attrDialog: function() {
-            this.newAttr = null;
+            this.newAttr = this.attrs[0];
             this.$refs.attrRef.show();
         },
         
@@ -779,10 +779,6 @@ var app = new Vue({
         addAttr: function( evt) {
 
             const attr = this.newAttr;
-            if (!attr) {
-                evt.preventDefault();
-                return;
-            }
             
             // check for binary attributes
             this.entry.attrs[ attr] = [''];
