@@ -117,7 +117,7 @@
             <b-form-group label="RDN attribute:" label-for="newrdn"
                 v-if="newEntry &amp;&amp; newEntry.objectClass">
                 <b-form-select id="newrdn" v-model="newEntry.rdn"
-                    :options="rdn" class="mb-3">
+                    :options="rdn" class="mb-3" :value="rdn[0]">
                 </b-form-select>
             </b-form-group>
 
