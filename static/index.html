@@ -324,7 +324,7 @@
                                             <input v-model="entry.attrs[key][index]"
                                                 :type="fieldType( key)" 
                                                 :class="{ structural: isStructural( key, val),
-                                                    disabled: disabled( key) }"
+                                                    disabled: !newEntry &amp;&amp; disabled( key) }"
                                                 :id="key + '-' + index"
                                                 @keyUp="complete"
                                                 @keyup.esc="clearDropdown"

@@ -328,6 +328,16 @@ var app = new Vue({
             }
             this.$refs.newRef.hide();
 
+            // Work-around partial rendering bug
+            Vue.nextTick( function () {
+                document.querySelectorAll('input').forEach( function( el) {
+                    el.removeAttribute( 'disabled');
+                });
+                document.querySelectorAll('input.disabled').forEach( function( el) {
+                    el.setAttribute( 'disabled', 'disabled');
+                });
+            });
+
             // Focus on first empty field
             const keys = Object.keys( this.entry.attrs);
             for (let i = 0; i < keys.length; ++i) {
@@ -645,7 +655,7 @@ var app = new Vue({
         
         // Special fields
         binary: function( key) {
-            if (key == 'userPassword') return false; // Special case with octetStringMatch
+            if (key == 'userPassword') return false; // Corner case with octetStringMatch
             return this.entry.meta.binary.indexOf( key) != -1
                 || this.getEquality( key) == 'octetStringMatch';
                     
@@ -653,9 +663,9 @@ var app = new Vue({
         
         // Special fields
         disabled: function( key) {
-            return this.binary( key)
-                || key == 'userPassword'
-                || key == this.entry.meta.dn.split( '=')[0];
+            return key == 'userPassword'
+                || key == this.entry.meta.dn.split( '=')[0]
+                || this.binary( key);
         },
         
         // Submit the entry form via AJAX
