@@ -2,6 +2,8 @@
 
 This is a *minimal* web interface for LDAP directories.
 
+![Screenshot](screenshot.png?raw=true)
+
 Features:
 
 * Directory tree view
