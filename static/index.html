@@ -159,15 +159,16 @@
             
                 <small v-if="entry &amp;&amp; user != entry.meta.dn">Optional</small>
                 <small v-if="entry &amp;&amp; user == entry.meta.dn">Required</small>
-                <br />
-                
-                <input v-model="password.old" class="mb-3 form-control"
-                    placeholder="Old password" type="password" id="oldpw"
-                    @change="checkOldPassword" />
                 <i class="green fa fa-check-circle"
                     v-if="passwordOk"></i>
                 <i class="red fa fa-times-circle"
                     v-if="passwordOk == false"></i>
+                <br />
+                
+                <input v-model="password.old" class="mb-3 form-control"
+                    placeholder="Old password" type="password" id="oldpw"
+                    @change="checkOldPassword"
+                    :disabled="entry &amp;&amp; entry.attrs['userPassword'] &amp;&amp; entry.attrs['userPassword'][0] == ''" />
 
                 <input v-model="password.new1" class="mb-3 form-control"
                     placeholder="New password" type="password" />

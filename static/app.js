@@ -407,6 +407,7 @@ var app = new Vue({
         // but required to change the current user's password
         checkOldPassword: function() {
             if (!this.password.old || this.password.old.length == 0) {
+                app.passwordOk = null;
                 return;
             }
             request({
@@ -451,9 +452,11 @@ var app = new Vue({
                 }
             }).then( function( xhr) {
                 app.showInfo( '👍 Password changed');
+                app.entry.attrs['userPassword'] = [ JSON.parse( xhr.response) ];
                 app.$refs.pwRef.hide();
             }).catch( function( xhr) {
                 app.showException( xhr.response);
+                app.$refs.pwRef.hide();
             });
         },
         
@@ -795,6 +798,20 @@ var app = new Vue({
             if (this.getSyntax( attr).not_human_readable) {
                 this.entry.meta.binary.push( attr);
             }
+
+            // Delay DOM update
+            Vue.nextTick( function () {
+                document.querySelectorAll('input').forEach( function( el) {
+                    el.removeAttribute( 'disabled');
+                });
+                document.querySelectorAll('input.disabled').forEach( function( el) {
+                    el.setAttribute( 'disabled', 'disabled');
+                });
+                if (attr == 'userPassword') {
+                    app.pwDialog();
+                }
+            });
+
             this.focus( attr + '-0');
 
             // Close popup

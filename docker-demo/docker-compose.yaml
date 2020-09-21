@@ -10,6 +10,13 @@ services:
         environment:
             DOMAIN: flintstones.com
             DEBUG: 256
+            ACCESS_RULES: |
+                access to attrs=userPassword
+                    by anonymous auth
+                    by self write
+                    by * none
+                access to *
+                    by * read
         restart: unless-stopped
         
     ldap-ui:
