@@ -46,7 +46,7 @@ and head over to [http://localhost:5000/](http://localhost:5000/).
 
 A Dockerfile is included. The container exposes port 5000. LDAP access is controlled by these environment variables:
 
-* `LDAP_URL`: connection URL (required), e.g. `ldap://your.ldap.server/`.
+* `LDAP_URL`: connection URL (optional), defaults to `ldap:///`).
 * `BASE_DN`: search base (required), e.g. `dc=example,dc=org`.
 * `LOGIN_ATTR`: User name attribute (optional), defaults to `uid`.
 

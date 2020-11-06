@@ -1,10 +1,12 @@
 .PHONY: debug run clean tidy docker
 
+ifeq (${BASE_DN},)
 export BASE_DN=dc=flintstones,dc=com
 export BIND_DN=cn=Fred Flintstone,ou=People,dc=flintstones,dc=com
 export BIND_PASSWORD=yabbadabbado
+endif
 
-debug: app.py .venv3 ldap
+debug: app.py .venv3
 	QUART_APP=$< QUART_ENV=development \
 		.venv3/bin/python3 .venv3/bin/quart run
 

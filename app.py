@@ -38,7 +38,7 @@ def authenticated( view: Callable):
             # Set up LDAP connection
             request.ldap = ldap.initialize( app.config['LDAP_URL'])
 
-            if app.config['BIND_DN']:
+            if app.config['BIND_DN'] and app.config['BIND_PASSWORD']:
                 dn = app.config['BIND_DN']
                 pw = app.config['BIND_PASSWORD']
 
@@ -194,8 +194,9 @@ def _entry( res: Tuple[ str, Any]) -> Dict[ str, Any]:
         # Try to decode as text and treat as binary on failure
         if not obj.syntax or obj.syntax == OCTET_STRING:
             try:
-                for val in attrs[attr]: val.decode()
-            except UnicodeError:
+                for val in attrs[attr]:
+                    assert val.decode().isprintable()
+            except:
                 binary.add( attr)
 
         else: # Check human-readable flag in schema
