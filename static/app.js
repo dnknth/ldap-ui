@@ -668,6 +668,29 @@ var app = new Vue({
                 || key == this.entry.meta.dn.split( '=')[0]
                 || this.binary( key);
         },
+
+        // human-readable dates
+        dateString: function( dt) {
+            let tz = dt.substr( 14);
+            if (tz != 'Z') {
+                tz = tz.substr( 0, 3) + ':'
+                    + (tz.length > 3 ? tz.substring( 3, 2) : '00');
+            }
+            return new Date( dt.substr( 0, 4) + '-'
+                + dt.substr( 4, 2) + '-'
+                + dt.substr( 6, 2) + 'T'
+                + dt.substr( 8, 2) + ':'
+                + dt.substr( 10, 2) + ':'
+                + dt.substr( 12, 2) + tz).toLocaleString( undefined, {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    second: 'numeric'
+                });
+        },
         
         // Submit the entry form via AJAX
         change: function( evt) {
@@ -759,7 +782,7 @@ var app = new Vue({
             }
         },
 
-        // look up a field, traversing suberclasses
+        // look up a field, traversing superclasses
         getField: function( attr, name) {
             do {
                 const val = attr[name];

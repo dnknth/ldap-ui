@@ -327,6 +327,7 @@
                                                 :class="{ structural: isStructural( key, val),
                                                     disabled: !newEntry &amp;&amp; disabled( key) }"
                                                 :id="key + '-' + index"
+                                                :title="getAttr( key).equality == 'generalizedTimeMatch' ? dateString( val) : ''"
                                                 @keyUp="complete"
                                                 @keyup.esc="clearDropdown"
                                                 v-if="key != 'jpegPhoto'" />
