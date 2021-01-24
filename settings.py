@@ -20,10 +20,11 @@ LOGIN_ATTR = os.environ.get( 'LOGIN_ATTR', 'uid')
 # You need to secure it otherwise!
 BIND_DN = os.environ.get( 'BIND_DN')
 BIND_PASSWORD = os.environ.get( 'BIND_PASSWORD')
+BIND_PATTERN = os.environ.get('BIND_PATTERN')
 
 # Searches
 SEARCH_PATTERNS = ( # for search field
-    '(%s=%%s)' % LOGIN_ATTR, 
+    '(%s=%%s)' % LOGIN_ATTR,
     '(cn=%s)',
     '(gn=%s)',
     '(sn=%s)',

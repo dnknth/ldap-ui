@@ -33,7 +33,7 @@ def authenticated( view: Callable):
         if not request.authorization and not app.config['BIND_DN']:
             return quart.Response(
                 'Please log in', 401, UNAUTHORIZED)
-            
+
         try:
             # Set up LDAP connection
             request.ldap = ldap.initialize( app.config['LDAP_URL'])
@@ -42,10 +42,14 @@ def authenticated( view: Callable):
                 dn = app.config['BIND_DN']
                 pw = app.config['BIND_PASSWORD']
 
+            elif app.config['BIND_PATTERN']:
+                dn = app.config['BIND_PATTERN'] % (request.authorization.username)
+                pw = request.authorization.password
+
             else: # Search user in HTTP headers
                 pw = request.authorization.password
                 try:
-                    dn, _attrs = await unique( request.ldap.search( 
+                    dn, _attrs = await unique( request.ldap.search(
                         app.config['BASE_DN'],
                         ldap.SCOPE_SUBTREE,
                         '(%s=%s)' % (app.config['LOGIN_ATTR'], request.authorization.username)))
