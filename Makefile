@@ -15,6 +15,7 @@ run: .venv3
 
 .venv3: requirements.txt
 	python3 -m venv --system-site-packages $@
+	.venv3/bin/pip3 install -U pip
 	.venv3/bin/pip3 install wheel
 	.venv3/bin/pip3 install -r $<
 	touch $@

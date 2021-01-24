@@ -15,12 +15,18 @@ SCHEMA_DN = 'cn=subschema'
 LOGIN_ATTR = os.environ.get( 'LOGIN_ATTR', 'uid')
 
 # Binding
+#
 # If the two following attributes are set in the environment,
 # the UI will NOT ask for a login.
 # You need to secure it otherwise!
 BIND_DN = os.environ.get( 'BIND_DN')
 BIND_PASSWORD = os.environ.get( 'BIND_PASSWORD')
-BIND_PATTERN = os.environ.get('BIND_PATTERN')
+
+# Optional user DN pattern string for authentication,
+# e.g. "uid=%s,ou=people,dc=example,dc=com".
+# This can be used to authenticate with directories
+# that do not allow anonymous users to search.
+BIND_PATTERN = os.environ.get( 'BIND_PATTERN')
 
 # Searches
 SEARCH_PATTERNS = ( # for search field
