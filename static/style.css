@@ -1,14 +1,81 @@
+:root {
+    --body-fg: #212529;
+    --body-bg: white;
+    --muted-fg: #222;
+    --muted-bg: #EEE;
+    --accent: var(--cyan);
+    --active: black;
+    --border: rgb(0,0,0,.125);
+    --input-bg: white;
+    --control: LightGray;
+    --modal-border: rgba(0,0,0,.2);
+    --modal-divider: #dee2e6;
+    --tree-icon: DarkGray;
+    --tree-bg: var(--body-bg);
+    --tree-shadow: rgba(0,0,0,0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+      --body-fg: #EEE;
+      --body-bg: #111;
+      --muted-fg: #CCC;
+      --muted-bg: #222;
+      --active: white;
+      --border: #333;
+      --input-bg: #444;
+      --control: gray;
+      --modal-border: rgba(48,48,48,.2);
+      --modal-divider: var(--border);
+      --tree-icon: LightGray;
+      --tree-bg: var(--muted-bg);
+      --tree-shadow: rgba(128,128,128,0.5);
+  }
+  
+  .navbar-dark .navbar-toggler {
+      border-color: var(--muted-fg);
+  }
+
+  .navbar-toggler-icon {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+  }
+
+  select.custom-select {
+      background: var(--input-bg) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='4' height='5' viewBox='0 0 4 5'%3e%3cpath fill='%23CCC' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") right .75rem center/8px 10px no-repeat;
+  }
+}
+
+body {
+    color: var(--body-fg);
+    background-color: var(--body-bg);
+}
+
 .navbar-brand i.fa-list-alt, .navbar-brand i.fa-list-ul {
     margin-right: 1em;
 }
 
-div.card {
-    margin-bottom: 1em;
+.navbar-dark .navbar-nav .nav-link {
+    color: white;
 }
 
-a, a:hover {
+div.card {
+    margin-bottom: 1em;
+    background-color: var(--muted-bg);
+    color: var(--body-fg);
+    border: 1px solid var(--border);
+}
+
+.card div.card-header {
+    color: var(--muted-fg);
+}
+
+div.card-body {
+    background-color: var(--body-bg);
+}
+
+a, a:hover, span.tree-link:hover {
     text-decoration: none;
-    color: black;
+    color: var(--active);
 }
 
 .u {
@@ -16,7 +83,8 @@ a, a:hover {
 }
 
 #tree-view {
-    box-shadow: 4px 4px 5px 0 rgba(0,0,0,0.5);
+    box-shadow: 4px 4px 5px 0 var(--tree-shadow);
+    background-color: var(--tree-bg);
 }
 
 ul#tree {
@@ -34,7 +102,7 @@ ul#tree li {
 }
 
 .tree-link i.fa {
-    color: gray;
+    color: var(--tree-icon);
 }
 
 span.tree-label-active {
@@ -59,7 +127,12 @@ span.indent {
 }
 
 span.opener {
-    color: LightGray;
+    color: var(--control);
+}
+
+.close {
+    color: var(--body-fg);
+    text-shadow: 0 1px 0 var(--body-bg);
 }
 
 .close-box {
@@ -67,7 +140,7 @@ span.opener {
     top: 0.2em;
     right: 16px;
     font-size: 150%;
-    color: gray;
+    color: var(--control);
     cursor: pointer;
 }
 
@@ -103,29 +176,31 @@ table#entry th {
 }
 
 th.optional span.oc {
-    color: gray;
+    color: var(--control);
 }
 
 table#entry input {
+    top: 0.2ex;
     width: 90%;
     padding: 0 0.5em;
     border-top-width: 0;
     border-left-width: 0;
     border-right-width: 0;
     position: relative;
-    border-bottom: 1px solid #EEE;
-    top: 0.2ex;
+    color: var(--page-fg);
+    border-bottom: 1px solid var(--muted-bg);
+    background-color: var(--page-bg);
 }
 
 table#entry input:focus {
-    border-bottom: 2px solid #17a2b8;
+    border-bottom: 2px solid var(--accent);
     outline: none;
 }
 
 table#entry input.disabled {
     border-bottom-width: 0;
-    background-color: white;
-    color: black;
+    background-color: var(--body-bg);
+    color: var(--body-fg);
 }
 
 table#entry div.attr-value {
@@ -147,12 +222,12 @@ table#entry span.photo img {
     font-size: 150%;
     position: relative;
     top: -0.5ex;
-    color: LightGray;
+    color: var(--control);
 }
 
 .remove-btn {
     font-size: 150%;
-    color: LightGray;
+    color: var(--control);
     vertical-align: top;
     position: relative;
     top: -0.5ex;
@@ -177,6 +252,11 @@ li.entry-menu a.nav-link {
     padding-left: 8px;
 }
 
+input.form-control, textarea.form-control, select.custom-select {
+    color: var(--body-fg) !important;
+    background-color: var(--input-bg) !important;
+}
+
 #change-password input {
     display: inline;
 }
@@ -187,10 +267,10 @@ li.entry-menu a.nav-link {
 
 #dropdown, #search-popup {
     margin-top: 2px;
-    border: 1px solid #17a2b8;
+    border: 1px solid var(--accent);
     border-radius: 4px;
     z-index: 99;
-    background-color: white;
+    background-color: var(--body-bg);
     box-shadow: 2px 2px 2px 0 rgba(0,0,0,0.3);
 }
 
@@ -228,9 +308,26 @@ li.entry-menu a.nav-link {
 #arrow::before {
   content: '';
   transform: rotate(45deg);
-  background: white;
+  background-color: var(--body-bg);
 }
 
 #search-popup[data-popper-placement^='bottom'] > #arrow {
     top: -4px;
+}
+
+.modal-header, .modal-footer {
+    border-color: var(--modal-divider);
+}
+
+.modal-content, .dropdown-menu {
+    border-color: var(--modal-border);
+    background-color: var(--body-bg);
+}
+
+.dropdown-menu {
+    border: 1px solid var(--border);
+}
+
+.dropdown-item {
+    color: var(--body-fg);
 }

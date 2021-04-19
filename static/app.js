@@ -174,7 +174,6 @@ var app = new Vue({
             if (el.id != this.dropdownId && !cl.contains( 'dropdown-item')) {
                 this.clearDropdown();
             }
-
             if (el.tagName == 'INPUT' && el.id && el.form.id == 'entry-form')  {
                 this.focused = el.id;
             }
@@ -344,6 +343,7 @@ var app = new Vue({
                 const key = keys[i];
                 if (this.entry.attrs[key] == '') {
                     this.focus( key + '-0');
+                    break;
                 }
             }
         },

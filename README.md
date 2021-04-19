@@ -15,7 +15,7 @@ Features:
 * Asynchronous LDAP backend with decent scalability
 * Available as [Docker image](https://hub.docker.com/r/dnknth/ldap-ui/)
 
-The app always requires authentication, even if the directory permits anonymous access. User credentials are validated through a `bind` on the directory. What a particular user can see (and edit) is governed entirely by directory access rules. The app shows displays the directory contents, nothing less and nothing more.
+The app always requires authentication, even if the directory permits anonymous access. User credentials are validated through a simple `bind` on the directory (SASL is not supported). What a particular user can see (and edit) is governed entirely by directory access rules. The app shows displays the directory contents, nothing less and nothing more.
 
 ## Manual installation and configuration
 
