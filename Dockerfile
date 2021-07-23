@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:3.13
 COPY . /app
 WORKDIR /app
 RUN apk add --no-cache alpine-sdk python3-dev py3-pip \
