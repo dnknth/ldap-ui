@@ -15,7 +15,7 @@ Features:
 * Asynchronous LDAP backend with decent scalability
 * Available as [Docker image](https://hub.docker.com/r/dnknth/ldap-ui/)
 
-The app always requires authentication, even if the directory permits anonymous access. User credentials are validated through a simple `bind` on the directory (SASL is not supported). What a particular user can see (and edit) is governed entirely by directory access rules. The app shows displays the directory contents, nothing less and nothing more.
+The app always requires authentication, even if the directory permits anonymous access. User credentials are validated through a simple `bind` on the directory (SASL is not supported). What a particular user can see (and edit) is governed entirely by directory access rules. The app shows the directory contents, nothing less and nothing more.
 
 ## Manual installation and configuration
 
@@ -30,7 +30,15 @@ To set up a virtual Python environment in `.venv3` with:
 
 ​    make setup
 
-Check the configuration in [settings.py](settings.py). It is very short and hopefully self-explaining.
+Check the configuration in [settings.py](settings.py). It is very short and mostly self-explaining.
+
+### Authentication methods
+
+The UI always uses a simple `bind` operation to authenticate with the LDAP directory. How the `bind` DN is obtained from a given user name depends on a combination of OS environment variables. 
+
+1. Search by some attribute. By default, this is the `uid`, which can be overridden by the environment variable `LOGIN_ATTR`, e.g. `LOGIN_ATTR=cn`.
+2. If the environment variable `BIND_PATTERN` is set, then no search is performed. Login with a full DN can be configured with `BIND_PATTERN=%s`, which for example allows to login as user `cn=admin,dc=example,dc=org`. If a partial DN like `BIND_PATTERN=%s,dc=example,dc=org` is configured, the corresponding login would be `cn=admin`. If a specific pattern like `BIND_PATTERN=cn=%s,dc=example,dc=org` is configured, the login name is just `admin`.
+3. If security is no concern, then a fixed `BIND_DN` and `BIND_PASSWORD` can be set in the environment. This is for demo purposes only, and probably a very bad idea if access to the UI is not restricted by any other means.
 
 ## Usage
 
