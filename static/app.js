@@ -133,7 +133,6 @@ var app = new Vue({
             app.showException( xhr.response);
         });
 
-        
         // Populate the tree view
         this.reload( 'base');
         
@@ -185,7 +184,6 @@ var app = new Vue({
             let pos = this.tree.indexOf( this.treeMap[ dn]);
             return request( { url: 'api/tree/' + dn }).then( function( xhr) {
                 const response = JSON.parse( xhr.response);
-
                 response.sort( function( a, b) {
                     return a.dn.toLowerCase().localeCompare( b.dn.toLowerCase());
                 });
@@ -873,7 +871,6 @@ var app = new Vue({
         
         // add an image
         addBlob: function( evt) {
-            
             if (!evt.target.files) return;
             
             const fd = new FormData();
@@ -896,7 +893,6 @@ var app = new Vue({
         
         // remove an image
         deleteBlob: function( key, index) {
-            
             request({
                 url:  'api/blob/' + key + '/' + index + '/' + app.entry.meta.dn,
                 method: 'DELETE',
