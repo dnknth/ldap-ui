@@ -250,6 +250,7 @@ var app = new Vue({
         
         // Get the tree item containing a given DN
         parent: function( dn) {
+            if (!dn.includes(',')) return undefined; // #14
             return this.treeMap[ dn.slice( dn.indexOf(',') + 1)];
         },
         

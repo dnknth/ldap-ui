@@ -36,3 +36,4 @@ tidy: clean
 
 docker: clean
 	docker build -t dnknth/ldap-ui .
+    docker push dnknth/ldap-ui
