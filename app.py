@@ -218,6 +218,8 @@ def _entry( res: Tuple[ str, Any]) -> Dict[ str, Any]:
                           for a in must_attrs],
             'aux': sorted( aux - ocs),
             'binary': sorted( binary),
+            'hints': {},
+            'autoFilled': [],
         }
     }
 
@@ -413,7 +415,7 @@ def _dn_order( node):
 @app.route( '/api/subtree/<path:dn>')
 @no_cache
 @api
-async def subtree( dn: str) -> List[ str]:
+async def subtree( dn: str) -> List[str]:
     'List the subtree below a dn'
 
     result, start = [], len( dn.split( ','))
@@ -422,6 +424,23 @@ async def subtree( dn: str) -> List[ str]:
         node['level'] = len( node['dn'].split( ',')) - start
         result.append( node)
     return result
+
+
+@app.route( '/api/range/<attribute>')
+@no_cache
+@api
+async def attribute_range( attribute: str) -> List[int]:
+    'List all values for a numeric attribute of an objectClass like uidNumber or gidNumber'
+
+    res = set()
+    async for dn, attrs in result( request.ldap.search(
+        app.config['BASE_DN'], ldap.SCOPE_SUBTREE, '(%s=*)' % attribute, attrlist=(attribute,))):
+            res.add( int( attrs[attribute][0]))
+    if not res: return {}
+    
+    minimum, maximum = min( res), max( res)
+    return { 'min' : minimum, 'max': maximum,
+        'next' : min( set( range( minimum, maximum + 2)) - res) }
 
 
 ### LDAP Schema ###
@@ -498,7 +517,6 @@ def _dict( key: str, items) -> dict:
     'Create an dictionary with a given key'
     return { obj[key].lower() : obj for obj in items }
 
-
 @app.route( '/api/schema')
 @no_cache
 @api
@@ -514,8 +532,7 @@ async def schema() -> dict:
 
         # See: https://www.python-ldap.org/en/latest/reference/ldap-schema.html
         app.schema = ldap.schema.SubSchema( subschema_entry, check_uniqueness=2)
-
-
+    
     return dict( attributes = _dict( 'name', map( _at, 
                             _schema( ldap.schema.models.AttributeType))),
               objectClasses = _dict( 'name', map( _oc,

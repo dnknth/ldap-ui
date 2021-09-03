@@ -115,11 +115,11 @@ span.tree-label-active {
 }
 
 .red {
-    color: red;
+    color: red !important;
 }
 
 .green {
-    color: green;
+    color: green !important;
 }
 
 span.indent {
@@ -330,4 +330,10 @@ input.form-control, textarea.form-control, select.custom-select {
 
 .dropdown-item {
     color: var(--body-fg);
+}
+
+.hint {
+    font-size: x-small;
+    padding-left: 8px;
+    opacity: 0.7;
 }
