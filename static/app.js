@@ -74,6 +74,9 @@ var app = new Vue({
             krbRealmContainer:  'globe',
             krbPrincipal:       'user-o',
         },
+        
+        idRanges: [             // Numeric ID ranges
+            'uidNumber', 'gidNumber' ],
 
         treeOpen: true,         // Is the tree visible?
 
@@ -296,6 +299,8 @@ var app = new Vue({
                     aux: [],
                     required: [],
                     binary: [],
+                    hints: {},
+                    autoFilled: [],
                 },
                 attrs: {
                     objectClass: [ this.newEntry.objectClass],
@@ -320,6 +325,7 @@ var app = new Vue({
                     if (this.entry.meta.required.indexOf( must) == -1) {
                         this.entry.meta.required.push( must);
                     }
+                    this.checkRange( must);
                 }
                 if (!oc.sup || !oc.sup.length || oc.sup[0] == 'top') break;
                 oc = this.getOc( oc.sup[0]);
@@ -345,6 +351,39 @@ var app = new Vue({
                     break;
                 }
             }
+        },
+        
+        checkRange: function( attr) {
+            if (this.idRanges.indexOf( attr) != -1) {
+                request( { url: 'api/range/' + attr }).then( function( xhr) {
+                    const range = JSON.parse(xhr.response);
+                    if (range) {
+                        app.entry.meta.hints[attr] = (range.min == range.max
+                            ? range.min : range.min + " - " + range.max);
+                        if (app.entry.attrs[ attr].length == 1 && !app.entry.attrs[ attr][0]) {
+                            app.entry.attrs[ attr] = ['' + range.next];
+                            app.entry.meta.autoFilled.push( attr);
+                        }
+                        app.refreshEntry();
+                    }
+                });
+            }
+        },
+        
+        isAutoFilled: function( attr) {
+            return this.entry.meta.autoFilled.indexOf( attr) != -1;
+        },
+        
+        noAutoFill: function( attr) {
+            const i = this.entry.meta.autoFilled.indexOf( attr);
+            if (i != -1) {
+                this.entry.meta.autoFilled.splice( i, 1);
+                this.refreshEntry();
+            }
+        },
+        
+        refreshEntry: function() {
+            this.entry = JSON.parse( JSON.stringify( this.entry)); // refresh
         },
         
         // Bring up the 'rename' dialog
@@ -760,6 +799,7 @@ var app = new Vue({
                 }
                 if (!this.entry.attrs[ m]) {
                     this.entry.attrs[ m] = [''];
+                    this.checkRange( m);
                 }
             }
             this.selectedOc = null;
@@ -815,9 +855,11 @@ var app = new Vue({
             
             // check for binary attributes
             this.entry.attrs[ attr] = [''];
+            
             if (this.getSyntax( attr).not_human_readable) {
                 this.entry.meta.binary.push( attr);
             }
+            else this.checkRange( attr);
 
             // Delay DOM update
             Vue.nextTick( function () {

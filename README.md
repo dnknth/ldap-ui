@@ -24,8 +24,10 @@ Prerequisites:
 * [GNU make](https://www.gnu.org/software/make/)
 * [Python3](https://www.python.org)
 * [pip3](https://packaging.python.org/tutorials/installing-packages/)
-* [python-ldap](https://pypi.org/project/python-ldap/)
-
+* [python-ldap](https://pypi.org/project/python-ldap/); To compile the Python module:
+  * Debian / Ubuntu: `apt-get install libsasl2-dev python-dev libldap2-dev libssl-dev`
+  * RedHat / CentOS: `yum install python-devel openldap-devel`
+  
 To set up a virtual Python environment in `.venv3` with:
 
 ​    make setup

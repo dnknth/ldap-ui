@@ -333,11 +333,13 @@
                                             <input v-model="entry.attrs[key][index]"
                                                 :type="fieldType( key)" 
                                                 :class="{ structural: isStructural( key, val),
-                                                    disabled: !newEntry &amp;&amp; disabled( key) }"
+                                                    disabled: !newEntry &amp;&amp; disabled( key),
+                                                    red: isAutoFilled( key) }"
                                                 :id="key + '-' + index"
                                                 :title="getAttr( key).equality == 'generalizedTimeMatch' ? dateString( val) : ''"
                                                 @keyUp="complete"
                                                 @keyup.esc="clearDropdown"
+                                                @input="noAutoFill( key)"
                                                 v-if="key != 'jpegPhoto'" />
                                             <span class="photo" v-if="key == 'jpegPhoto' &amp;&amp; val">
                                                 <img :src="'data:image/jpeg;base64, ' + val" />
@@ -350,6 +352,9 @@
                                             <i class="clickable fa fa-question-circle"
                                                 v-if="key == 'userPassword'"
                                                 @click="pwDialog"></i>
+                                        </div>
+                                        <div class="hint">
+                                          {{ entry.meta.hints[key] }}
                                         </div>
                                     </td>
                                 </tr>
