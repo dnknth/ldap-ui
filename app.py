@@ -1,5 +1,4 @@
 from quart import request
-from quart.exceptions import HTTPException
 from ldap.modlist import addModlist, modifyModlist
 import asyncio, base64, quart, functools, io, ldap, ldif, sys, types
 from typing import *
@@ -72,8 +71,8 @@ def authenticated( view: Callable):
 
         except ldap.LDAPError as err:
             args = err.args[0]
-            raise HTTPException( 500, args.get( 'info', ''),
-                args.get( 'desc', ''))
+            quart.abort( 500, args.get( 'info', '')
+                + args.get( 'desc', ''))
 
     return wrapped_view
 
@@ -516,6 +515,7 @@ def _syntax( obj) -> dict:
 def _dict( key: str, items) -> dict:
     'Create an dictionary with a given key'
     return { obj[key].lower() : obj for obj in items }
+
 
 @app.route( '/api/schema')
 @no_cache

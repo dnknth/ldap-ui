@@ -22,12 +22,14 @@ The app always requires authentication, even if the directory permits anonymous 
 Prerequisites:
 
 * [GNU make](https://www.gnu.org/software/make/)
-* [Python3](https://www.python.org)
+* [Python3](https://www.python.org), at least Python3.7 (see note below)
 * [pip3](https://packaging.python.org/tutorials/installing-packages/)
 * [python-ldap](https://pypi.org/project/python-ldap/); To compile the Python module:
   * Debian / Ubuntu: `apt-get install libsasl2-dev python-dev libldap2-dev libssl-dev`
   * RedHat / CentOS: `yum install python-devel openldap-devel`
-  
+
+(NB: For Python versions older than 3.7, please try the `3.6` Git tag. It uses outdated dependencies and is no longer supported, though.)
+ 
 To set up a virtual Python environment in `.venv3` with:
 
 ​    make setup
