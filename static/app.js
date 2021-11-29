@@ -582,6 +582,15 @@ var app = new Vue({
             this.$refs.copyRef.hide();
         },
         
+        openAndLoad: function( item) {
+            this.loadEntry( item.dn);
+            if (item.hasSubordinates && !item.open) {
+                item.open = true;
+                this.tree = this.tree.slice(); // force redraw
+                this.reload( item.dn);
+            }
+        },
+        
         // Load an entry into the editing form
         loadEntry: function( dn, changed) {
             const oldEntry = this.entry;

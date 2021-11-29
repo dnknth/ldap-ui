@@ -213,7 +213,7 @@
                                         @click="toggle(item)"><i :class="'fa fa-chevron-circle-'
                                             + (item.open ? 'down' : 'right')"></i></span>
                                     <span v-else class="indent"></span>
-                                    <span class="tree-link" @click="loadEntry( item.dn)"> 
+                                    <span class="tree-link" @click="openAndLoad( item)"> 
                                         <i class="fa" :class="icon( item)"></i>
                                         <span :class="entry &amp;&amp; entry.meta.dn == item.dn ? 'tree-label-active' : 'tree-label'">
                                             {{ item.level ? label( item.dn) : item.dn }}
