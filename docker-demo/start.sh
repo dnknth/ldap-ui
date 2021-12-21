@@ -1,11 +1,11 @@
 #!/bin/sh
 
 # Test to see if docker compose is installed.
-if ! command -v docker-compose &> /dev/null
+if ! type docker-compose > /dev/null; 
 then
     printf "\033[1;31mError: docker-compose could not be found\033[0m\n"
     echo "Install docker-compose: https://docs.docker.com/compose/install/"
-    exit
+    exit 1
 fi
 
 cd $(dirname $0)
