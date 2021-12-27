@@ -1,391 +1,391 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="robots" content="noindex, nofollow" />
-    <meta name="googlebot" content="noindex, nofollow" />
-    
-    <link rel="icon" type="image/png" sizes="32x32" href="icons/32px.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="icons/16px.png" />
-    <!--[if IE]><link rel="shortcut icon" href="icons/favicon.ico"><![endif]-->
-    
-    <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="aliceblue" />
-
-    <!-- Add to home screen for Safari on iOS -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <meta name="apple-mobile-web-app-title" content="LDAP" />
-    <link rel="apple-touch-icon" href="icons/152px.png">
-
-    <!-- Bootstrap CSS -->
-    <link type="text/css" rel="stylesheet" 
-      href="https://unpkg.com/bootstrap@4/dist/css/bootstrap.min.css"
-      crossorigin="anonymous" />
-    <link type="text/css" rel="stylesheet" 
-      href="https://unpkg.com/bootstrap-vue@2/dist/bootstrap-vue.min.css"
-      crossorigin="anonymous" />
-        
-    <link rel="stylesheet" 
-      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
-      crossorigin="anonymous">
-    <link type="text/css" rel="stylesheet" href="style.css"/>
-    
-    <!-- Load polyfills to support older browsers -->
-    <script src="https://polyfill.io/v3/polyfill.js?features=es2015%2CIntersectionObserver"
-      crossorigin="anonymous"></script>
-
-    <!-- Load Vue followed by BootstrapVue -->
-    <script src="https://unpkg.com/vue@2/dist/vue.min.js" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/bootstrap-vue@2/dist/bootstrap-vue.min.js"
-      crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"
-      crossorigin="anonymous"></script>
-
-    <title>Directory</title>
-  </head>
+ <head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="googlebot" content="noindex, nofollow" />
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/32px.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/16px.png" />
+  <!--[if IE]><link rel="shortcut icon" href="icons/favicon.ico"><![endif]-->
+  
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="aliceblue" />
+
+  <!-- Add to home screen for Safari on iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="LDAP" />
+  <link rel="apple-touch-icon" href="icons/152px.png">
+
+  <!-- Bootstrap CSS -->
+  <link type="text/css" rel="stylesheet" 
+   href="https://unpkg.com/bootstrap@4/dist/css/bootstrap.min.css"
+   crossorigin="anonymous" />
+  <link type="text/css" rel="stylesheet" 
+   href="https://unpkg.com/bootstrap-vue@2/dist/bootstrap-vue.min.css"
+   crossorigin="anonymous" />
+    
+  <link rel="stylesheet" 
+   href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+   crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="style.css"/>
+  
+  <!-- Load polyfills to support older browsers -->
+  <script src="https://polyfill.io/v3/polyfill.js?features=es2015%2CIntersectionObserver"
+   crossorigin="anonymous"></script>
+
+  <!-- Load Vue followed by BootstrapVue -->
+  <script src="https://unpkg.com/vue@2/dist/vue.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/bootstrap-vue@2/dist/bootstrap-vue.min.js"
+   crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"
+   crossorigin="anonymous"></script>
+
+  <title>{{ user ? label(user) : 'Directory' }}</title>
+ </head>
+ 
 <body>
 
-    <div id="app" @focusin="focusHandler" @click="focusHandler">
+  <div id="app" @focusin="focusHandler" @click="focusHandler">
 
-        <b-navbar toggleable="md" type="dark" variant="info">
-            <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
-            
-            <b-navbar-brand>
-                <i class="fa" :class="treeOpen ? 'fa-list-alt' : 'fa-list-ul'"
-                    @click="treeOpen = !treeOpen"></i>
-                <i class="fa fa-user"></i>
-                <span @click="loadEntry( user)" class="tree-link">{{ user ? label( user) : '' }}</span>
-            </b-navbar-brand>
+    <b-navbar toggleable="md" type="dark" variant="info">
+      <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
+      
+      <b-navbar-brand>
+        <i class="fa" :class="treeOpen ? 'fa-list-alt' : 'fa-list-ul'"
+          @click="treeOpen = !treeOpen"></i>
+        <i class="fa fa-user"></i>
+        <span @click="loadEntry(user)" class="tree-link">{{ user ? label(user) : '' }}</span>
+      </b-navbar-brand>
 
-            <b-collapse is-nav id="nav_collapse">
-              <!-- Right aligned nav items -->
-              <b-navbar-nav class="ml-auto">
-              
-                <b-nav-item @click="importDialog">Import…</b-nav-item>
-                
-                <b-nav-item-dropdown text="Schema" right>
-                    <b-dropdown-item v-for="(obj, name) in schema.objectClasses"
-                        :key="name" @click="oc = obj; attr = null;">{{ name }}</b-dropdown-item>
-                </b-nav-item-dropdown>
-
-                <b-nav-form @submit.prevent="search">
-                    <input size="sm" class="mr-sm-2 form-control" id="search"
-                        name="q" placeholder="🔎" />
-                </b-nav-form>
-              </b-navbar-nav>
-            </b-collapse>
-        </b-navbar>
-
-        <div id="search-popup" class="hidden">
-            <div id="arrow" data-popper-arrow></div>
-            <ul>
-                <li v-for="entry in searchResult" class="clickable search-item"
-                    @click="loadEntry(entry.dn)">{{ entry.name }}
-                </li>
-            </ul>
-        </div>
+      <b-collapse is-nav id="nav_collapse">
+       <!-- Right aligned nav items -->
+       <b-navbar-nav class="ml-auto">
+       
+        <b-nav-item @click="importDialog">Import…</b-nav-item>
         
-        <!-- Confirmation popup -->
-        <b-modal id="confirm" title="Are you sure?" @ok="remove" @show="getSubtree">
-            <p class="strong">This action is irreversible.</p>
+        <b-nav-item-dropdown text="Schema" right>
+          <b-dropdown-item v-for="(obj, name) in schema.objectClasses"
+            :key="name" @click="oc = obj; attr = null;">{{ name }}</b-dropdown-item>
+        </b-nav-item-dropdown>
 
-            <div v-if="subtree &amp;&amp; subtree.length">
-                <p class="red">The following child nodes will be also deleted:</p>
-                <div v-for="node in subtree">
-                    <span v-for="i in node.level" class="indent"></span>
-                    <i class="fa" :class="icon( node)"></i>
-                    {{ node.dn.split(',')[0] }}
-                </div>
-            </div>
-        </b-modal>
-  
-        <!-- Popup for object class selection -->
-        <b-modal ref="ocRef" title="Add objectClass" @ok="addOc" @shown="focus('oc-select')">
-            <b-form-select v-model="selectedOc"
-                :options="entry ? entry.meta.aux : []"
-                id="oc-select" class="mb-3">
-            </b-form-select>
-        </b-modal>
-  
-        <!-- Add entry popup -->
-        <b-modal ref="newRef" title="New entry" @ok="createEntry" @shown="focus('newoc')">
-            <b-form-group label="Object class:" label-for="newoc">
-                <b-form-select id="newoc" v-model="newEntry.objectClass"
-                    :options="schema.structural" v-if="newEntry"
-                    class="mb-3">
-                </b-form-select>
-            </b-form-group>
-            
-            <b-form-group label="RDN attribute:" label-for="newrdn"
-                v-if="newEntry &amp;&amp; newEntry.objectClass">
-                <b-form-select id="newrdn" v-model="newEntry.rdn"
-                    :options="rdn" class="mb-3" :value="rdn[0]">
-                </b-form-select>
-            </b-form-group>
+        <b-nav-form @submit.prevent="search">
+          <input size="sm" class="mr-sm-2 form-control" id="search"
+            name="q" placeholder="🔎" />
+        </b-nav-form>
+       </b-navbar-nav>
+      </b-collapse>
+    </b-navbar>
 
-            <input v-if="newEntry &amp;&amp; newEntry.objectClass" class="form-control"
-                v-model="newEntry.name" class="mb-3" placeholder="RDN value"
-                @keyup.enter="createEntry" />
-        </b-modal>
-  
-        <!-- Rename entry popup -->
-        <b-modal ref="renameRef" title="Rename entry"
-            @ok="renameEntry" @shown="focus('renamerdn')">
-
-            <b-form-group label="New RDN attribute:" label-for="renamerdn">
-                <b-form-select id="renamerdn" v-model="newRdn"
-                    :options="renameRdns()" class="mb-3">
-                </b-form-select>
-            </b-form-group>
-        </b-modal>
-  
-        <!-- Popup to add a new attribute -->
-        <b-modal ref="attrRef" title="Add attribute" @ok="addAttr"
-            @shown="focus('newattr')" return-focus="#dummy-element">
-
-            <b-form-select v-model="newAttr" id="newattr" :options="attrs" class="mb-3">
-            </b-form-select>
-        </b-modal>
-  
-        <!-- Popup to copy an entry -->
-        <b-modal ref="copyRef" title="Copy entry"
-            @ok="copyEntry" @cancel="copyDn = null;" @shown="focus('copyDn')">
-
-            <input v-model="copyDn" class="mb-3 form-control"
-                 placeholder="New DN" id="copyDn" @keyup.enter="copyEntry" />
-        </b-modal>
-  
-        <!-- Popup to verify / change passwords -->
-        <b-modal ref="pwRef" title="Change / verify password" id="change-password"
-            @shown="focus('oldpw')" @ok="changePassword" @cancel="password={}">
-            
-                <small v-if="entry &amp;&amp; user != entry.meta.dn">Optional</small>
-                <small v-if="entry &amp;&amp; user == entry.meta.dn">Required</small>
-                <i class="green fa fa-check-circle"
-                    v-if="passwordOk"></i>
-                <i class="red fa fa-times-circle"
-                    v-if="passwordOk == false"></i>
-                <br />
-                
-                <input v-model="password.old" class="mb-3 form-control"
-                    placeholder="Old password" type="password" id="oldpw"
-                    @change="checkOldPassword"
-                    :disabled="entry &amp;&amp; entry.attrs['userPassword'] &amp;&amp; entry.attrs['userPassword'][0] == ''" />
-
-                <input v-model="password.new1" class="mb-3 form-control"
-                    placeholder="New password" type="password" />
-                <input v-model="password.new2" class="mb-3 form-control"
-                    placeholder="Repeat new password" type="password"
-                    @keyup.enter="changePassword" />
-        </b-modal>
-        
-        <!-- Popup for image upload -->
-        <b-modal ref="photoRef" title="Upload photo" @shown="focus('addPhoto')">
-            <input type="file" name="photo" id="addPhoto" accept="image/jpeg" @change="addBlob" />
-            <div slot="modal-footer"></div>
-        </b-modal>
-  
-        <!-- Popup for LDIF import -->
-        <b-modal ref="importRef" title="Import" @ok="importLdif" @shown="focus('ldif-data')">
-            <textarea v-model="ldifData" class="mb-3 form-control"
-                 id="ldif-data" placeholder="Paste or upload LDIF">
-            </textarea>
-            <input type="file" value="Upload…" @change="readLdif" accept=".ldif" />
-        </b-modal>
-  
-        <b-container fluid>
-            <b-row>
-                <b-col cols="*" id="left">
-                
-                    <!-- Tree view -->
-                    <div id="tree-view">
-                        <ul id="tree" class="list-unstyled" v-if="treeOpen">
-                            <li v-for="item in treeItems"
-                                :id="item.dn" :class="item.structuralObjectClass">
-                                    <span v-for="i in item.level" class="indent"></span>
-                                    <span v-if="item.hasSubordinates" class="clickable opener"
-                                        @click="toggle(item)"><i :class="'fa fa-chevron-circle-'
-                                            + (item.open ? 'down' : 'right')"></i></span>
-                                    <span v-else class="indent"></span>
-                                    <span class="tree-link" @click="openAndLoad( item)"> 
-                                        <i class="fa" :class="icon( item)"></i>
-                                        <span :class="entry &amp;&amp; entry.meta.dn == item.dn ? 'tree-label-active' : 'tree-label'">
-                                            {{ item.level ? label( item.dn) : item.dn }}
-                                        </span>
-                                    </span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- Schema / Objectclass -->
-                    <b-card v-if="oc" :title="oc.desc" title-tag="strong">
-                        <span class="header" slot="header">
-                            {{ oc.name }}
-                            <span class="close-box" @click="oc = null;">⊗</span>
-                        </span>
-                                                
-                        <div v-if="oc.must.length > 0">
-                            Required attributes:
-                            <ul>
-                                <li v-for="name in oc.must">
-                                    <span class="clickable u" @click="oc = null; attr = getAttr(name)">{{ name }}</span>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div v-if="oc.may.length > 0">
-                            Optional attributes:
-                            <ul>
-                                <li v-for="name in oc.may">
-                                    <span class="clickable u" @click="oc = null; attr = getAttr(name)">{{ name }}</span>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div v-if="oc.sup.length > 0">
-                            Superclasses:
-                            <ul>
-                                <li v-for="name in oc.sup">
-                                    <span class="clickable u" @click="oc = getOc(name)">{{ name }}</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </b-card>
-                    
-                    <!-- Schema / Attribute -->
-                    <b-card v-if="attr" :title="attr.desc" title-tag="strong">
-                        <span class="header" slot="header">
-                            {{ attr.names.join(', ') }}
-                            <span class="close-box" @click="attr = null;">⊗</span>
-                        </span>
-                        
-                        <ul>
-                            <li v-for="(val, key) in attr"
-                                v-if="val !== null &amp;&amp; hiddenFields.indexOf( key) == -1">
-                                {{ key }}: {{ val }}
-                            </li>
-                        </ul>
-                        
-                        <div v-if="attr.sup.length > 0">
-                            Superclasses:
-                            <ul>
-                                <li v-for="name in attr.sup">
-                                    <span class="clickable u" @click="attr = getAttr(name)">{{ name }}</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </b-card>
-                </b-col>
-                
-                <b-col id="main">
-                    <b-alert dismissible fade :variant="error.type"
-                            :show="error &amp;&amp; error.counter" @dismissed="error.counter=0">
-                        {{ error.msg }}
-                    </b-alert>
-                    
-                    <!-- Entry editor form -->
-                    <b-form id="entry-form" @submit.prevent="change" @reset="loadEntry( entry.meta.dn);">
-                        <b-card v-if="entry" id="editor">
-                            <div class="header" slot="header">
-                                <b-nav>
-                                    <b-nav-item class="icon">
-                                        <i class="fa" :class="icon( treeMap[entry.meta.dn])"></i>
-                                    </b-nav-item>
-                                    <b-nav-item-dropdown
-                                        :text="label( entry.meta.dn)"
-                                        extra-toggle-classes="nav-link-custom" right  class="entry-menu">
-                                        <b-dropdown-item @click="addDialog">Add child…</b-dropdown-item>
-                                        <b-dropdown-item @click="copyDialog">Copy…</b-dropdown-item>
-                                        <b-dropdown-item @click="renameDialog">Rename…</b-dropdown-item>
-                                        <b-dropdown-item @click="ldif">Export</b-dropdown-item>
-                                        <b-dropdown-item v-b-modal.confirm><span class="red">Delete…</span></b-dropdown-item>
-                                    </b-nav-item-dropdown>
-                                </b-nav>
-                                <span class="close-box" @click="entry = newEntry = null; document.title = 'Directory';">⊗</span>
-                            </div>
-                            
-                            <table id="entry">
-                                <tr v-for="(values, key) in entry.attrs" class="attr"
-                                    v-if="key == 'jpegPhoto' || (!getAttr(key).no_user_mod &amp;&amp; !binary( key))">
-                                    
-                                    <th :class="required( key) ? 'required' : 'optional'">
-                                        <span class="clickable oc" :title="getAttr(key).desc"
-                                            @click="oc = null; attr = getAttr(key)">{{ key }}</span>
-                                        <i v-if="changed( key)" class="fa green fa-check"></i>
-                                        <span class="clickable right add-btn"
-                                            v-if="!getAttr(key).single_value &amp;&amp; !newEntry &amp;&amp; !disabled( key)"
-                                            @click="addRow( key, values)">⊕</span>
-                                        <span class="clickable right add-btn"
-                                            v-if="key == 'jpegPhoto'"
-                                            @click="$refs.photoRef.show()">⊕</span>
-                                        <span class="clickable right add-btn"
-                                            v-if="key == 'userPassword' &amp;&amp; user != entry.meta.dn"
-                                            @click="deletePassword()">⊖</span>
-                                    </th>
-                                    <td>
-                                        <div v-for="(val, index) in values" class="attr-value">
-                                            <input v-model="entry.attrs[key][index]"
-                                                :type="fieldType( key)" 
-                                                :class="{ structural: isStructural( key, val),
-                                                    disabled: !newEntry &amp;&amp; disabled( key),
-                                                    red: isAutoFilled( key) }"
-                                                :id="key + '-' + index"
-                                                :title="getAttr( key).equality == 'generalizedTimeMatch' ? dateString( val) : ''"
-                                                @keyUp="complete"
-                                                @keyup.esc="clearDropdown"
-                                                @input="noAutoFill( key)"
-                                                v-if="key != 'jpegPhoto'" />
-                                            <span class="photo" v-if="key == 'jpegPhoto' &amp;&amp; val">
-                                                <img :src="'data:image/jpeg;base64, ' + val" />
-                                                <span class="clickable remove-btn"
-                                                    @click="deleteBlob( 'jpegPhoto', index)">⊖</span>
-                                            </span>
-                                            <i class="clickable fa fa-info-circle"
-                                                v-if="key == 'objectClass'"
-                                                @click="oc = getOc(val); attr = null;"></i>
-                                            <i class="clickable fa fa-question-circle"
-                                                v-if="key == 'userPassword'"
-                                                @click="pwDialog"></i>
-                                        </div>
-                                        <div class="hint">
-                                          {{ entry.meta.hints[key] }}
-                                        </div>
-                                    </td>
-                                </tr>
-                                
-                                <tr>
-                                    <th></th>
-                                    <td>
-                                        <div class="button-bar">
-                                            <b-button type="submit" variant="primary" accesskey="s">Submit</b-button>
-                                            <b-button type="reset" v-if="!newEntry">Reset</b-button>
-                                            <b-button class="right" @click="attrDialog" v-if="!newEntry" accesskey="a">
-                                                Add attribute…
-                                            </b-button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </table>
-                            <ul id="dropdown" class="hidden">
-                                <li v-for="dn in dropdownChoices" class="clickable dropdown-item"
-                                    @click="selectCompletion">{{ dn }}
-                                </li>
-                            </ul>
-                            
-                        </b-card>
-                    </b-form>
-                </b-col>
-            </b-row>
-        </b-container>
+    <div id="search-popup" class="hidden">
+      <div id="arrow" data-popper-arrow></div>
+      <ul>
+        <li v-for="entry in searchResult" class="clickable search-item"
+          @click="loadEntry(entry.dn)">{{ entry.name }}
+        </li>
+      </ul>
     </div>
     
-    <script src="app.js" charset="UTF-8"></script>
+    <!-- Confirmation popup -->
+    <b-modal id="confirm" title="Are you sure?" @ok="remove" @show="getSubtree">
+      <p class="strong">This action is irreversible.</p>
 
-  </body>
+      <div v-if="subtree &amp;&amp; subtree.length">
+        <p class="red">The following child nodes will be also deleted:</p>
+        <div v-for="node in subtree">
+          <span v-for="i in node.level" class="indent"></span>
+          <i class="fa" :class="icon(node)"></i>
+          {{ node.dn.split(',')[0] }}
+        </div>
+      </div>
+    </b-modal>
+ 
+    <!-- Popup for object class selection -->
+    <b-modal ref="ocRef" title="Add objectClass" @ok="addOc" @shown="focus('oc-select')">
+      <b-form-select v-model="selectedOc"
+        :options="entry ? entry.meta.aux : []"
+        id="oc-select" class="mb-3">
+      </b-form-select>
+    </b-modal>
+ 
+    <!-- Add entry popup -->
+    <b-modal ref="newRef" title="New entry" @ok="createEntry" @shown="focus('newoc')">
+      <b-form-group label="Object class:" label-for="newoc">
+        <b-form-select id="newoc" v-model="newEntry.objectClass"
+          :options="schema.structural" v-if="newEntry"
+          class="mb-3">
+        </b-form-select>
+      </b-form-group>
+      
+      <b-form-group label="RDN attribute:" label-for="newrdn"
+        v-if="newEntry &amp;&amp; newEntry.objectClass">
+        <b-form-select id="newrdn" v-model="newEntry.rdn"
+          :options="rdn" class="mb-3" :value="rdn[0]">
+        </b-form-select>
+      </b-form-group>
+
+      <input v-if="newEntry &amp;&amp; newEntry.objectClass" class="form-control"
+        v-model="newEntry.name" class="mb-3" placeholder="RDN value"
+        @keyup.enter="createEntry" />
+    </b-modal>
+ 
+    <!-- Rename entry popup -->
+    <b-modal ref="renameRef" title="Rename entry"
+      @ok="renameEntry" @shown="focus('renamerdn')">
+
+      <b-form-group label="New RDN attribute:" label-for="renamerdn">
+        <b-form-select id="renamerdn" v-model="newRdn"
+          :options="renameRdns()" class="mb-3">
+        </b-form-select>
+      </b-form-group>
+    </b-modal>
+ 
+    <!-- Popup to add a new attribute -->
+    <b-modal ref="attrRef" title="Add attribute" @ok="addAttr"
+      @shown="focus('newattr')" return-focus="#dummy-element">
+
+      <b-form-select v-model="newAttr" id="newattr" :options="attrs" class="mb-3">
+      </b-form-select>
+    </b-modal>
+ 
+    <!-- Popup to copy an entry -->
+    <b-modal ref="copyRef" title="Copy entry"
+      @ok="copyEntry" @cancel="copyDn = null;" @shown="focus('copyDn')">
+
+      <input v-model="copyDn" class="mb-3 form-control"
+         placeholder="New DN" id="copyDn" @keyup.enter="copyEntry" />
+    </b-modal>
+ 
+    <!-- Popup to verify / change passwords -->
+    <b-modal ref="pwRef" title="Change / verify password" id="change-password"
+      @shown="focus('oldpw')" @ok="changePassword" @cancel="password={}">
+      
+        <small v-if="entry &amp;&amp; user != entry.meta.dn">Optional</small>
+        <small v-if="entry &amp;&amp; user == entry.meta.dn">Required</small>
+        <i class="green fa fa-check-circle"
+          v-if="passwordOk"></i>
+        <i class="red fa fa-times-circle"
+          v-if="passwordOk == false"></i>
+        <br />
+        
+        <input v-model="password.old" class="mb-3 form-control"
+          placeholder="Old password" type="password" id="oldpw"
+          @change="checkOldPassword"
+          :disabled="entry &amp;&amp; entry.attrs['userPassword'] &amp;&amp; entry.attrs['userPassword'][0] == ''" />
+
+        <input v-model="password.new1" class="mb-3 form-control"
+          placeholder="New password" type="password" />
+        <input v-model="password.new2" class="mb-3 form-control"
+          placeholder="Repeat new password" type="password"
+          @keyup.enter="changePassword" />
+    </b-modal>
+    
+    <!-- Popup for image upload -->
+    <b-modal ref="photoRef" title="Upload photo" @shown="focus('addPhoto')">
+      <input type="file" name="photo" id="addPhoto" accept="image/jpeg" @change="addBlob" />
+      <div slot="modal-footer"></div>
+    </b-modal>
+ 
+    <!-- Popup for LDIF import -->
+    <b-modal ref="importRef" title="Import" @ok="importLdif" @shown="focus('ldif-data')">
+      <textarea v-model="ldifData" class="mb-3 form-control"
+         id="ldif-data" placeholder="Paste or upload LDIF">
+      </textarea>
+      <input type="file" value="Upload…" @change="readLdif" accept=".ldif" />
+    </b-modal>
+ 
+    <b-container fluid>
+      <b-row>
+        <b-col cols="*" id="left">
+        
+          <!-- Tree view -->
+          <div id="tree-view">
+            <ul id="tree" class="list-unstyled" v-if="treeOpen">
+              <li v-for="item in treeItems"
+                :id="item.dn" :class="item.structuralObjectClass">
+                  <span v-for="i in item.level" class="indent"></span>
+                  <span v-if="item.hasSubordinates" class="clickable opener"
+                    @click="toggle(item)"><i :class="'fa fa-chevron-circle-'
+                      + (item.open ? 'down' : 'right')"></i></span>
+                  <span v-else class="indent"></span>
+                  <span class="tree-link" @click="openAndLoad(item)"> 
+                    <i class="fa" :class="icon(item)"></i>
+                    <span :class="entry &amp;&amp; entry.meta.dn == item.dn ? 'tree-label-active' : 'tree-label'">
+                      {{ item.level ? label(item.dn) : item.dn }}
+                    </span>
+                  </span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Schema / Objectclass -->
+          <b-card v-if="oc" :title="oc.desc" title-tag="strong">
+            <span class="header" slot="header">
+              {{ oc.name }}
+              <span class="close-box" @click="oc = null;">⊗</span>
+            </span>
+                        
+            <div v-if="oc.must.length > 0">
+              Required attributes:
+              <ul>
+                <li v-for="name in oc.must">
+                  <span class="clickable u" @click="oc = null; attr = getAttr(name)">{{ name }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <div v-if="oc.may.length > 0">
+              Optional attributes:
+              <ul>
+                <li v-for="name in oc.may">
+                  <span class="clickable u" @click="oc = null; attr = getAttr(name)">{{ name }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <div v-if="oc.sup.length > 0">
+              Superclasses:
+              <ul>
+                <li v-for="name in oc.sup">
+                  <span class="clickable u" @click="oc = getOc(name)">{{ name }}</span>
+                </li>
+              </ul>
+            </div>
+          </b-card>
+          
+          <!-- Schema / Attribute -->
+          <b-card v-if="attr" :title="attr.desc" title-tag="strong">
+            <span class="header" slot="header">
+              {{ attr.names.join(', ') }}
+              <span class="close-box" @click="attr = null;">⊗</span>
+            </span>
+            
+            <ul>
+              <li v-for="(val, key) in attr"
+                v-if="val !== null &amp;&amp; hiddenFields.indexOf(key) == -1">
+                {{ key }}: {{ val }}
+              </li>
+            </ul>
+            
+            <div v-if="attr.sup.length > 0">
+              Superclasses:
+              <ul>
+                <li v-for="name in attr.sup">
+                  <span class="clickable u" @click="attr = getAttr(name)">{{ name }}</span>
+                </li>
+              </ul>
+            </div>
+          </b-card>
+        </b-col>
+        
+        <b-col id="main">
+          <b-alert dismissible fade :variant="error.type"
+              :show="error &amp;&amp; error.counter" @dismissed="error.counter=0">
+            {{ error.msg }}
+          </b-alert>
+          
+          <!-- Entry editor form -->
+          <b-form id="entry-form" @submit.prevent="change" @reset="loadEntry(entry.meta.dn);">
+            <b-card v-if="entry" id="editor">
+              <div class="header" slot="header">
+                <b-nav>
+                  <b-nav-item class="icon">
+                    <i class="fa" :class="icon(treeMap[entry.meta.dn])"></i>
+                  </b-nav-item>
+                  <b-nav-item-dropdown
+                    :text="label(entry.meta.dn)"
+                    extra-toggle-classes="nav-link-custom" right class="entry-menu">
+                    <b-dropdown-item @click="addDialog">Add child…</b-dropdown-item>
+                    <b-dropdown-item @click="copyDialog">Copy…</b-dropdown-item>
+                    <b-dropdown-item @click="renameDialog">Rename…</b-dropdown-item>
+                    <b-dropdown-item @click="ldif">Export</b-dropdown-item>
+                    <b-dropdown-item v-b-modal.confirm><span class="red">Delete…</span></b-dropdown-item>
+                  </b-nav-item-dropdown>
+                </b-nav>
+                <span class="close-box" @click="entry = newEntry = null; document.title = 'Directory';">⊗</span>
+              </div>
+              
+              <table id="entry">
+                <tr v-for="(values, key) in entry.attrs" class="attr"
+                  v-if="key == 'jpegPhoto' || (!getAttr(key).no_user_mod &amp;&amp; !binary(key))">
+                  
+                  <th :class="required(key) ? 'required' : 'optional'">
+                    <span class="clickable oc" :title="getAttr(key).desc"
+                      @click="oc = null; attr = getAttr(key)">{{ key }}</span>
+                    <i v-if="changed(key)" class="fa green fa-check"></i>
+                    <span class="clickable right add-btn"
+                      v-if="!getAttr(key).single_value &amp;&amp; !newEntry &amp;&amp; !disabled(key)"
+                      @click="addRow(key, values)">⊕</span>
+                    <span class="clickable right add-btn"
+                      v-if="key == 'jpegPhoto'"
+                      @click="$refs.photoRef.show()">⊕</span>
+                    <span class="clickable right add-btn"
+                      v-if="key == 'userPassword' &amp;&amp; user != entry.meta.dn"
+                      @click="deletePassword()">⊖</span>
+                  </th>
+                  <td>
+                    <div v-for="(val, index) in values" class="attr-value">
+                      <input v-model="entry.attrs[key][index]"
+                        :type="fieldType(key)" 
+                        :class="{ structural: isStructural(key, val),
+                          disabled: !newEntry &amp;&amp; disabled(key),
+                          red: isAutoFilled(key) }"
+                        :id="key + '-' + index"
+                        :title="getAttr(key).equality == 'generalizedTimeMatch' ? dateString(val) : ''"
+                        @keyUp="complete"
+                        @keyup.esc="clearDropdown"
+                        @input="noAutoFill(key)"
+                        v-if="key != 'jpegPhoto'" />
+                      <span class="photo" v-if="key == 'jpegPhoto' &amp;&amp; val">
+                        <img :src="'data:image/jpeg;base64, ' + val" />
+                        <span class="clickable remove-btn"
+                          @click="deleteBlob('jpegPhoto', index)">⊖</span>
+                      </span>
+                      <i class="clickable fa fa-info-circle"
+                        v-if="key == 'objectClass'"
+                        @click="oc = getOc(val); attr = null;"></i>
+                      <i class="clickable fa fa-question-circle"
+                        v-if="key == 'userPassword'"
+                        @click="pwDialog"></i>
+                    </div>
+                    <div class="hint">
+                     {{ entry.meta.hints[key] }}
+                    </div>
+                  </td>
+                </tr>
+                
+                <tr>
+                  <th></th>
+                  <td>
+                    <div class="button-bar">
+                      <b-button type="submit" variant="primary" accesskey="s">Submit</b-button>
+                      <b-button type="reset" v-if="!newEntry">Reset</b-button>
+                      <b-button class="right" @click="attrDialog" v-if="!newEntry" accesskey="a">
+                        Add attribute…
+                      </b-button>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              <ul id="dropdown" class="hidden">
+                <li v-for="dn in dropdownChoices" class="clickable dropdown-item"
+                  @click="selectCompletion">{{ dn }}
+                </li>
+              </ul>
+              
+            </b-card>
+          </b-form>
+        </b-col>
+      </b-row>
+    </b-container>
+  </div>
+  
+  <script src="app.js" charset="UTF-8"></script>
+
+ </body>
 </html>

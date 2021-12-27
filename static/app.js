@@ -11,20 +11,20 @@
  *   binary: Boolean,
  * }
  */
-function request( opts) {
-  return new Promise( function( resolve, reject) {
+function request(opts) {
+  return new Promise(function(resolve, reject) {
     var xhr = new XMLHttpRequest();
-    xhr.open( opts.method || 'GET', opts.url);
+    xhr.open(opts.method || 'GET', opts.url);
     if (opts.responseType) xhr.responseType = opts.responseType;
     xhr.onload = function () {
       if (this.status >= 200 && this.status < 300) {
         resolve(xhr);
       } else {
-        reject( this);
+        reject(this);
       }
     };
     xhr.onerror = function () {
-      reject( this);
+      reject(this);
     };
     if (opts.headers) {
       Object.keys(opts.headers).forEach(function (key) {
@@ -130,23 +130,23 @@ var app = new Vue({
     created: function() { // Runs on page load
         
         // Get the DN of the current user
-        request( { url: 'api/whoami'}).then( function( xhr) {
-            app.user = JSON.parse( xhr.response);
-        }).catch( function( xhr) {
-            app.showException( xhr.response);
+        request({ url: 'api/whoami'}).then(function(xhr) {
+            app.user = JSON.parse(xhr.response);
+        }).catch(function(xhr) {
+            app.showException(xhr.response);
         });
 
         // Populate the tree view
-        this.reload( 'base');
+        this.reload('base');
         
         // Load the schema
-        request( { url: 'api/schema' }).then( function( xhr) {
-            app.schema = JSON.parse( xhr.response);
+        request({ url: 'api/schema' }).then(function(xhr) {
+            app.schema = JSON.parse(xhr.response);
             app.schema.structural = [];
             for (let n in app.schema.objectClasses) {
                 const oc = app.schema.objectClasses[n];
                 if (oc.kind == 'structural') {
-                    app.schema.structural.push( oc.name);
+                    app.schema.structural.push(oc.name);
                 }
             }
         });
@@ -157,23 +157,23 @@ var app = new Vue({
     methods: {
         
         // Focus an element on second next draw
-        focus: function( id) {
-            Vue.nextTick( function() {
-                Vue.nextTick( function() {
-                    const el = document.getElementById( id);
+        focus: function(id) {
+            Vue.nextTick(function() {
+                Vue.nextTick(function() {
+                    const el = document.getElementById(id);
                     if (el) el.focus();
                 });
             });
         },
 
         // Clean up UI state on focus changes and clicks
-        focusHandler: function( evt) {
+        focusHandler: function(evt) {
             const el = event.target,
                 cl = el.classList;
-            if (el.id != 'search' && !cl.contains( 'search-item')) {
+            if (el.id != 'search' && !cl.contains('search-item')) {
                 this.clearSearch();
             }
-            if (el.id != this.dropdownId && !cl.contains( 'dropdown-item')) {
+            if (el.id != this.dropdownId && !cl.contains('dropdown-item')) {
                 this.clearDropdown();
             }
             if (el.tagName == 'INPUT' && el.id && el.form.id == 'entry-form')  {
@@ -182,41 +182,41 @@ var app = new Vue({
         },
 
         // Reload the subtree at entry with given DN
-        reload: function( dn) {
+        reload: function(dn) {
             const treesize = this.tree.length;
-            let pos = this.tree.indexOf( this.treeMap[ dn]);
-            return request( { url: 'api/tree/' + dn }).then( function( xhr) {
-                const response = JSON.parse( xhr.response);
-                response.sort( function( a, b) {
-                    return a.dn.toLowerCase().localeCompare( b.dn.toLowerCase());
+            let pos = this.tree.indexOf(this.treeMap[ dn]);
+            return request({ url: 'api/tree/' + dn }).then(function(xhr) {
+                const response = JSON.parse(xhr.response);
+                response.sort(function(a, b) {
+                    return a.dn.toLowerCase().localeCompare(b.dn.toLowerCase());
                 });
                 
                 if (pos >= 0) app.tree[pos].loaded = true;
                 ++pos;
                 
-                while( pos < app.tree.length
-                    && app.tree[pos].dn.indexOf( dn) != -1) {
+                while(pos < app.tree.length
+                    && app.tree[pos].dn.indexOf(dn) != -1) {
                         delete app.treeMap[ app.tree[pos].dn];
-                        app.tree.splice( pos, 1);
+                        app.tree.splice(pos, 1);
                 }
                 for (let i = 0; i < response.length; ++i) {
                     const item = response[i];
                     app.treeMap[ item.dn] = item;
-                    app.tree.splice( pos++, 0, item);
+                    app.tree.splice(pos++, 0, item);
                     item.level = item.dn.split(',').length;
                     // Extra step is needed for treesize == 0
                     item.level -= app.tree[0].dn.split(',').length;
                 }
-                if (treesize == 0) app.toggle( app.tree[0]);
+                if (treesize == 0) app.toggle(app.tree[0]);
             });
         },
 
         // Make a node visible in the tree, reloading as needed
-        reveal: function( dn) {
+        reveal: function(dn) {
             // Simple case: Tree node is already loaded.
             // Just open all ancestors
             if (this.treeMap[dn]) {
-                for( let p = this.parent( dn); p; p = this.parent( p.dn)) {
+                for(let p = this.parent(dn); p; p = this.parent(p.dn)) {
                     p.open = p.hasSubordinates = true;
                 }
                 this.tree = this.tree.slice(); // force redraw
@@ -224,13 +224,13 @@ var app = new Vue({
             }
             
             // build list of ancestors to reload
-            let parts = dn.split( ','),
+            let parts = dn.split(','),
                 parents = [];
                 
             while (true) {
-                parts.splice( 0, 1);
-                const pdn = parts.join( ',');
-                parents.push( pdn);
+                parts.splice(0, 1);
+                const pdn = parts.join(',');
+                parents.push(pdn);
                 if (this.treeMap[pdn]) break;
             }
             
@@ -241,7 +241,7 @@ var app = new Vue({
                     return;
                 }
                 const pdn = parents.pop();
-                app.reload( pdn).then( function() {
+                app.reload(pdn).then(function() {
                     app.treeMap[pdn].open = true;
                     visit();
                 });
@@ -250,27 +250,27 @@ var app = new Vue({
         },
         
         // Get the tree item containing a given DN
-        parent: function( dn) {
+        parent: function(dn) {
             if (!dn.includes(',')) return undefined; // #14
-            return this.treeMap[ dn.slice( dn.indexOf(',') + 1)];
+            return this.treeMap[ dn.slice(dn.indexOf(',') + 1)];
         },
         
         // Get the icon classes for a tree node
-        icon: function( item) {
+        icon: function(item) {
             return ' fa-' +
                 (item ? this.icons[ item.structuralObjectClass] : 'atom' || 'question');
         },
         
         // Shorten a DN for readability
-        label: function( dn) {
-            return dn.split(',')[0].replace( /^cn=/, '').replace( /^krbPrincipalName=/, '');
+        label: function(dn) {
+            return dn.split(',')[0].replace(/^cn=/, '').replace(/^krbPrincipalName=/, '');
         },
         
         // Hide / show tree elements
-        toggle: function( item) {
+        toggle: function(item) {
             item.open = !item.open;
             this.tree = this.tree.slice(); // force redraw
-            if (item.open) this.reload( item.dn);
+            if (item.open) this.reload(item.dn);
         },
         
         // Populate the "New Entry" form
@@ -285,7 +285,7 @@ var app = new Vue({
         },
         
         // Create a new entry in the main editor
-        createEntry: function( evt) {
+        createEntry: function(evt) {
             this.entry = null;
             if (!this.newEntry || !this.newEntry.objectClass
                 || !this.newEntry.rdn || !this.newEntry.name) {
@@ -310,10 +310,10 @@ var app = new Vue({
             this.entry.attrs[this.newEntry.rdn] = [this.newEntry.name];
             
             // Traverse objectClass parents
-            for( let oc = this.getOc( this.newEntry.objectClass); oc; ) {
+            for(let oc = this.getOc(this.newEntry.objectClass); oc; ) {
                 
                 if (oc.kind != 'structural') {
-                    this.entry.attrs.objectClass.push( oc.name);
+                    this.entry.attrs.objectClass.push(oc.name);
                 }
 
                 // Add required attributes
@@ -322,47 +322,47 @@ var app = new Vue({
                     if (!this.entry.attrs[ must]) {
                         this.entry.attrs[ must] = [''];
                     }
-                    if (this.entry.meta.required.indexOf( must) == -1) {
-                        this.entry.meta.required.push( must);
+                    if (this.entry.meta.required.indexOf(must) == -1) {
+                        this.entry.meta.required.push(must);
                     }
-                    this.checkRange( must);
+                    this.checkRange(must);
                 }
                 if (!oc.sup || !oc.sup.length || oc.sup[0] == 'top') break;
-                oc = this.getOc( oc.sup[0]);
+                oc = this.getOc(oc.sup[0]);
             }
             this.$refs.newRef.hide();
 
             // Work-around partial rendering bug
-            Vue.nextTick( function () {
-                document.querySelectorAll('input').forEach( function( el) {
-                    el.removeAttribute( 'disabled');
+            Vue.nextTick(function () {
+                document.querySelectorAll('input').forEach(function(el) {
+                    el.removeAttribute('disabled');
                 });
-                document.querySelectorAll('input.disabled').forEach( function( el) {
-                    el.setAttribute( 'disabled', 'disabled');
+                document.querySelectorAll('input.disabled').forEach(function(el) {
+                    el.setAttribute('disabled', 'disabled');
                 });
             });
 
             // Focus on first empty field
-            const keys = Object.keys( this.entry.attrs);
+            const keys = Object.keys(this.entry.attrs);
             for (let i = 0; i < keys.length; ++i) {
                 const key = keys[i];
                 if (this.entry.attrs[key] == '') {
-                    this.focus( key + '-0');
+                    this.focus(key + '-0');
                     break;
                 }
             }
         },
         
-        checkRange: function( attr) {
-            if (this.idRanges.indexOf( attr) != -1) {
-                request( { url: 'api/range/' + attr }).then( function( xhr) {
+        checkRange: function(attr) {
+            if (this.idRanges.indexOf(attr) != -1) {
+                request({ url: 'api/range/' + attr }).then(function(xhr) {
                     const range = JSON.parse(xhr.response);
                     if (range) {
                         app.entry.meta.hints[attr] = (range.min == range.max
                             ? range.min : range.min + " - " + range.max);
                         if (app.entry.attrs[ attr].length == 1 && !app.entry.attrs[ attr][0]) {
                             app.entry.attrs[ attr] = ['' + range.next];
-                            app.entry.meta.autoFilled.push( attr);
+                            app.entry.meta.autoFilled.push(attr);
                         }
                         app.refreshEntry();
                     }
@@ -370,19 +370,19 @@ var app = new Vue({
             }
         },
         
-        isAutoFilled: function( attr) {
-            return this.entry.meta.autoFilled.indexOf( attr) != -1;
+        isAutoFilled: function(attr) {
+            return this.entry.meta.autoFilled.indexOf(attr) != -1;
         },
         
-        noAutoFill: function( attr) {
-            const i = this.entry.meta.autoFilled.indexOf( attr);
+        noAutoFill: function(attr) {
+            const i = this.entry.meta.autoFilled.indexOf(attr);
             if (i != -1) {
-                this.entry.meta.autoFilled.splice( i, 1);
+                this.entry.meta.autoFilled.splice(i, 1);
             }
         },
         
         refreshEntry: function() {
-            this.entry = JSON.parse( JSON.stringify( this.entry)); // refresh
+            this.entry = JSON.parse(JSON.stringify(this.entry)); // refresh
         },
         
         // Bring up the 'rename' dialog
@@ -397,15 +397,15 @@ var app = new Vue({
 
             const dn = this.entry.meta.dn,
                 rdn = dn.split('=')[0];
-            return Object.keys( this.entry.attrs).filter( 
-                function( e) {
+            return Object.keys(this.entry.attrs).filter(
+                function(e) {
                     return e != rdn;
                 }
             );
         },
         
         // Change the RDN for an entry
-        renameEntry: function( evt) {
+        renameEntry: function(evt) {
             const dn = this.entry.meta.dn;
                 
             const rdnAttr = this.entry.attrs[this.newRdn];
@@ -415,15 +415,15 @@ var app = new Vue({
             }
             
             const rdn = this.newRdn + '=' + rdnAttr[0];
-            request( { url: 'api/rename/' + rdn + '/' + dn }).then( function( xhr) {
-                app.entry = JSON.parse( xhr.response);
-                const parent = app.parent( dn),
+            request({ url: 'api/rename/' + rdn + '/' + dn }).then(function(xhr) {
+                app.entry = JSON.parse(xhr.response);
+                const parent = app.parent(dn),
                     dnparts = dn.split(',');
-                if (parent) app.reload( parent.dn);
-                dnparts.splice( 0, 1, rdn);
-                app.loadEntry( dnparts.join(','));
-            }).catch( function( xhr) {
-                app.showException( xhr.response);
+                if (parent) app.reload(parent.dn);
+                dnparts.splice(0, 1, rdn);
+                app.loadEntry(dnparts.join(','));
+            }).catch(function(xhr) {
+                app.showException(xhr.response);
             });
         },
         
@@ -450,14 +450,14 @@ var app = new Vue({
             request({
                 url:  'api/entry/password/' + this.entry.meta.dn,
                 method: 'POST',
-                data: JSON.stringify( { check: this.password.old }),
+                data: JSON.stringify({ check: this.password.old }),
                 headers: {
                     'Content-Type': 'application/json; charset=utf-8',
                 }
-            }).then( function( xhr) {
-                app.passwordOk = JSON.parse( xhr.response);
-            }).catch( function( xhr) {
-                app.showException( xhr.response);
+            }).then(function(xhr) {
+                app.passwordOk = JSON.parse(xhr.response);
+            }).catch(function(xhr) {
+                app.showException(xhr.response);
             });
         },
         
@@ -469,7 +469,7 @@ var app = new Vue({
         },
         
         // Update password
-        changePassword: function( evt) {
+        changePassword: function(evt) {
             
             // new passwords must match
             // old password is required for current user
@@ -483,22 +483,22 @@ var app = new Vue({
             request({
                 url:  'api/entry/password/' + this.entry.meta.dn,
                 method: 'POST',
-                data: JSON.stringify( this.password),
+                data: JSON.stringify(this.password),
                 headers: {
                     'Content-Type': 'application/json; charset=utf-8',
                 }
-            }).then( function( xhr) {
-                app.showInfo( '👍 Password changed');
-                app.entry.attrs['userPassword'] = [ JSON.parse( xhr.response) ];
+            }).then(function(xhr) {
+                app.showInfo('👍 Password changed');
+                app.entry.attrs['userPassword'] = [ JSON.parse(xhr.response) ];
                 app.$refs.pwRef.hide();
-            }).catch( function( xhr) {
-                app.showException( xhr.response);
+            }).catch(function(xhr) {
+                app.showException(xhr.response);
                 app.$refs.pwRef.hide();
             });
         },
         
         // Update password
-        deletePassword: function( evt) {
+        deletePassword: function(evt) {
             if (this.user != this.entry.meta.dn) {
                 this.entry.attrs['userPassword'] = [];
             }
@@ -520,18 +520,18 @@ var app = new Vue({
         },
         
         // Load LDIF from file
-        readLdif: function( evt) {
+        readLdif: function(evt) {
             const file = evt.target.files[0],
                 reader = new FileReader();
             reader.onload = function() {
                 app.ldifData = reader.result;
                 evt.target.value = null;
             }
-            reader.readAsText( file);
+            reader.readAsText(file);
         },
         
         // Import LDIF
-        importLdif: function( evt) {
+        importLdif: function(evt) {
             if (!this.ldifData) {
                 evt.preventDefault();
                 return;
@@ -543,16 +543,16 @@ var app = new Vue({
                 headers: {
                     'Content-Type': 'text/plain; charset=utf-8',
                 }
-            }).then( function( xhr) {
+            }).then(function(xhr) {
                 app.$refs.importRef.hide();
-                app.reload( app.tree[0].dn);
-            }).catch( function( xhr) {
-                app.showException( xhr.response);
+                app.reload(app.tree[0].dn);
+            }).catch(function(xhr) {
+                app.showException(xhr.response);
             });
         },
         
         // Load copied entry into the editor
-        copyEntry: function( evt) {
+        copyEntry: function(evt) {
 
             if (!this.copyDn) {
                 evt.preventDefault();
@@ -561,7 +561,7 @@ var app = new Vue({
             
             if (this.copyDn == this.entry.meta.dn) {
                 this.copyDn = null;
-                this.showWarning( 'Entry not copied');
+                this.showWarning('Entry not copied');
                 return;
             }
             
@@ -571,7 +571,7 @@ var app = new Vue({
 
             if (rdnpart.length != 2) {
                 this.copyDn = null;
-                this.showError( 'Invalid RDN: ' + parts[0]);
+                this.showError('Invalid RDN: ' + parts[0]);
                 return;
             }
             
@@ -582,36 +582,36 @@ var app = new Vue({
             this.$refs.copyRef.hide();
         },
         
-        openAndLoad: function( item) {
-            this.loadEntry( item.dn);
+        openAndLoad: function(item) {
+            this.loadEntry(item.dn);
             if (item.hasSubordinates && !item.open) {
                 item.open = true;
                 this.tree = this.tree.slice(); // force redraw
-                this.reload( item.dn);
+                this.reload(item.dn);
             }
         },
         
         // Load an entry into the editing form
-        loadEntry: function( dn, changed) {
+        loadEntry: function(dn, changed) {
             const oldEntry = this.entry;
             this.newEntry = null;
             this.clearDropdown();
 
-            this.reveal( dn);
-            request( { url: 'api/entry/' + dn }).then( function( xhr) {
-                app.entry = JSON.parse( xhr.response);
+            this.reveal(dn);
+            request({ url: 'api/entry/' + dn }).then(function(xhr) {
+                app.entry = JSON.parse(xhr.response);
                 app.entry.changed = changed || [];
-                Vue.nextTick( function () {
+                Vue.nextTick(function () {
                     // Work-around partial rendering bug
-                    document.querySelectorAll('input').forEach( function( el) {
-                        el.removeAttribute( 'disabled');
+                    document.querySelectorAll('input').forEach(function(el) {
+                        el.removeAttribute('disabled');
                     });
-                    document.querySelectorAll('input.disabled').forEach( function( el) {
-                        el.setAttribute( 'disabled', 'disabled');
+                    document.querySelectorAll('input.disabled').forEach(function(el) {
+                        el.setAttribute('disabled', 'disabled');
                     });
                     // Focus on last focused input or first editable attribute
-                    const input = document.querySelector( '#' + app.focused)
-                        || document.querySelector( '#entry input:not([disabled])');
+                    const input = document.querySelector('#' + app.focused)
+                        || document.querySelector('#entry input:not([disabled])');
                     if (input) input.focus();
                 });
                 // Clear notifications on DN change
@@ -619,12 +619,12 @@ var app = new Vue({
                     app.error = {};
                     app.focused = null;
                 }
-                document.title = dn.split( ',')[0];
+                document.title = dn.split(',')[0];
             });
         },
 
         // auto-complete form values
-        complete: function( evt) {
+        complete: function(evt) {
 
             // Avoid AJAX calls without results
             const q = evt.target.value;
@@ -634,100 +634,100 @@ var app = new Vue({
             }
 
             const attr = evt.target.id.split('-', 1);
-            if (evt.key.length == 1 && this.getEquality( attr[0]) == 'distinguishedNameMatch') {
+            if (evt.key.length == 1 && this.getEquality(attr[0]) == 'distinguishedNameMatch') {
                 this.dropdownId = evt.target.id;
-                request( { url: 'api/search/' + q }
-                ).then( function( xhr) {
-                    const response = JSON.parse( xhr.response);
+                request({ url: 'api/search/' + q }
+                ).then(function(xhr) {
+                    const response = JSON.parse(xhr.response);
                     app.clearDropdown();
                     for (let i = 0; i < response.length; ++i) {
-                        app.dropdownChoices.push( response[i].dn);
+                        app.dropdownChoices.push(response[i].dn);
                     }
-                    Vue.nextTick( function() {
-                        const dropdown = document.getElementById( 'dropdown');
+                    Vue.nextTick(function() {
+                        const dropdown = document.getElementById('dropdown');
                         if (app.dropdownChoices.length) {
                             dropdown.className = '';
                             app.dropdownMenu = Popper.createPopper(
-                                document.getElementById( app.dropdownId),
+                                document.getElementById(app.dropdownId),
                                 dropdown, {
                                     modifiers: [ {
                                         name: 'offset',
                                         options: { offset: [0, -8] },
                                     } ]
                                 });
-                            dropdown.setAttribute( 'data-show', '');
+                            dropdown.setAttribute('data-show', '');
                         }
                     });
-                }).catch( function( xhr) {
+                }).catch(function(xhr) {
                     app.clearDropdown();
                 });
             }
         },
 
         // use an auto-completion choice
-        selectCompletion: function( evt) {
-            const el = document.getElementById( this.dropdownId),
-                attr = this.dropdownId.split( '-')[0], 
-                index = this.dropdownId.split( '-')[1];
+        selectCompletion: function(evt) {
+            const el = document.getElementById(this.dropdownId),
+                attr = this.dropdownId.split('-')[0], 
+                index = this.dropdownId.split('-')[1];
             this.entry.attrs[attr][index] = el.value = evt.target.innerText;
-            this.focus( this.dropdownId);
+            this.focus(this.dropdownId);
             this.clearDropdown();
         },
         
         // reset choice list
-        clearDropdown: function( evt) {
+        clearDropdown: function(evt) {
             if (this.dropdownMenu) this.dropdownMenu.destroy();
             this.dropdownMenu = null;
             this.dropdownChoices = [];
-            const dropdown = document.getElementById( 'dropdown');
+            const dropdown = document.getElementById('dropdown');
             if (dropdown) {
-                dropdown.removeAttribute( 'data-show');
+                dropdown.removeAttribute('data-show');
                 dropdown.className = 'hidden';
             }
         },
 
         // Download LDIF
         ldif: function() {
-            request( { url: 'api/ldif/' + this.entry.meta.dn,
+            request({ url: 'api/ldif/' + this.entry.meta.dn,
                 responseType: 'blob'
-            }).then( function( xhr) {
+            }).then(function(xhr) {
                 var a = document.createElement("a"),
-                    url = URL.createObjectURL( xhr.response);
+                    url = URL.createObjectURL(xhr.response);
                 a.href = url;
                 a.download = app.entry.meta.dn.split(',')[0].split('=')[1] + '.ldif';
                 document.body.appendChild(a);
                 a.click();
-            }).catch( function( xhr) {
-                app.showException( xhr.response);
+            }).catch(function(xhr) {
+                app.showException(xhr.response);
             });
         },
         
         // Special fields
-        binary: function( key) {
+        binary: function(key) {
             if (key == 'userPassword') return false; // Corner case with octetStringMatch
-            return this.entry.meta.binary.indexOf( key) != -1;                    
+            return this.entry.meta.binary.indexOf(key) != -1;                    
         },
         
         // Special fields
-        disabled: function( key) {
+        disabled: function(key) {
             return key == 'userPassword'
-                || key == this.entry.meta.dn.split( '=')[0]
-                || this.binary( key);
+                || key == this.entry.meta.dn.split('=')[0]
+                || this.binary(key);
         },
 
         // human-readable dates
-        dateString: function( dt) {
-            let tz = dt.substr( 14);
+        dateString: function(dt) {
+            let tz = dt.substr(14);
             if (tz != 'Z') {
-                tz = tz.substr( 0, 3) + ':'
-                    + (tz.length > 3 ? tz.substring( 3, 2) : '00');
+                tz = tz.substr(0, 3) + ':'
+                    + (tz.length > 3 ? tz.substring(3, 2) : '00');
             }
-            return new Date( dt.substr( 0, 4) + '-'
-                + dt.substr( 4, 2) + '-'
-                + dt.substr( 6, 2) + 'T'
-                + dt.substr( 8, 2) + ':'
-                + dt.substr( 10, 2) + ':'
-                + dt.substr( 12, 2) + tz).toLocaleString( undefined, {
+            return new Date(dt.substr(0, 4) + '-'
+                + dt.substr(4, 2) + '-'
+                + dt.substr(6, 2) + 'T'
+                + dt.substr(8, 2) + ':'
+                + dt.substr(10, 2) + ':'
+                + dt.substr(12, 2) + tz).toLocaleString(undefined, {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -739,7 +739,7 @@ var app = new Vue({
         },
         
         // Submit the entry form via AJAX
-        change: function( evt) {
+        change: function(evt) {
             this.entry.changed = [];
             this.error = {};
             const dn = this.entry.meta.dn;
@@ -747,22 +747,22 @@ var app = new Vue({
             request({
                 url:  'api/entry/' + dn,
                 method: this.newEntry ? 'PUT' : 'POST',
-                data: JSON.stringify( this.entry.attrs),
+                data: JSON.stringify(this.entry.attrs),
                 headers: {
                     'Content-Type': 'application/json; charset=utf-8',
                 }
-            }).then( function( xhr) {
-                const data = JSON.parse( xhr.response);
-                if ( data && data.changed && data.changed.length) {
-                    app.showInfo( '👍 Saved changes');
+            }).then(function(xhr) {
+                const data = JSON.parse(xhr.response);
+                if (data && data.changed && data.changed.length) {
+                    app.showInfo('👍 Saved changes');
                 }
                 if (app.newEntry) {
-                    app.reload( app.parent( dn).dn);
+                    app.reload(app.parent(dn).dn);
                 }
                 app.newEntry = null;
-                app.loadEntry( dn, data.changed);
-            }).catch( function( xhr) {
-                app.showException( xhr.response);
+                app.loadEntry(dn, data.changed);
+            }).catch(function(xhr) {
+                app.showException(xhr.response);
             });
         },
 
@@ -770,10 +770,10 @@ var app = new Vue({
         getSubtree: function() {
             const dn = this.entry.meta.dn;
             request({ url:  'api/subtree/' + dn
-            }).then( function( xhr) {
-                app.subtree = JSON.parse( xhr.response);
-            }).catch( function( xhr) {
-                app.showException( xhr.response);
+            }).then(function(xhr) {
+                app.subtree = JSON.parse(xhr.response);
+            }).catch(function(xhr) {
+                app.showException(xhr.response);
             });
         },
         
@@ -781,40 +781,40 @@ var app = new Vue({
         remove: function() {
             const dn = this.entry.meta.dn;
             request({ url:  'api/entry/' + dn, method: 'DELETE'
-            }).then( function() {
-                app.showInfo( 'Deleted entry: ' + dn);
+            }).then(function() {
+                app.showInfo('Deleted entry: ' + dn);
                 app.entry = null;
-                app.reload( app.parent( dn).dn);
-            }).catch( function( xhr) {
-                app.showException( xhr.response);
+                app.reload(app.parent(dn).dn);
+            }).catch(function(xhr) {
+                app.showException(xhr.response);
             });
         },
         
         // Get a schema objectClass by name
-        getOc: function( name) {
+        getOc: function(name) {
             return this.schema.objectClasses[name.toLowerCase()];
         },
         
         // Callback for OC selection popup
-        addOc: function( evt) {
-            this.entry.attrs.objectClass.push( this.selectedOc);
+        addOc: function(evt) {
+            this.entry.attrs.objectClass.push(this.selectedOc);
             const must = this.schema.objectClasses[
                     this.selectedOc.toLowerCase()].must;
             for (let i = 0; i < must.length; ++i) {
                 let m = must[i];
-                if (this.entry.meta.required.indexOf( m) == -1) {
-                    this.entry.meta.required.push( m);
+                if (this.entry.meta.required.indexOf(m) == -1) {
+                    this.entry.meta.required.push(m);
                 }
                 if (!this.entry.attrs[ m]) {
                     this.entry.attrs[ m] = [''];
-                    this.checkRange( m);
+                    this.checkRange(m);
                 }
             }
             this.selectedOc = null;
         },
         
         // Get a schema attribute by name
-        getAttr: function( name) {
+        getAttr: function(name) {
             const n = name.toLowerCase(),
                   a = this.schema.attributes[n];
             if (a) return a;
@@ -830,24 +830,24 @@ var app = new Vue({
         },
 
         // look up a field, traversing superclasses
-        getField: function( attr, name) {
+        getField: function(attr, name) {
             do {
                 const val = attr[name];
                 if (val) return val;
-                attr = this.getAttr( attr.sup[0]);
+                attr = this.getAttr(attr.sup[0]);
             } while (attr);
         },
         
         // Get an attribute syntax
-        getSyntax: function( name) {
-            const a = this.getAttr( name);
+        getSyntax: function(name) {
+            const a = this.getAttr(name);
             if (a) return this.schema.syntaxes[
-                this.getField( a, 'syntax') || this.directoryString];
+                this.getField(a, 'syntax') || this.directoryString];
         },
 
         // Get the equality rule name for an attribute
-        getEquality: function( name) {
-            return this.getField( this.getAttr( name), 'equality');
+        getEquality: function(name) {
+            return this.getField(this.getAttr(name), 'equality');
         },
         
         // Show popup for attribute selection
@@ -857,32 +857,32 @@ var app = new Vue({
         },
         
         // Add the selected attribute
-        addAttr: function( evt) {
+        addAttr: function(evt) {
 
             const attr = this.newAttr;
             
             // check for binary attributes
             this.entry.attrs[ attr] = [''];
             
-            if (this.getSyntax( attr).not_human_readable) {
-                this.entry.meta.binary.push( attr);
+            if (this.getSyntax(attr).not_human_readable) {
+                this.entry.meta.binary.push(attr);
             }
-            else this.checkRange( attr);
+            else this.checkRange(attr);
 
             // Delay DOM update
-            Vue.nextTick( function () {
-                document.querySelectorAll('input').forEach( function( el) {
-                    el.removeAttribute( 'disabled');
+            Vue.nextTick(function () {
+                document.querySelectorAll('input').forEach(function(el) {
+                    el.removeAttribute('disabled');
                 });
-                document.querySelectorAll('input.disabled').forEach( function( el) {
-                    el.setAttribute( 'disabled', 'disabled');
+                document.querySelectorAll('input.disabled').forEach(function(el) {
+                    el.setAttribute('disabled', 'disabled');
                 });
                 if (attr == 'userPassword') {
                     app.pwDialog();
                 }
             });
 
-            this.focus( attr + '-0');
+            this.focus(attr + '-0');
 
             // Close popup
             this.newAttr = null;
@@ -892,152 +892,152 @@ var app = new Vue({
         },
                 
         // Add an empty row in the entry form
-        addRow: function( key, values) {
+        addRow: function(key, values) {
             if (key == 'objectClass') {
                 this.$refs.ocRef.show();
             }
             else if (values.indexOf('') == -1) {
                 values.push('');
-                this.focus( key + '-' + (values.length -1));
+                this.focus(key + '-' + (values.length -1));
             }
         },
         
         // Check for required fields by key
-        required: function( key) {
-            return this.entry.meta.required.indexOf( key) != -1;
+        required: function(key) {
+            return this.entry.meta.required.indexOf(key) != -1;
         },
         
         // Has the key been updated on last entry modification? 
-        changed: function( key) {
+        changed: function(key) {
             return this.entry && this.entry.changed
-                && this.entry.changed.indexOf( key) != -1;
+                && this.entry.changed.indexOf(key) != -1;
         },
         
         // Guess the <input> type for an attribute
-        fieldType: function( attr) {
+        fieldType: function(attr) {
             return attr == 'userPassword' ? 'password'
                 : this.attrMap[ this.getAttr(attr).equality] || 'text';
         },
         
         // add an image
-        addBlob: function( evt) {
+        addBlob: function(evt) {
             if (!evt.target.files) return;
             
             const fd = new FormData();
-            fd.append( "blob", evt.target.files[0])
+            fd.append("blob", evt.target.files[0])
             request({
                 url:  'api/blob/jpegPhoto/0/' + app.entry.meta.dn,
                 method: 'PUT',
                 data: fd,
                 binary: true,
-            }).then( function( xhr) {
+            }).then(function(xhr) {
                 evt.target.value = null;
                 app.$refs.photoRef.hide()
-                const data = JSON.parse( xhr.response);
-                app.loadEntry( app.entry.meta.dn, data.changed);
-            }).catch( function( xhr) {
+                const data = JSON.parse(xhr.response);
+                app.loadEntry(app.entry.meta.dn, data.changed);
+            }).catch(function(xhr) {
                 app.$refs.photoRef.hide();
-                app.showError( xhr.response);
+                app.showError(xhr.response);
             });
         },
         
         // remove an image
-        deleteBlob: function( key, index) {
+        deleteBlob: function(key, index) {
             request({
                 url:  'api/blob/' + key + '/' + index + '/' + app.entry.meta.dn,
                 method: 'DELETE',
-            }).then( function( xhr) {
-                const data = JSON.parse( xhr.response);
-                app.loadEntry( app.entry.meta.dn, data.changed);
-            }).catch( function( xhr) {
-                app.showException( xhr.response);
+            }).then(function(xhr) {
+                const data = JSON.parse(xhr.response);
+                app.loadEntry(app.entry.meta.dn, data.changed);
+            }).catch(function(xhr) {
+                app.showException(xhr.response);
             });
         },
         
         // Is the given value a structural object class?
-        isStructural: function( key, val) {
+        isStructural: function(key, val) {
             return key == 'objectClass'
-                && this.schema.structural.indexOf( val) != -1;
+                && this.schema.structural.indexOf(val) != -1;
         },
         
         // Run a search against the directory
-        search: function( evt) {
+        search: function(evt) {
             const q = document.getElementById('search').value;
             
-            request( { url: 'api/search/' + q }
-            ).then( function( xhr) {
-                const response = JSON.parse( xhr.response);
+            request({ url: 'api/search/' + q }
+            ).then(function(xhr) {
+                const response = JSON.parse(xhr.response);
                 app.clearSearch();
                 app.error = {};
 
                 if (!response || !response.length) {
-                    app.showWarning( 'No search results');
+                    app.showWarning('No search results');
                 }
                 else if (response.length == 1) {
                     // load single result for editing
-                    app.loadEntry( response[0].dn);
+                    app.loadEntry(response[0].dn);
                 }
                 else { // multiple results
                     app.searchResult = response;
-                    Vue.nextTick( function() {
-                        const popup = document.getElementById( 'search-popup');
+                    Vue.nextTick(function() {
+                        const popup = document.getElementById('search-popup');
                         popup.className = '';
                         app.searchPopup = Popper.createPopper(
-                            document.getElementById( 'search'),
+                            document.getElementById('search'),
                             popup, {
                                 modifiers: [ {
                                     name: 'offset',
                                     options: { offset: [0, 4] },
                                 } ]
                             });
-                        popup.setAttribute( 'data-show', '');
+                        popup.setAttribute('data-show', '');
                     });
                 }
-            }).catch( function( xhr) {
-                app.showException( xhr.response);
+            }).catch(function(xhr) {
+                app.showException(xhr.response);
             });
         },
 
-        clearSearch: function( evt) {
+        clearSearch: function(evt) {
             if (this.searchPopup) this.searchPopup.destroy();
             this.searchPopup = null;
             app.searchResult = null;
-            const popup = document.getElementById( 'search-popup');
+            const popup = document.getElementById('search-popup');
             if (popup) {
-                popup.removeAttribute( 'data-show');
+                popup.removeAttribute('data-show');
                 popup.className = 'hidden';
             }
         },
 
         // Display an info popup
-        showInfo: function( msg) {
+        showInfo: function(msg) {
             this.error = { counter: 5, type: 'success', msg: '' + msg }
         },
         
         // Flash a warning popup
-        showWarning: function( msg) {
+        showWarning: function(msg) {
             this.error = { counter: 10, type: 'warning', msg: '⚠️ ' + msg }
         },
         
         // Report an error
-        showError: function( msg) {
+        showError: function(msg) {
             this.error = { counter: 60, type: 'danger', msg: '⛔ ' + msg }
         },
 
-        showException: function( msg) {
+        showException: function(msg) {
             const span = document.createElement('span');
             span.innerHTML = msg;
             const titles = span.getElementsByTagName('title');
             for (let i = 0; i < titles.length; ++i) {
-                span.removeChild( titles[i]);
+                span.removeChild(titles[i]);
             }
             let text = '';
             const headlines = span.getElementsByTagName('h1');
             for (let i = 0; i < headlines.length; ++i) {
                 text = text + headlines[i].textContent + ': ';
-                span.removeChild( headlines[i]);
+                span.removeChild(headlines[i]);
             }
-            this.showError( text + span.textContent);
+            this.showError(text + span.textContent);
         },
         
     },
@@ -1047,8 +1047,8 @@ var app = new Vue({
         // All visible tree entries (with non-collaped parents)
         treeItems: function() {
             const p = this.parent;
-            return this.tree.filter( function( item) {
-                for (let i = p( item.dn); i; i = p( i.dn)) {
+            return this.tree.filter(function(item) {
+                for (let i = p(item.dn); i; i = p(i.dn)) {
                     if (!i.open) return false;
                 }
                 return true;
@@ -1059,12 +1059,12 @@ var app = new Vue({
         rdn: function() {
             if (!this.newEntry || !this.newEntry.objectClass) return [];
             let oc = this.newEntry.objectClass, structural = [];
-            while( oc) {
-                const cls = this.getOc( oc);
+            while(oc) {
+                const cls = this.getOc(oc);
                 for (let i in cls.must) {
-                    const name = app.getAttr( cls.must[i]).name;
+                    const name = app.getAttr(cls.must[i]).name;
                     if (name != 'objectClass') {
-                        structural.push( name);
+                        structural.push(name);
                     }
                 }
                 oc = cls.sup.length > 0 ? cls.sup[0] : null;
@@ -1080,12 +1080,12 @@ var app = new Vue({
             for (let i = 0; i < this.entry.attrs.objectClass.length; ++i) {
                 let key = this.entry.attrs.objectClass[i];
                 while (key) {
-                    const cls = this.getOc( key),
+                    const cls = this.getOc(key),
                         may = cls.may;
                     for (let j = 0; j < may.length; ++j) {
                         let a = may[j];
-                        if (options.indexOf( a) == -1 && !this.entry.attrs[a]) {
-                            options.push( a);
+                        if (options.indexOf(a) == -1 && !this.entry.attrs[a]) {
+                            options.push(a);
                         }
                     }
                     key = cls.sup.length > 0 ? cls.sup[0] : null;
