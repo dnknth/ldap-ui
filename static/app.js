@@ -184,7 +184,7 @@ var app = new Vue({
         // Reload the subtree at entry with given DN
         reload: function(dn) {
             const treesize = this.tree.length;
-            let pos = this.tree.indexOf(this.treeMap[ dn]);
+            let pos = this.tree.indexOf(this.treeMap[dn]);
             return request({ url: 'api/tree/' + dn }).then(function(xhr) {
                 const response = JSON.parse(xhr.response);
                 response.sort(function(a, b) {
@@ -196,12 +196,12 @@ var app = new Vue({
                 
                 while(pos < app.tree.length
                     && app.tree[pos].dn.indexOf(dn) != -1) {
-                        delete app.treeMap[ app.tree[pos].dn];
+                        delete app.treeMap[app.tree[pos].dn];
                         app.tree.splice(pos, 1);
                 }
                 for (let i = 0; i < response.length; ++i) {
                     const item = response[i];
-                    app.treeMap[ item.dn] = item;
+                    app.treeMap[item.dn] = item;
                     app.tree.splice(pos++, 0, item);
                     item.level = item.dn.split(',').length;
                     // Extra step is needed for treesize == 0
@@ -252,18 +252,18 @@ var app = new Vue({
         // Get the tree item containing a given DN
         parent: function(dn) {
             if (!dn.includes(',')) return undefined; // #14
-            return this.treeMap[ dn.slice(dn.indexOf(',') + 1)];
+            return this.treeMap[dn.slice(dn.indexOf(',') + 1)];
         },
         
         // Get the icon classes for a tree node
         icon: function(item) {
             return ' fa-' +
-                (item ? this.icons[ item.structuralObjectClass] : 'atom' || 'question');
+                (item ? this.icons[item.structuralObjectClass] : 'atom' || 'question');
         },
         
         // Shorten a DN for readability
         label: function(dn) {
-            return dn.split(',')[0].replace(/^cn=/, '').replace(/^krbPrincipalName=/, '');
+            return !dn ? '' : dn.split(',')[0].replace(/^cn=/, '').replace(/^krbPrincipalName=/, '');
         },
         
         // Hide / show tree elements
@@ -360,8 +360,8 @@ var app = new Vue({
                     if (range) {
                         app.entry.meta.hints[attr] = (range.min == range.max
                             ? range.min : range.min + " - " + range.max);
-                        if (app.entry.attrs[ attr].length == 1 && !app.entry.attrs[ attr][0]) {
-                            app.entry.attrs[ attr] = ['' + range.next];
+                        if (app.entry.attrs[attr].length == 1 && !app.entry.attrs[attr][0]) {
+                            app.entry.attrs[attr] = ['' + range.next];
                             app.entry.meta.autoFilled.push(attr);
                         }
                         app.refreshEntry();
@@ -489,7 +489,7 @@ var app = new Vue({
                 }
             }).then(function(xhr) {
                 app.showInfo('👍 Password changed');
-                app.entry.attrs['userPassword'] = [ JSON.parse(xhr.response) ];
+                app.entry.attrs['userPassword'] = [JSON.parse(xhr.response) ];
                 app.$refs.pwRef.hide();
             }).catch(function(xhr) {
                 app.showException(xhr.response);
@@ -710,9 +710,13 @@ var app = new Vue({
         
         // Special fields
         disabled: function(key) {
-            return key == 'userPassword'
-                || key == this.entry.meta.dn.split('=')[0]
-                || this.binary(key);
+            return this.isRdn(key)
+                || (!this.newEntry && (key == 'userPassword' || this.binary(key)));
+        },
+        
+        isRdn: function(key) {
+            return this.newEntry ? key == this.newEntry.rdn
+                : key == this.entry.meta.dn.split('=')[0];
         },
 
         // human-readable dates
@@ -805,8 +809,8 @@ var app = new Vue({
                 if (this.entry.meta.required.indexOf(m) == -1) {
                     this.entry.meta.required.push(m);
                 }
-                if (!this.entry.attrs[ m]) {
-                    this.entry.attrs[ m] = [''];
+                if (!this.entry.attrs[m]) {
+                    this.entry.attrs[m] = [''];
                     this.checkRange(m);
                 }
             }
@@ -862,12 +866,8 @@ var app = new Vue({
             const attr = this.newAttr;
             
             // check for binary attributes
-            this.entry.attrs[ attr] = [''];
-            
-            if (this.getSyntax(attr).not_human_readable) {
-                this.entry.meta.binary.push(attr);
-            }
-            else this.checkRange(attr);
+            this.entry.attrs[attr] = [''];
+            this.checkRange(attr);
 
             // Delay DOM update
             Vue.nextTick(function () {
@@ -916,7 +916,7 @@ var app = new Vue({
         // Guess the <input> type for an attribute
         fieldType: function(attr) {
             return attr == 'userPassword' ? 'password'
-                : this.attrMap[ this.getAttr(attr).equality] || 'text';
+                : this.attrMap[this.getAttr(attr).equality] || 'text';
         },
         
         // add an image

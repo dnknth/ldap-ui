@@ -95,14 +95,14 @@ def no_cache(view: types.FunctionType) -> quart.Response:
     @functools.wraps(view)
     async def wrapped_view(**values) -> quart.Response:
         resp = await view(**values)
-        resp.headers[ 'Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        resp.headers[ 'Pragma'] = 'no-cache'
-        resp.headers[ 'Expires'] = '0'
+        resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        resp.headers['Pragma'] = 'no-cache'
+        resp.headers['Expires'] = '0'
         return resp
     return wrapped_view
 
 
-async def result(msgid: int,) -> AsyncGenerator[ Tuple[str, Dict[str, List[bytes]]], None]:
+async def result(msgid: int,) -> AsyncGenerator[Tuple[str, Dict[str, List[bytes]]], None]:
     'Concurrently gather results'
     while True:
         r_type, r_data = request.ldap.result(msgid=msgid, all=0, timeout=0)
@@ -155,7 +155,7 @@ async def whoami() -> str:
 @app.route('/api/tree/<basedn>')
 @no_cache
 @api
-async def tree(basedn: str) -> List[ Dict[ str, Any]]:
+async def tree(basedn: str) -> List[Dict[str, Any]]:
     'List directory entries'
     
     scope = ldap.SCOPE_ONELEVEL
@@ -166,7 +166,7 @@ async def tree(basedn: str) -> List[ Dict[ str, Any]]:
     return await _tree(basedn, scope)
 
 
-async def _tree(basedn: str, scope: int) -> List[ Dict[ str, Any]]:
+async def _tree(basedn: str, scope: int) -> List[Dict[str, Any]]:
     'Get all nodes below a DN (including the DN) within the given scope'
 
     return [ { 'dn': dn,
@@ -176,13 +176,13 @@ async def _tree(basedn: str, scope: int) -> List[ Dict[ str, Any]]:
             basedn, scope, attrlist=WITH_OPERATIONAL_ATTRS)) ]
         
 
-def _entry(res: Tuple[ str, Any]) -> Dict[ str, Any]:
+def _entry(res: Tuple[str, Any]) -> Dict[str, Any]:
     'Prepare an LDAP entry for transmission'
     
     dn, attrs = res
-    ocs = set([ oc.decode() for oc in attrs['objectClass'] ])
+    ocs = set([oc.decode() for oc in attrs['objectClass']])
     must_attrs, _may_attrs = app.schema.attribute_types(ocs)
-    soc = [ oc.names[0]
+    soc = [oc.names[0]
         for oc in map(lambda o: app.schema.get_obj(ldap.schema.models.ObjectClass, o), ocs)
         if oc.kind == 0]
     aux = set(app.schema.get_obj(ldap.schema.models.ObjectClass, a).names[0]
@@ -207,13 +207,13 @@ def _entry(res: Tuple[ str, Any]) -> Dict[ str, Any]:
             if syntax.not_human_readable: binary.add(attr)
     
     return {
-        'attrs':  { k: [ base64.b64encode(val).decode()
+        'attrs':  { k: [base64.b64encode(val).decode()
                          if k in binary else val.decode()
-                         for val in values ]
+                         for val in values]
             for k, values in attrs.items() },
         'meta': {
             'dn': dn,
-            'required': [ app.schema.get_obj(ldap.schema.models.AttributeType, a).names[0]
+            'required': [app.schema.get_obj(ldap.schema.models.AttributeType, a).names[0]
                           for a in must_attrs],
             'aux': sorted(aux - ocs),
             'binary': sorted(binary),
@@ -232,7 +232,7 @@ async def entry(dn: str) -> Optional[dict]:
     if request.is_json:
         json = await request.get_json()
         # Copy JSON payload into a dictionary of non-empty byte strings
-        req  = { k: [ s.encode() for s in filter(None, v) ]
+        req  = { k: [s.encode() for s in filter(None, v)]
                     for k,v in json.items()
                     if k != PHOTO}
         
@@ -382,7 +382,7 @@ async def passwd(dn: str) -> Optional[bool]:
 @app.route('/api/search/<path:query>')
 @no_cache
 @api
-async def search(query: str) -> List[ dict]:
+async def search(query: str) -> List[dict]:
     'Search the directory'
 
     q = query
@@ -478,7 +478,7 @@ def _oc(obj) -> dict:
     r.update({
         'may'   : sorted(obj.may),
         'must'  : sorted(obj.must),
-        'kind'  : SCHEMA_OC_KIND[ obj.kind]
+        'kind'  : SCHEMA_OC_KIND[obj.kind]
     })
     return r
 
@@ -500,7 +500,7 @@ def _at(obj) -> dict:
         'syntax'       : obj.syntax,
         'substr'       : obj.substr,
         'ordering'     : obj.ordering,
-        'usage'        : SCHEMA_ATTR_USAGE[ obj.usage],
+        'usage'        : SCHEMA_ATTR_USAGE[obj.usage],
     })
     return r
 

@@ -25,7 +25,7 @@
       --border: #333;
       --input-bg: #444;
       --control: gray;
-      --modal-border: rgba(48,48,48,.2);
+      --modal-border: rgba(48,48,48,.8);
       --modal-divider: var(--border);
       --tree-icon: LightGray;
       --tree-bg: var(--muted-bg);
@@ -179,6 +179,10 @@ th.optional span.oc {
     color: var(--control);
 }
 
+th.rdn span.oc {
+    text-decoration: underline;
+}
+
 table#entry input {
     top: 0.2ex;
     width: 90%;
@@ -263,6 +267,10 @@ input.form-control, textarea.form-control, select.custom-select {
 
 #change-password i {
     margin-left: 0.5em;
+}
+
+#search {
+    font-family: sans-serif, FontAwesome;
 }
 
 #dropdown, #search-popup {

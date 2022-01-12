@@ -46,7 +46,7 @@
   <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"
    crossorigin="anonymous"></script>
 
-  <title>{{ user ? label(user) : 'Directory' }}</title>
+  <title>{{ label(user) }}</title>
  </head>
  
 <body>
@@ -60,7 +60,7 @@
         <i class="fa" :class="treeOpen ? 'fa-list-alt' : 'fa-list-ul'"
           @click="treeOpen = !treeOpen"></i>
         <i class="fa fa-user"></i>
-        <span @click="loadEntry(user)" class="tree-link">{{ user ? label(user) : '' }}</span>
+        <span @click="loadEntry(user)" class="tree-link">{{ label(user) }}</span>
       </b-navbar-brand>
 
       <b-collapse is-nav id="nav_collapse">
@@ -76,7 +76,7 @@
 
         <b-nav-form @submit.prevent="search">
           <input size="sm" class="mr-sm-2 form-control" id="search"
-            name="q" placeholder="🔎" />
+            name="q" placeholder="&#xF002" />
         </b-nav-form>
        </b-navbar-nav>
       </b-collapse>
@@ -314,12 +314,14 @@
                 <tr v-for="(values, key) in entry.attrs" class="attr"
                   v-if="key == 'jpegPhoto' || (!getAttr(key).no_user_mod &amp;&amp; !binary(key))">
                   
-                  <th :class="required(key) ? 'required' : 'optional'">
+                  <th :class="{ required: required(key),
+                      optional: !required(key),
+                      rdn: isRdn(key) }">
                     <span class="clickable oc" :title="getAttr(key).desc"
                       @click="oc = null; attr = getAttr(key)">{{ key }}</span>
                     <i v-if="changed(key)" class="fa green fa-check"></i>
                     <span class="clickable right add-btn"
-                      v-if="!getAttr(key).single_value &amp;&amp; !newEntry &amp;&amp; !disabled(key)"
+                      v-if="!getAttr(key).single_value &amp;&amp; !disabled(key)"
                       @click="addRow(key, values)">⊕</span>
                     <span class="clickable right add-btn"
                       v-if="key == 'jpegPhoto'"
@@ -333,7 +335,7 @@
                       <input v-model="entry.attrs[key][index]"
                         :type="fieldType(key)" 
                         :class="{ structural: isStructural(key, val),
-                          disabled: !newEntry &amp;&amp; disabled(key),
+                          disabled: disabled(key),
                           red: isAutoFilled(key) }"
                         :id="key + '-' + index"
                         :title="getAttr(key).equality == 'generalizedTimeMatch' ? dateString(val) : ''"
