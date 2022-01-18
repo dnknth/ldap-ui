@@ -187,10 +187,14 @@ def _entry(res: Tuple[str, Any]) -> Dict[str, Any]:
         if oc.kind == 0]
     aux = set(app.schema.get_obj(ldap.schema.models.ObjectClass, a).names[0]
         for a in app.schema.get_applicable_aux_classes(soc[0]))
-    
+
+    #23 suppress userPassword
+    if 'userPassword' in attrs:
+        attrs['userPassword'] = [b'*****']
+        
     # Filter out binary attributes
     binary = set()
-    for attr in attrs.keys():
+    for attr in attrs:
         obj = app.schema.get_obj(ldap.schema.models.AttributeType, attr)
 
         # Octet strings are not used consistently.
