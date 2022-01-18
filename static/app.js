@@ -1,58 +1,11 @@
 "use strict";
 
-/* See: https://stackoverflow.com/questions/30008114/how-do-i-promisify-native-xhr#30008115
- * 
- * opts = {
- *   method: String,
- *   url: String,
- *   data: String | Object,
- *   headers: Object,
- *   responseType: String,
- *   binary: Boolean,
- * }
- */
-function request(opts) {
-  return new Promise(function(resolve, reject) {
-    var xhr = new XMLHttpRequest();
-    xhr.open(opts.method || 'GET', opts.url);
-    if (opts.responseType) xhr.responseType = opts.responseType;
-    xhr.onload = function () {
-      if (this.status >= 200 && this.status < 300) {
-        resolve(xhr);
-      } else {
-        reject(this);
-      }
-    };
-    xhr.onerror = function () {
-      reject(this);
-    };
-    if (opts.headers) {
-      Object.keys(opts.headers).forEach(function (key) {
-        xhr.setRequestHeader(key, opts.headers[key]);
-      });
-    }
-    var params = opts.data;
-    // We'll need to stringify if we've been given an object
-    // If we have a string, this is skipped.
-    if (params && typeof params === 'object' && !opts.binary) {
-      params = Object.keys(params).map(function (key) {
-        return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
-      }).join('&');
-    }
-    xhr.send(params);
-  });
-}
-
-
 var app = new Vue({
     
     // root <div> in page
     el: "#app",
     
     data: {
-
-        // default attribute syntax (constant)
-        directoryString: '1.3.6.1.4.1.1466.115.121.1.15',
 
         // authentication
         user: null,             // logged in user
@@ -75,8 +28,8 @@ var app = new Vue({
             krbPrincipal:       'user-o',
         },
         
-        idRanges: [             // Numeric ID ranges
-            'uidNumber', 'gidNumber' ],
+        idRanges:               // Numeric ID ranges
+            [ 'uidNumber', 'gidNumber' ],
 
         treeOpen: true,         // Is the tree visible?
 
@@ -100,11 +53,8 @@ var app = new Vue({
         newRdn: null,           // new RDN for rename operation
         
         // schema
-        schema: {               // LDAP schema info
-            attributes:    [],
-            objectClasses: [],
-            structural:    [],  // Names of structural OC
-        },
+        schema: new LdapSchema({}), // LDAP schema info
+
         oc: null,               // objectclass in side panel
         attr: null,             // attribute in side panel
         hiddenFields: [         // not shown in schema panel
@@ -131,9 +81,9 @@ var app = new Vue({
         
         // Get the DN of the current user
         request({ url: 'api/whoami'}).then(function(xhr) {
-            app.user = JSON.parse(xhr.response);
+          app.user = JSON.parse(xhr.response);
         }).catch(function(xhr) {
-            app.showException(xhr.response);
+          app.showException(xhr.response);
         });
 
         // Populate the tree view
@@ -141,14 +91,9 @@ var app = new Vue({
         
         // Load the schema
         request({ url: 'api/schema' }).then(function(xhr) {
-            app.schema = JSON.parse(xhr.response);
-            app.schema.structural = [];
-            for (let n in app.schema.objectClasses) {
-                const oc = app.schema.objectClasses[n];
-                if (oc.kind == 'structural') {
-                    app.schema.structural.push(oc.name);
-                }
-            }
+          app.schema = new LdapSchema(JSON.parse(xhr.response));
+        }).catch(function(xhr) {
+          app.showException(xhr.response);
         });
 
         this.focus('search');
@@ -195,7 +140,7 @@ var app = new Vue({
                 ++pos;
                 
                 while(pos < app.tree.length
-                    && app.tree[pos].dn.indexOf(dn) != -1) {
+                    && app.tree[pos].dn.includes(dn)) {
                         delete app.treeMap[app.tree[pos].dn];
                         app.tree.splice(pos, 1);
                 }
@@ -303,32 +248,31 @@ var app = new Vue({
                     autoFilled: [],
                 },
                 attrs: {
-                    objectClass: [ this.newEntry.objectClass],
+                    objectClass: [this.newEntry.objectClass],
                 },
             };
             
             this.entry.attrs[this.newEntry.rdn] = [this.newEntry.name];
             
             // Traverse objectClass parents
-            for(let oc = this.getOc(this.newEntry.objectClass); oc; ) {
+            for (let oc = this.schema.oc(this.newEntry.objectClass); oc; oc = this.schema.oc(oc.sup[0])) {
                 
-                if (oc.kind != 'structural') {
+                if (!oc.isStructural) {
                     this.entry.attrs.objectClass.push(oc.name);
                 }
 
                 // Add required attributes
                 for (let i = 0; i < oc.must.length; ++i) {
                     let must = oc.must[i];
-                    if (!this.entry.attrs[ must]) {
-                        this.entry.attrs[ must] = [''];
+                    if (!this.entry.attrs[must]) {
+                        this.entry.attrs[must] = [''];
                     }
-                    if (this.entry.meta.required.indexOf(must) == -1) {
+                    if (!this.entry.meta.required.includes(must)) {
                         this.entry.meta.required.push(must);
                     }
                     this.checkRange(must);
                 }
                 if (!oc.sup || !oc.sup.length || oc.sup[0] == 'top') break;
-                oc = this.getOc(oc.sup[0]);
             }
             this.$refs.newRef.hide();
 
@@ -354,24 +298,24 @@ var app = new Vue({
         },
         
         checkRange: function(attr) {
-            if (this.idRanges.indexOf(attr) != -1) {
-                request({ url: 'api/range/' + attr }).then(function(xhr) {
-                    const range = JSON.parse(xhr.response);
-                    if (range) {
-                        app.entry.meta.hints[attr] = (range.min == range.max
-                            ? range.min : range.min + " - " + range.max);
-                        if (app.entry.attrs[attr].length == 1 && !app.entry.attrs[attr][0]) {
-                            app.entry.attrs[attr] = ['' + range.next];
-                            app.entry.meta.autoFilled.push(attr);
-                        }
-                        app.refreshEntry();
-                    }
-                });
-            }
+            if (!this.idRanges.includes(attr)) return;
+
+            request({ url: 'api/range/' + attr }).then(function(xhr) {
+                const range = JSON.parse(xhr.response);
+                if (!range) return;
+                
+                app.entry.meta.hints[attr] = (range.min == range.max
+                    ? range.min : range.min + " - " + range.max);
+                if (app.entry.attrs[attr].length == 1 && !app.entry.attrs[attr][0]) {
+                    app.entry.attrs[attr] = ['' + range.next];
+                    app.entry.meta.autoFilled.push(attr);
+                }
+                app.refreshEntry();
+            });
         },
         
         isAutoFilled: function(attr) {
-            return this.entry.meta.autoFilled.indexOf(attr) != -1;
+            return this.entry.meta.autoFilled.includes(attr);
         },
         
         noAutoFill: function(attr) {
@@ -628,16 +572,15 @@ var app = new Vue({
 
             // Avoid AJAX calls without results
             const q = evt.target.value;
-            if (q.length < 2 || q.indexOf(',') != -1) {
+            if (q.length < 2 || q.includes(',')) {
                 this.clearDropdown();
                 return;
             }
 
             const attr = evt.target.id.split('-', 1);
-            if (evt.key.length == 1 && this.getEquality(attr[0]) == 'distinguishedNameMatch') {
+            if (evt.key.length == 1 && this.schema.attr(attr[0]).getField('Equality') == 'distinguishedNameMatch') {
                 this.dropdownId = evt.target.id;
-                request({ url: 'api/search/' + q }
-                ).then(function(xhr) {
+                request({ url: 'api/search/' + q }).then(function(xhr) {
                     const response = JSON.parse(xhr.response);
                     app.clearDropdown();
                     for (let i = 0; i < response.length; ++i) {
@@ -705,7 +648,7 @@ var app = new Vue({
         // Special fields
         binary: function(key) {
             if (key == 'userPassword') return false; // Corner case with octetStringMatch
-            return this.entry.meta.binary.indexOf(key) != -1;                    
+            return this.entry.meta.binary.includes(key);                    
         },
         
         // Special fields
@@ -794,19 +737,13 @@ var app = new Vue({
             });
         },
         
-        // Get a schema objectClass by name
-        getOc: function(name) {
-            return this.schema.objectClasses[name.toLowerCase()];
-        },
-        
         // Callback for OC selection popup
         addOc: function(evt) {
             this.entry.attrs.objectClass.push(this.selectedOc);
-            const must = this.schema.objectClasses[
-                    this.selectedOc.toLowerCase()].must;
+            const must = this.schema.oc(this.selectedOc).must;
             for (let i = 0; i < must.length; ++i) {
                 let m = must[i];
-                if (this.entry.meta.required.indexOf(m) == -1) {
+                if (!this.entry.meta.required.includes(m)) {
                     this.entry.meta.required.push(m);
                 }
                 if (!this.entry.attrs[m]) {
@@ -815,43 +752,6 @@ var app = new Vue({
                 }
             }
             this.selectedOc = null;
-        },
-        
-        // Get a schema attribute by name
-        getAttr: function(name) {
-            const n = name.toLowerCase(),
-                  a = this.schema.attributes[n];
-            if (a) return a;
-
-            // brute-force search for alternative names
-            for (let att in this.schema.attributes) {
-                const a2 = this.schema.attributes[att];
-                for (let i = 0; i < a2.names.length; ++i) {
-                    let name = a2.names[i];
-                    if (name.toLowerCase() == n) return a2;
-                }
-            }
-        },
-
-        // look up a field, traversing superclasses
-        getField: function(attr, name) {
-            do {
-                const val = attr[name];
-                if (val) return val;
-                attr = this.getAttr(attr.sup[0]);
-            } while (attr);
-        },
-        
-        // Get an attribute syntax
-        getSyntax: function(name) {
-            const a = this.getAttr(name);
-            if (a) return this.schema.syntaxes[
-                this.getField(a, 'syntax') || this.directoryString];
-        },
-
-        // Get the equality rule name for an attribute
-        getEquality: function(name) {
-            return this.getField(this.getAttr(name), 'equality');
         },
         
         // Show popup for attribute selection
@@ -896,7 +796,7 @@ var app = new Vue({
             if (key == 'objectClass') {
                 this.$refs.ocRef.show();
             }
-            else if (values.indexOf('') == -1) {
+            else if (!values.includes('')) {
                 values.push('');
                 this.focus(key + '-' + (values.length -1));
             }
@@ -904,19 +804,19 @@ var app = new Vue({
         
         // Check for required fields by key
         required: function(key) {
-            return this.entry.meta.required.indexOf(key) != -1;
+            return this.entry.meta.required.includes(key);
         },
         
         // Has the key been updated on last entry modification? 
         changed: function(key) {
             return this.entry && this.entry.changed
-                && this.entry.changed.indexOf(key) != -1;
+                && this.entry.changed.includes(key);
         },
         
         // Guess the <input> type for an attribute
         fieldType: function(attr) {
             return attr == 'userPassword' ? 'password'
-                : this.attrMap[this.getAttr(attr).equality] || 'text';
+                : this.attrMap[this.schema.attr(attr).getField('equality')] || 'text';
         },
         
         // add an image
@@ -957,7 +857,7 @@ var app = new Vue({
         // Is the given value a structural object class?
         isStructural: function(key, val) {
             return key == 'objectClass'
-                && this.schema.structural.indexOf(val) != -1;
+                && this.schema.structural.includes(val);
         },
         
         // Run a search against the directory
@@ -1058,18 +958,7 @@ var app = new Vue({
         // Choice list of RDN attributes for a new entry
         rdn: function() {
             if (!this.newEntry || !this.newEntry.objectClass) return [];
-            let oc = this.newEntry.objectClass, structural = [];
-            while(oc) {
-                const cls = this.getOc(oc);
-                for (let i in cls.must) {
-                    const name = app.getAttr(cls.must[i]).name;
-                    if (name != 'objectClass') {
-                        structural.push(name);
-                    }
-                }
-                oc = cls.sup.length > 0 ? cls.sup[0] : null;
-            }
-            return structural;
+            return this.schema.oc(this.newEntry.objectClass).structural;
         },
         
         // Choice list for new attribute selection popup
@@ -1078,17 +967,14 @@ var app = new Vue({
             
             let options = [];
             for (let i = 0; i < this.entry.attrs.objectClass.length; ++i) {
-                let key = this.entry.attrs.objectClass[i];
-                while (key) {
-                    const cls = this.getOc(key),
-                        may = cls.may;
-                    for (let j = 0; j < may.length; ++j) {
-                        let a = may[j];
-                        if (options.indexOf(a) == -1 && !this.entry.attrs[a]) {
-                            options.push(a);
-                        }
+                const key = this.entry.attrs.objectClass[i],
+                      cls = this.schema.oc(key),
+                      may = cls.getAll('may');
+                for (let j = 0; j < may.length; ++j) {
+                    let a = may[j];
+                    if (!options.includes(a) && !this.entry.attrs[a]) {
+                        options.push(a);
                     }
-                    key = cls.sup.length > 0 ? cls.sup[0] : null;
                 }
             }
             options.sort();

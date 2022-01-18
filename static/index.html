@@ -46,6 +46,9 @@
   <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"
    crossorigin="anonymous"></script>
 
+  <script src="request.js" charset="UTF-8"></script>
+  <script src="schema.js" charset="UTF-8"></script>
+
   <title>{{ label(user) }}</title>
  </head>
  
@@ -70,8 +73,8 @@
         <b-nav-item @click="importDialog">Import…</b-nav-item>
         
         <b-nav-item-dropdown text="Schema" right>
-          <b-dropdown-item v-for="(obj, name) in schema.objectClasses"
-            :key="name" @click="oc = obj; attr = null;">{{ name }}</b-dropdown-item>
+          <b-dropdown-item v-for="obj in schema.objectClasses._objects"
+            :key="name" @click="oc = obj; attr = null;">{{ obj.name }}</b-dropdown-item>
         </b-nav-item-dropdown>
 
         <b-nav-form @submit.prevent="search">
@@ -234,7 +237,7 @@
               Required attributes:
               <ul>
                 <li v-for="name in oc.must">
-                  <span class="clickable u" @click="oc = null; attr = getAttr(name)">{{ name }}</span>
+                  <span class="clickable u" @click="oc = null; attr = schema.attr(name)">{{ name }}</span>
                 </li>
               </ul>
             </div>
@@ -243,7 +246,7 @@
               Optional attributes:
               <ul>
                 <li v-for="name in oc.may">
-                  <span class="clickable u" @click="oc = null; attr = getAttr(name)">{{ name }}</span>
+                  <span class="clickable u" @click="oc = null; attr = schema.attr(name)">{{ name }}</span>
                 </li>
               </ul>
             </div>
@@ -252,7 +255,7 @@
               Superclasses:
               <ul>
                 <li v-for="name in oc.sup">
-                  <span class="clickable u" @click="oc = getOc(name)">{{ name }}</span>
+                  <span class="clickable u" @click="oc = schema.oc(name)">{{ name }}</span>
                 </li>
               </ul>
             </div>
@@ -276,7 +279,7 @@
               Superclasses:
               <ul>
                 <li v-for="name in attr.sup">
-                  <span class="clickable u" @click="attr = getAttr(name)">{{ name }}</span>
+                  <span class="clickable u" @click="attr = schema.attr(name)">{{ name }}</span>
                 </li>
               </ul>
             </div>
@@ -312,16 +315,16 @@
               
               <table id="entry">
                 <tr v-for="(values, key) in entry.attrs" class="attr"
-                  v-if="key == 'jpegPhoto' || (!getAttr(key).no_user_mod &amp;&amp; !binary(key))">
+                  v-if="key == 'jpegPhoto' || (!schema.attr(key).no_user_mod &amp;&amp; !binary(key))">
                   
                   <th :class="{ required: required(key),
                       optional: !required(key),
                       rdn: isRdn(key) }">
-                    <span class="clickable oc" :title="getAttr(key).desc"
-                      @click="oc = null; attr = getAttr(key)">{{ key }}</span>
+                    <span class="clickable oc" :title="schema.attr(key).desc"
+                      @click="oc = null; attr = schema.attr(key)">{{ key }}</span>
                     <i v-if="changed(key)" class="fa green fa-check"></i>
                     <span class="clickable right add-btn"
-                      v-if="!getAttr(key).single_value &amp;&amp; !disabled(key)"
+                      v-if="!schema.attr(key).single_value &amp;&amp; !disabled(key)"
                       @click="addRow(key, values)">⊕</span>
                     <span class="clickable right add-btn"
                       v-if="key == 'jpegPhoto'"
@@ -338,7 +341,7 @@
                           disabled: disabled(key),
                           red: isAutoFilled(key) }"
                         :id="key + '-' + index"
-                        :title="getAttr(key).equality == 'generalizedTimeMatch' ? dateString(val) : ''"
+                        :title="schema.attr(key).equality == 'generalizedTimeMatch' ? dateString(val) : ''"
                         @keyUp="complete"
                         @keyup.esc="clearDropdown"
                         @input="noAutoFill(key)"
@@ -350,7 +353,7 @@
                       </span>
                       <i class="clickable fa fa-info-circle"
                         v-if="key == 'objectClass'"
-                        @click="oc = getOc(val); attr = null;"></i>
+                        @click="oc = schema.oc(val); attr = null;"></i>
                       <i class="clickable fa fa-question-circle"
                         v-if="key == 'userPassword'"
                         @click="pwDialog"></i>
