@@ -4,7 +4,10 @@ import asyncio, base64, quart, functools, io, ldap, ldif, sys, types
 from typing import *
 
 
-app = quart.Quart(__name__)
+app = quart.Quart(__name__, static_folder='dist')
+if quart.helpers.get_debug_flag():
+    from quart_cors import cors
+    app = cors(app, allow_origin='*')
 app.config.from_object('settings')
 
 # Constant to add technical attributes in LDAP search results
@@ -15,6 +18,7 @@ UNAUTHORIZED = { 'WWW-Authenticate': 'Basic realm="Login Required"' }
 
 # Special fields
 PHOTO = 'jpegPhoto'
+PASSWORDS = ('userPassword',)
 
 # Special syntaxes
 OCTET_STRING = '1.3.6.1.4.1.1466.115.121.1.40'
@@ -72,7 +76,7 @@ def authenticated(view: Callable):
         except ldap.LDAPError as err:
             args = err.args[0]
             quart.abort(500, args.get('info', '')
-                + args.get('desc', ''))
+                + ': ' + args.get('desc', ''))
 
     return wrapped_view
 
@@ -84,8 +88,9 @@ def api(view: Callable) -> quart.Response:
     @functools.wraps(view)
     async def wrapped_view(**values) -> quart.Response:
         data = await authenticated(view)(**values)
-        if type(data) is quart.Response: return data
-        return quart.jsonify(data)
+        if type(data) is not quart.Response:
+            data = quart.jsonify(data)
+        return data
     return wrapped_view
 
 
@@ -238,7 +243,8 @@ async def entry(dn: str) -> Optional[dict]:
         # Copy JSON payload into a dictionary of non-empty byte strings
         req  = { k: [s.encode() for s in filter(None, v)]
                     for k,v in json.items()
-                    if k != PHOTO}
+                    if k != PHOTO
+                    and (k not in PASSWORDS or request.method == 'PUT') }
         
     if request.method == 'GET':
         try:
@@ -350,6 +356,7 @@ async def ldifUpload() -> quart.Response:
 async def rename(dn: str, newrdn: str) -> None:
     'Rename an entry'
     await empty(request.ldap.rename(dn, newrdn, delold=0))
+    return 'OK'
 
 
 def _ename(entry: dict) -> Optional[str]:

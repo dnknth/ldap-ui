@@ -1,0 +1,143 @@
+<template>
+  <b-modal id="change-password" title="Change / verify password"
+    @show="reset" @shown="init" @ok="done" @hidden="$emit('update-form')">
+    
+    <div v-if="oldExists">
+      <small v-if="user != entry.meta.dn">Optional</small>
+      <small v-if="user == entry.meta.dn">Required</small>
+      <i class="green fa fa-check-circle" v-if="passwordOk === true"></i>
+      <i class="red fa fa-times-circle" v-if="passwordOk === false"></i>
+    </div>
+      
+    <input id="old-password" v-model="oldPassword" class="mb-3 form-control"
+      placeholder="Old password" :disabled="!oldExists" type="password" @change="check" />
+
+    <input v-model="newPassword" class="mb-3 form-control" id="new-password"
+      placeholder="New password" type="password" />
+
+    <input v-model="repeated" class="mb-3 form-control" :class="{ red: repeated && !passwordsMatch }"
+      placeholder="Repeat new password" type="password" @keyup.enter="done" />
+</b-modal>
+</template>
+
+<script>
+
+export default {
+
+  name: 'PasswordChangeDialog',
+
+  props: {
+    entry: {
+      type: Object,
+      required: true
+    },
+    info: {
+      type: Function,
+      required: true,
+    },
+  },
+
+  model: {
+    prop: 'entry',
+    event: 'replace-entry',
+  },
+
+  inject: [ 'getUser', 'xhr' ],
+
+  data: function() {
+    return {
+      oldPassword: '',
+      newPassword: '',
+      repeated: '',
+      passwordOk: undefined,
+      user: this.getUser(),
+    }
+  },
+
+  methods: {
+
+    reset: function() {
+      this.oldPassword = this.newPassword = this.repeated = '';
+      this.passwordOk = undefined;
+    },
+
+    init: function() {
+      document.getElementById(this.oldExists ? 'old-password' : 'new-password').focus();
+    },
+
+    // Verify an existing password
+    // This is optional for administrative changes
+    // but required to change the current user's password
+    check: async function() {
+      if (!this.oldPassword || this.oldPassword.length == 0) {
+        this.passwordOk = undefined;
+        return;
+      }
+      this.passwordOk = await this.xhr({
+        url: 'api/entry/password/' + this.entry.meta.dn,
+        method: 'POST',
+        data: JSON.stringify({ check: this.oldPassword }),
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      });
+    },
+
+    deletePassword: function() {
+      if (this.user != this.entry.meta.dn) {
+        this.entry.attrs['userPassword'] = [];
+        this.$bvModal.hide('change-password');
+      }
+    },
+
+    done: async function(evt) {
+      // new passwords must match
+      // old password is required for current user
+      if (this.newPassword == '' || this.newPassword != this.repeated
+      || (this.user == this.entry.meta.dn && this.oldExists && (!this.oldPassword || !this.passwordOk))) {
+        evt.preventDefault();
+        return;
+      }
+      
+      const data = await this.xhr({
+          url: 'api/entry/password/' + this.entry.meta.dn,
+          method: 'POST',
+          data: JSON.stringify({ old: this.oldPassword, new1: this.newPassword }),
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        });
+
+      if (data) {
+        const entry = Object.assign({}, this.entry);
+        entry.attrs['userPassword'] = [ data ];
+        this.info('👍 Password changed');
+        this.$bvModal.hide('change-password');
+        this.$emit('replace-entry', entry);
+      }
+    },
+  },
+
+  computed: {
+    // Verify that the new password is repeated correctly
+    passwordsMatch: function() {
+      return this.newPassword && this.newPassword == this.repeated;
+    },
+
+    oldExists: function() {
+      return this.entry.attrs['userPassword']
+        && this.entry.attrs['userPassword'][0] != '';
+    },
+  }
+}
+</script>
+
+<style scoped>
+  #change-password input {
+    display: inline;
+  }
+
+  #change-password i {
+    margin-left: 0.5em;
+  }
+
+  .red {
+    color: red !important;
+  }
+</style>
