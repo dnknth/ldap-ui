@@ -15,6 +15,7 @@ UNAUTHORIZED = { 'WWW-Authenticate': 'Basic realm="Login Required"' }
 
 # Special fields
 PHOTO = 'jpegPhoto'
+PASSWORD = 'userPassword'
 
 # Special syntaxes
 OCTET_STRING = '1.3.6.1.4.1.1466.115.121.1.40'
@@ -238,7 +239,7 @@ async def entry(dn: str) -> Optional[dict]:
         # Copy JSON payload into a dictionary of non-empty byte strings
         req  = { k: [s.encode() for s in filter(None, v)]
                     for k,v in json.items()
-                    if k != PHOTO}
+                    if k != PHOTO and k != PASSWORD }
         
     if request.method == 'GET':
         try:
