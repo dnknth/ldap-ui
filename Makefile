@@ -2,11 +2,6 @@
 
 export COMPOSE_FILE=docker-demo/docker-compose.yml
 
-ifeq (${BASE_DN},)
-export BASE_DN=dc=flintstones,dc=com
-export BIND_DN=cn=Fred Flintstone,ou=People,dc=flintstones,dc=com
-export BIND_PASSWORD=yabbadabbado
-endif
 
 debug: app.py .venv3
 	QUART_APP=$< QUART_ENV=development \
@@ -32,8 +27,8 @@ clean:
 	rm -rf docker-demo/data __pycache__
 
 tidy: clean
-	rm -rf .venv3
+	rm -rf .venv3 node_modules dist
 
-docker: tidy
+docker: clean
 	docker build -t dnknth/ldap-ui .
 	docker push dnknth/ldap-ui

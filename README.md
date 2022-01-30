@@ -22,6 +22,7 @@ The app always requires authentication, even if the directory permits anonymous 
 Prerequisites:
 
 * [GNU make](https://www.gnu.org/software/make/)
+* [node.js](https://nodejs.dev) with NPM
 * [Python3](https://www.python.org), at least Python3.7 (see note below)
 * [pip3](https://packaging.python.org/tutorials/installing-packages/)
 * [python-ldap](https://pypi.org/project/python-ldap/); To compile the Python module:
@@ -29,16 +30,23 @@ Prerequisites:
   * RedHat / CentOS: `yum install python-devel openldap-devel`
 
 (NB: For Python versions older than 3.7, please try the `3.6` Git tag. It uses outdated dependencies and is no longer supported, though.)
- 
+
 To set up a virtual Python environment in `.venv3` with:
 
-​    make setup
+    make .venv3
 
 Check the configuration in [settings.py](settings.py). It is very short and mostly self-explaining.
+Most settings can (and should) be overridden by environment variables.
+
+To build the HTML front-end, run
+
+    npm install && npm run build
+
+This populates the `dist` directory.
 
 ### Authentication methods
 
-The UI always uses a simple `bind` operation to authenticate with the LDAP directory. How the `bind` DN is obtained from a given user name depends on a combination of OS environment variables. 
+The UI always uses a simple `bind` operation to authenticate with the LDAP directory. How the `bind` DN is obtained from a given user name depends on a combination of OS environment variables.
 
 1. Search by some attribute. By default, this is the `uid`, which can be overridden by the environment variable `LOGIN_ATTR`, e.g. `LOGIN_ATTR=cn`.
 2. If the environment variable `BIND_PATTERN` is set, then no search is performed. Login with a full DN can be configured with `BIND_PATTERN=%s`, which for example allows to login as user `cn=admin,dc=example,dc=org`. If a partial DN like `BIND_PATTERN=%s,dc=example,dc=org` is configured, the corresponding login would be `cn=admin`. If a specific pattern like `BIND_PATTERN=cn=%s,dc=example,dc=org` is configured, the login name is just `admin`.
@@ -50,7 +58,7 @@ The UI always uses a simple `bind` operation to authenticate with the LDAP direc
 
 Run the app with
 
-​    make run
+    make run
 
 and head over to [http://localhost:5000/](http://localhost:5000/).
 
@@ -65,7 +73,7 @@ A Dockerfile is included. The container exposes port 5000. LDAP access is contro
 For the impatient: Run it with
 
     docker run -e LDAP_URL=ldap://your.ldap.server/ -e BASE_DN=dc=example,dc=org dnknth/ldap-ui
-    
+
 For the even more impatient: A demo is provided in [docker-demo](docker-demo). Run it with
 
     docker-demo/start.sh

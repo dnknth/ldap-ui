@@ -1,14 +1,18 @@
 "use strict";
 
-function LdapSchema(json) {
+export function LdapSchema(json) {
   
   // copy properties from a given object
   function ShallowCopy(json, ctor) {
     for (let prop in json) {
-      if (json.hasOwnProperty(prop)) {
+      if (Object.prototype.hasOwnProperty.call(json, prop)) {
         this[prop] = ctor ? new ctor(json[prop]) : json[prop];
       }
     }
+  }
+
+  function unique(element, index, array) { 
+    return array.indexOf(element) == index;
   }
 
   function ObjectClass(json) {
@@ -19,29 +23,24 @@ function LdapSchema(json) {
     
     schema: this,
     
+    get superClasses() {
+      let result = [];
+      for (let oc = this; oc; oc = this.schema.oc(oc.sup[0])) result.push(oc);
+      return result;
+    },
+    
     get isStructural() {
       return this.kind == 'structural';
     },
 
-    // List all structural attributes for a class
-    get structural() {
-      let result = [];
-      for (let oc = this; oc; oc = this.schema.oc(oc.sup[0])) {
-        for (let i in oc.must) {
-            const name = this.schema.attr(oc.must[i]).name;
-            if (name != 'objectClass') result.push(name);
-        }
-      }
-      return result;
-    },
-    
     // collect values from a field, across all superclasses
-    getAll: function(name) {
-      let result = [];
-      for (let oc = this; oc; oc = this.schema.oc(oc.sup[0])) {
-        const val = oc[name];
-        if (val) result = result.concat(val);
-      }
+    getAttributes: function(name) {
+      const result = this.superClasses
+        .map(oc => oc[name])
+        .filter(attrs => attrs)
+        .flat()
+        .map(attr => this.schema.attr(attr).name)
+        .filter(unique);
       result.sort();
       return result;
     },
@@ -77,7 +76,7 @@ function LdapSchema(json) {
     if (!json) return;
     
     for (let prop in json) {
-      if (json.hasOwnProperty(prop)) {
+      if (Object.prototype.hasOwnProperty.call(json, prop)) {
         const obj = ctor ? new ctor(json[prop]) : json[prop];
         this._objects.push(obj);
         for (let i = 0; i < obj.names.length; ++i) {
@@ -92,11 +91,9 @@ function LdapSchema(json) {
   this.objectClasses = new FlatMap(json.objectClasses, ObjectClass);
   this.syntaxes = json.syntaxes || [];
 
-  this.structural = [];
-  for (let i in this.objectClasses._objects) {
-    const oc = this.objectClasses._objects[i];
-    if (oc.isStructural) this.structural.push(oc.name);
-  }
+  this.structural = this.objectClasses._objects
+    .filter(oc => oc.isStructural)
+    .map(oc => oc.name);
 }
 
 LdapSchema.prototype = {
