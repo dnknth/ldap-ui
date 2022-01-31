@@ -28,8 +28,8 @@ BIND_PASSWORD = os.environ.get('BIND_PASSWORD')
 # that do not allow anonymous users to search.
 BIND_PATTERN = os.environ.get('BIND_PATTERN')
 
-# Searches
-SEARCH_PATTERNS = (# for search field
+# Search
+SEARCH_PATTERNS = ( # for search field and group members
     '(%s=%%s)' % LOGIN_ATTR,
     '(cn=%s)',
     '(gn=%s)',

@@ -37,10 +37,9 @@ export default {
     },
 
     done: function() {
-      const entry = Object.assign({}, this.entry);
-      entry.attrs.objectClass.push(this.oc);
+      this.entry.attrs.objectClass.push(this.oc);
+      this.$emit('replace-entry', this.entry);
       this.$bvModal.hide('add-oc');
-      this.$emit('replace-entry', entry);
     },
   },
   

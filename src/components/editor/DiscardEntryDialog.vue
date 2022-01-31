@@ -1,5 +1,5 @@
 <template>
-  <b-modal id="confirm-discard" title="Are you sure?" @show="init" @ok="done"
+  <b-modal id="confirm-discard" title="Are you sure?" @shown="init" @ok="done"
     @cancel="$emit('select-dn')" cancel-variant="primary" ok-variant="danger">
 
     <p class="strong">All changes will be irreversibly lost.</p>
@@ -17,34 +17,25 @@ export default {
   name: 'DiscardEntryDialog',
 
   props: {
-    entry: {
-      type: Object,
-      required: true,
-    },
     dn: String,
-  },
-
-  model: {
-    prop: 'entry',
-    event: 'form-changed',
   },
 
   data: function() {
     return {
-      back: undefined,
-    };
+      next: undefined,
+    }
   },
 
   methods: {
 
     init: function() {
-      this.back = this.dn;
+      this.next = this.dn;
       this.$emit('select-dn');
     },
 
     done: function() {
-      this.$emit('form-changed', null);
-      this.$emit('select-dn', this.back);
+      this.$emit('replace-entry', null);
+      this.$emit('select-dn', this.next);
     },
   },
 }

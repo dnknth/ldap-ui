@@ -1,7 +1,8 @@
 <template>
   <div id="app">
 
-    <nav-bar v-model="treeOpen" :dn="activeDn" :showWarning="showWarning"
+    <nav-bar v-model="treeOpen" :dn="activeDn" :base-dn="baseDn" :user="user"
+      :showWarning="showWarning" :schema="schema"
       @select-dn="activeDn = $event" @display-oc="displayOc" />
 
     <ldif-import-dialog @select-dn="activeDn = $event" />
@@ -9,7 +10,8 @@
     <b-container fluid>
       <b-row>
         <b-col cols="*" id="left">
-          <tree-view :shown="treeOpen" v-model="activeDn" />
+          <tree-view v-model="activeDn" :shown="treeOpen" :schema="schema"
+            @base-dn="baseDn = $event" />
           <object-class-card :oc="oc" @display-oc="displayOc" @display-attr="displayAttr" />
           <attribute-card v-if="attr" :attr="attr" @display-attr="displayAttr" />
         </b-col>
@@ -21,6 +23,7 @@
           </b-alert>
           
           <editor v-model="activeDn" :showInfo="showInfo"
+            :schema="schema" :user="user" :base-dn="baseDn"
             @display-attr="displayAttr" @display-oc="displayOc" />
 
         </b-col>
@@ -33,8 +36,8 @@
 
 import AttributeCard from './components/schema/AttributeCard.vue'
 import Editor from './components/editor/Editor.vue'
-import LdifImportDialog from './components/LdifImportDialog.vue'
 import { LdapSchema } from './components/schema/schema.js'
+import LdifImportDialog from './components/LdifImportDialog.vue'
 import NavBar from './components/NavBar.vue'
 import ObjectClassCard from './components/schema/ObjectClassCard.vue'
 import { request } from './request.js'
@@ -59,6 +62,7 @@ export default {
 
       // authentication
       user: null,             // logged in user
+      baseDn: undefined,
       
       treeOpen: true,         // Is the tree visible?
       activeDn: undefined,    // currently active DN in the editor
@@ -67,19 +71,16 @@ export default {
       error: {},              // status alert
       
       // schema
-      schema: new LdapSchema({}), // LDAP schema info
+      schema: new LdapSchema({}),
 
-      oc: null,               // objectclass in side panel
-      attr: null,             // attribute in side panel
+      // Flash cards
+      oc: null,               // objectClass info in side panel
+      attr: null,             // attribute info in side panel
     }
   },
 
   provide: function () {
-    return {
-      getUser: this.getUser,
-      getSchema: this.getSchema,
-      xhr: this.xhr,
-    }
+    return { xhr: this.xhr, }
   },
 
   created: async function() { // Runs on page load
@@ -87,24 +88,21 @@ export default {
     // Get the DN of the current user
     this.user = await this.xhr({ url: 'api/whoami'});
 
-  // Load the schema
+    // Load the schema
     this.schema = new LdapSchema(await this.xhr({ url: 'api/schema' }));
 
     document.getElementById('search').focus();
   },
 
   methods: {
-
-    getUser: function() { return this.user; },
     
-    getSchema: function() { return this.schema; },
-
     xhr: function(options) {
-      const exception = this.showException;
-      // options.url = 'http://localhost:5000/' + options.url; // FIXME debug mode
+      if (window.webpackHotUpdate) {  // debug mode
+        options.url = 'http://localhost:5000/' + options.url;
+      }
       return new Promise(resolve => request(options)
         .then(xhr => resolve(JSON.parse(xhr.response)))
-        .catch(xhr => resolve(exception(xhr.response))));
+        .catch(xhr => resolve(this.showException(xhr.response))));
     },
     
     displayOc: function(name) {
@@ -258,6 +256,10 @@ export default {
 
   .dropdown-item {
     color: var(--body-fg);
+  }
+
+  .glyph {
+    font-family: sans-serif, FontAwesome;
   }
 
 </style>

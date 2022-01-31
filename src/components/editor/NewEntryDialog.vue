@@ -28,16 +28,18 @@ export default {
       type: Object,
       required: true,
     },
-  },
 
-  inject: [ 'getSchema' ],
+    schema: {
+      type: Object,
+      required: true,
+    },
+},
 
   data: function() {
     return {
       name: null,
       rdn: null,
       objectClass: null,
-      schema: this.getSchema(),
     }
   },
 

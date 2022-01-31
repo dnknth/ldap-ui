@@ -396,24 +396,20 @@ async def passwd(dn: str) -> Optional[bool]:
 async def search(query: str) -> List[dict]:
     'Search the directory'
 
-    q = query
     patterns = app.config['SEARCH_PATTERNS']
+    if len(query) < app.config['SEARCH_QUERY_MIN']: return []
 
-    # Search for an attribute prefix
-    if '=' in query:
-        attr, q = query.split('=', 1)
-        patterns = ['(%s=%%s*)' % attr]
-
-    # Build query
-    res : List[dict] = []
-    if len(q) < app.config['SEARCH_QUERY_MIN']: return res
-    query = '(|%s)' % ''.join(pattern % q for pattern in patterns)
+    if '=' in query: # Search specific attributes
+        if '(' not in query: query = '(%s)' % query
+    else: # Build default query
+        query = '(|%s)' % ''.join(p % query for p in patterns)
     
     # Collect results
+    res : List[dict] = []
     async for dn, attrs in result(request.ldap.search(
         app.config['BASE_DN'], ldap.SCOPE_SUBTREE, query)):
-            res.append ({ 'dn': dn, 'name': _ename(attrs) or dn })
-            if len(res) == app.config['SEARCH_MAX']: break
+            res.append({ 'dn': dn, 'name': _ename(attrs) or dn })
+            if len(res) >= app.config['SEARCH_MAX']: break
     return res
 
 

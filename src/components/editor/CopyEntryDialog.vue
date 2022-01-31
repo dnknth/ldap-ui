@@ -21,11 +21,6 @@ export default {
     },
   },
 
-  model: {
-    prop: 'entry',
-    event: 'replace-entry',
-  },
-
   data: function() {
     return {
       dn: this.entry.meta.dn,
@@ -63,9 +58,9 @@ export default {
         return;
       }
       
-      this.entry.attrs[rdn] = [rdnpart[1]];
-      this.entry.meta.dn = this.dn;
-      this.entry.meta.isNew = true;
+      this.$set(this.entry.attrs, rdn, [rdnpart[1]]);
+      this.$set(this.entry.meta, 'dn', this.dn);
+      this.$set(this.entry.meta, 'isNew', true);
 
       this.$emit('replace-entry', this.entry);
       this.$bvModal.hide('copy-entry');

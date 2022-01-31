@@ -1,6 +1,6 @@
 <template>
   <tr v-if="shown">
-    <th :class="{ required: required, optional: !required, rdn: isRdn }">
+    <th :class="{ required: must, optional: may, rdn: isRdn, illegal: illegal }">
       <span class="clickable oc" :title="attr.desc"
         @click="$emit('display-attr', attr.name)">{{ attr }}</span>
       <i v-if="changed" class="fa green fa-check"></i>
@@ -17,18 +17,20 @@
           <img v-if="val" :src="'data:image/jpeg;base64,' + val" />
           <span v-if="val" class="clickable control remove-btn" @click="deleteBlob(index)">⊖</span>
         </span>
-        <input v-else v-model="values[index]" :id="attr + '-' + index" :type="type" 
-          :placeholder="flagged ? '\uf071' : ''" :class="{ structural: isStructural(val),
-            disabled: disabled, auto: defaultValue, flagged: flagged }"
+        <input v-else v-model="values[index]" :id="attr + '-' + index" :type="type" class="glyph"
+          :class="{ structural: isStructural(val), disabled: disabled || isStructural(val),
+            auto: defaultValue, duplicate: duplicate(index) }"
+          :placeholder="placeholder"
           :title="equality == 'generalizedTimeMatch' ? dateString(val) : ''"
-          @keyup="complete" @keyup.esc="query = ''" @focusin="query = ''" />
+          @keyup="search" @keyup.esc="query = ''" @focusin="query = ''" />
+
         <i v-if="attr == 'objectClass'" class="clickable fa fa-info-circle"
           @click="$emit('display-oc', val)"></i>
         <i v-if="password" class="clickable fa fa-question-circle"
           v-b-modal.change-password></i>
       </div>
-      <auto-completion v-if="completable" :attr="attr.name"
-        :index="completeIndex" :query="query" v-model="values" />
+      <search-results v-if="completable" @select-dn="complete"
+        :for="elementId" :query="query" label="dn" placement="topleft" :shorten="baseDn" />
       <div v-if="hint" class="hint">{{ hint }}</div>
     </td>
   </tr>
@@ -36,10 +38,14 @@
 
 <script>
 
-import AutoCompletion from './AutoCompletion.vue';
+function unique(element, index, array) {
+  return array.indexOf(element) == index;
+}
+
+import SearchResults from '../SearchResults.vue';
 
 export default {
-  components: { AutoCompletion },
+  components: { SearchResults },
 
   name: 'FormRow',
 
@@ -64,17 +70,18 @@ export default {
       required: true,
     },
 
-    required: {
+    must: {
       type: Boolean,
       required: true,
     },
 
-    marked: {
+    may: {
       type: Boolean,
       required: true,
     },
 
     changed: Boolean,
+    baseDn: String,
   },
 
   model: {
@@ -86,6 +93,8 @@ export default {
 
   data: function() {
     return {
+      valid: undefined,
+
       // auto ranges
       idRanges:               // Numeric ID ranges
         [ 'uidNumber', 'gidNumber' ],
@@ -93,12 +102,19 @@ export default {
       hint: '',
 
       // auto completion
-      completeIndex: null,
       query: '',
+      elementId: undefined,
+    }
+  },
+
+  watch: {
+    valid: function(ok) {
+      this.$emit('valid', ok);
     }
   },
 
   created: async function() {
+
     if (this.disabled
       || !this.idRanges.includes(this.attr.name)
       || this.values.length != 1
@@ -110,10 +126,20 @@ export default {
     this.hint = range.min == range.max
       ? '> ' + range.min
       : '\u2209 (' + range.min + " - " + range.max + ')';
-    this.values[0] = this.autoFilled = new String(range.next);
+    this.autoFilled = new String(range.next);
+    this.$set(this.values, 0, this.autoFilled);
   },
 
+  mounted: function() { this.validate(); },
+  updated: function() { this.validate(); },
+
   methods: {
+
+    validate: function() {
+      this.valid = !this.missing
+        && (!this.illegal || this.empty)
+        && this.values.every(unique);
+    },
 
     // Add an empty row in the entry form
     addRow: function() {
@@ -152,23 +178,26 @@ export default {
       return this.attr.name == 'objectClass' && this.structural.includes(val);
     },
 
-    // auto-complete form values
-    complete: function(evt) {
-
-      // Avoid AJAX calls without results
-      const dropdownId = evt.target.id,
-        q = evt.target.value;
-
-      this.completeIndex = +dropdownId.split('-')[1];
-      this.query = q.length > 2 && !q.includes(',') ? q : '';
+    duplicate: function(index) {
+      return !unique(this.values[index], index, this.values);
     },
 
+    // auto-complete form values
+    search: function(evt) {
+      this.elementId = evt.target.id;
+      const q = evt.target.value;
+      this.query = q.length >= 2 && !q.includes(',') ? q : '';
+    },
+
+    // use an auto-completion choice
+    complete: function(dn) {
+      const index = +this.elementId.split('-')[1];
+      this.$set(this.values, index, dn);
+      this.query = '';
+    },
+    
     // remove an image
     deleteBlob: async function(index) {
-      // let values = Array.from(this.values);
-      // values[index] = '';
-      // this.$emit('update-value', values);
-
       const data = await this.xhr({
         method: 'DELETE',
         url:  'api/blob/' + this.attr.name + '/' + index + '/' + this.meta.dn,
@@ -198,7 +227,17 @@ export default {
         || (!this.meta.isNew && (this.password || this.binary));
     },
 
-    completable: function() { return this.equality == 'distinguishedNameMatch'; },
+    completable: function() {
+      return this.elementId && this.equality == 'distinguishedNameMatch';
+    },
+
+    placeholder: function() {
+      if (this.completable) return '\uf002'; // fa-search
+      if (this.missing) return '\uf071';     // fa-warning
+      if (this.empty) return '\uf1f8';       // fa-trash
+      return undefined;
+    },
+
     isRdn: function() { return this.attr.name == this.meta.dn.split('=')[0]; },
 
     // Guess the <input> type for an attribute
@@ -218,9 +257,10 @@ export default {
       return this.values.length == 1 && this.values[0] == this.autoFilled;
     },
 
-    empty: function() { return this.values.length == 1 && !this.values[0]; },
-    missing: function() { return this.empty && this.required; },
-    flagged: function() { return this.missing && this.marked; },
+    empty: function() { return this.values.every(value => !value.trim()); },
+    missing: function() { return this.empty && this.must; },
+    illegal: function() { return !this.must && !this.may; }
+
   },
 }
 </script>
@@ -231,6 +271,7 @@ export default {
   }
 
   th {
+    font-weight: normal;
     vertical-align: top;
     position: relative;
     top: 0.5ex;
@@ -239,6 +280,10 @@ export default {
 
   th.optional span.oc {
     color: var(--muted-fg);
+  }
+
+  th.illegal, input.duplicate {
+    text-decoration: line-through red;
   }
 
   th.rdn span.oc {
@@ -263,7 +308,7 @@ export default {
   }
 
   input:focus {
-    border-bottom: 2px solid var(--accent);
+    border-bottom: 1px solid var(--accent);
     outline: none;
   }
 
@@ -320,8 +365,4 @@ export default {
     color: var(--accent);
   }
 
-  input.flagged {
-    color: red;
-    font-family: sans-serif, FontAwesome;
-  }
 </style>

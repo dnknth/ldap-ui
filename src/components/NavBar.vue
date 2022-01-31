@@ -5,24 +5,28 @@
     <b-navbar-brand>
       <i class="clickable fa" :class="treeOpen ? 'fa-list-alt' : 'fa-list-ul'"
         @click="$emit('toggle-tree', !treeOpen)"></i>
-      <node-label oc="person" :dn="getUser()" cssClass="clickable"
+      <node-label oc="person" :dn="user" cssClass="clickable"
         @select-dn="$emit('select-dn', $event)" />
     </b-navbar-brand>
 
     <b-collapse is-nav id="nav_collapse">
-      <!-- Right aligned nav items -->
-      <b-navbar-nav class="ml-auto">
+      <b-navbar-nav class="ml-auto"><!-- Right aligned nav items -->
       
-      <b-nav-item v-b-modal.ldif-import>Import…</b-nav-item>
-      
-      <b-nav-item-dropdown text="Schema" right>
-        <b-dropdown-item v-for="obj in getSchema().objectClasses._objects"
-          :key="obj.name" @click="$emit('display-oc', obj.name)">
-            {{ obj.name }}
-        </b-dropdown-item>
-      </b-nav-item-dropdown>
+        <b-nav-item v-b-modal.ldif-import>Import…</b-nav-item>
+        
+        <b-nav-item-dropdown text="Schema" right>
+          <b-dropdown-item v-for="obj in schema.objectClasses._objects"
+            :key="obj.name" @click="$emit('display-oc', obj.name)">
+              {{ obj.name }}
+          </b-dropdown-item>
+        </b-nav-item-dropdown>
 
-      <search-form :dn="dn" :showWarning="showWarning" @select-dn="$emit('select-dn', $event)" />
+        <b-nav-form @submit.prevent="query = search">
+          <input size="sm" class="glyph mr-sm-2 form-control" id="search" v-model="search"
+            :placeholder="'\uf002'" name="q" onClick="this.select();" @keyup.esc="query = ''" />
+          <search-results for="search" @select-dn="query = ''; $emit('select-dn', $event)"
+            :shorten="baseDn" :query="query" :warning="showWarning" placement="bottomleft" />
+        </b-nav-form>
 
       </b-navbar-nav>
     </b-collapse>
@@ -32,7 +36,7 @@
 <script>
 
 import NodeLabel from './NodeLabel.vue'
-import SearchForm from './SearchForm.vue'
+import SearchResults from './SearchResults.vue';
 
 export default {
 
@@ -40,17 +44,26 @@ export default {
 
   components: {
     NodeLabel,
-    SearchForm,
+    SearchResults,
   },
 
   props: {
     dn: String,
+    baseDn: String,
+    user: String,
+
     showWarning: {
       type: Function,
       required: true,
     },
+
     treeOpen: {
       type: Boolean,
+      required: true,
+    },
+
+    schema: {
+      type: Object,
       required: true,
     },
   },
@@ -60,11 +73,22 @@ export default {
     event: 'toggle-tree',
   },
 
-  inject: [ 'getSchema', 'getUser' ],
+  data: function() {
+    return {
+      query: '',
+      search: '',
+    }
+  },
+
+  watch: {
+    dn: function() { this.query = ''; },
+    search: function(q) { if (!q) this.query = ''; },
+  },
+
 }
 </script>
 
-<style scoped>
+<style>
   @media (prefers-color-scheme: dark) {
     .navbar-dark .navbar-toggler {
       border-color: var(--muted-fg);

@@ -3,10 +3,9 @@
     @show="reset" @shown="init" @ok="done" @hidden="$emit('update-form')">
     
     <div v-if="oldExists">
-      <small v-if="user != entry.meta.dn">Optional</small>
-      <small v-if="user == entry.meta.dn">Required</small>
-      <i class="green fa fa-check-circle" v-if="passwordOk === true"></i>
-      <i class="red fa fa-times-circle" v-if="passwordOk === false"></i>
+      <small >{{ user == entry.meta.dn ? 'Required' : 'Optional' }}</small>
+      <i v-if="passwordOk !== undefined" class="fa"
+        :class="passwordOk ? 'green fa-check-circle' : 'red fa-times-circle'"></i>
     </div>
       
     <input id="old-password" v-model="oldPassword" class="mb-3 form-control"
@@ -15,7 +14,8 @@
     <input v-model="newPassword" class="mb-3 form-control" id="new-password"
       placeholder="New password" type="password" />
 
-    <input v-model="repeated" class="mb-3 form-control" :class="{ red: repeated && !passwordsMatch }"
+    <input v-model="repeated" class="mb-3 form-control"
+      :class="{ red: repeated &amp;&amp; !passwordsMatch }"
       placeholder="Repeat new password" type="password" @keyup.enter="done" />
 </b-modal>
 </template>
@@ -31,18 +31,19 @@ export default {
       type: Object,
       required: true
     },
+
     info: {
       type: Function,
       required: true,
     },
+
+    user: {
+      type: String,
+      required: true,
+    },
   },
 
-  model: {
-    prop: 'entry',
-    event: 'replace-entry',
-  },
-
-  inject: [ 'getUser', 'xhr' ],
+  inject: [ 'xhr' ],
 
   data: function() {
     return {
@@ -50,7 +51,6 @@ export default {
       newPassword: '',
       repeated: '',
       passwordOk: undefined,
-      user: this.getUser(),
     }
   },
 
@@ -107,9 +107,9 @@ export default {
       if (data) {
         const entry = Object.assign({}, this.entry);
         entry.attrs['userPassword'] = [ data ];
+        this.$emit('replace-entry', entry);
         this.info('👍 Password changed');
         this.$bvModal.hide('change-password');
-        this.$emit('replace-entry', entry);
       }
     },
   },

@@ -23,26 +23,14 @@ Prerequisites:
 
 * [GNU make](https://www.gnu.org/software/make/)
 * [node.js](https://nodejs.dev) with NPM
-* [Python3](https://www.python.org), at least Python3.7 (see note below)
+* [Python3](https://www.python.org) >= 3.7
 * [pip3](https://packaging.python.org/tutorials/installing-packages/)
 * [python-ldap](https://pypi.org/project/python-ldap/); To compile the Python module:
   * Debian / Ubuntu: `apt-get install libsasl2-dev python-dev libldap2-dev libssl-dev`
   * RedHat / CentOS: `yum install python-devel openldap-devel`
 
-(NB: For Python versions older than 3.7, please try the `3.6` Git tag. It uses outdated dependencies and is no longer supported, though.)
-
-To set up a virtual Python environment in `.venv3` with:
-
-    make .venv3
-
 Check the configuration in [settings.py](settings.py). It is very short and mostly self-explaining.
-Most settings can (and should) be overridden by environment variables.
-
-To build the HTML front-end, run
-
-    npm install && npm run build
-
-This populates the `dist` directory.
+Most settings can (and should) be overridden by environment variables or settings in a `.env` file; see [docker-demo/env-example](docker-demo/env-example).
 
 ### Authentication methods
 
@@ -70,6 +58,8 @@ A Dockerfile is included. The container exposes port 5000. LDAP access is contro
 * `BASE_DN`: search base (required), e.g. `dc=example,dc=org`.
 * `LOGIN_ATTR`: User name attribute (optional), defaults to `uid`.
 
+For finer-grained control, check the variables in [settings.py](settings.py).
+
 For the impatient: Run it with
 
     docker run -e LDAP_URL=ldap://your.ldap.server/ -e BASE_DN=dc=example,dc=org dnknth/ldap-ui
@@ -79,6 +69,15 @@ For the even more impatient: A demo is provided in [docker-demo](docker-demo). R
     docker-demo/start.sh
 
 You are automatically logged in as `Fred Flintstone`.
+
+## Notes
+
+### Searching
+
+Search uses a fixed set of criteria (`cn`, `gn`, `sn`, and `uid`) if the query does not contain `=`.
+Wildcards are supported, e.g. `f*` will match all `cn`, `gn`, `sn`, and `uid` starting with `f`.
+Additionally, arbitrary attributes can be searched with an LDAP filter specification, for example
+`sn=F*` or `uidNumber>=100`.
 
 ## Caveats
 

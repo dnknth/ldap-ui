@@ -24,11 +24,6 @@ export default {
     },
   },
 
-  model: {
-    prop: 'entry',
-    event: 'replace-entry',
-  },
-
   data: function() {
     return {
       attr: null,
@@ -63,8 +58,9 @@ export default {
         return;
       }
 
-      this.entry.attrs[this.attr] = [''];
-      this.$emit('replace-entry', this.entry);
+      const entry = Object.assign({}, this.entry);
+      this.$set(entry.attrs, this.attr, ['']);
+      this.$emit('replace-entry', entry);
     },
 
     focus: function() {

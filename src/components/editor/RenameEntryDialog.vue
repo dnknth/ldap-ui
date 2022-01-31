@@ -30,12 +30,11 @@ export default {
     },
   },
 
-  inject: [ 'getSchema', 'xhr' ],
+  inject: [ 'xhr' ],
 
   data: function() {
     return {
       rdn: undefined,
-      schema: this.getSchema(),
     }
   },
 

@@ -1,9 +1,9 @@
 <template>
   <div id="tree-view">
-    <ul id="tree" v-if="shown" class="list-unstyled">
-      <li v-for="item in treeItems" :key="item.dn"
+    <ul id="tree" v-if="shown &amp;&amp; tree" class="list-unstyled">
+      <li v-for="item in tree.visible()" :key="item.dn"
         :id="item.dn" :class="item.structuralObjectClass">
-          <span v-for="i in item.level" class="indent" :key="i"></span>
+          <span v-for="i in (item.level - tree.level)" class="indent" :key="i"></span>
           <span v-if="item.hasSubordinates" class="clickable opener"
             @click="toggle(item)"><i :class="'fa fa-chevron-circle-'
               + (item.open ? 'down' : 'right')"></i></span>
@@ -22,8 +22,45 @@
 
 <script>
 
-import { DN } from './schema/DN.js'
 import NodeLabel from './NodeLabel.vue'
+
+
+function Node(json) {
+  Object.assign(this, json);
+  this.level = this.dn.split(',').length;
+  if (this.hasSubordinates) {
+    this.subordinates = [];
+    this.open = false;
+  }
+}
+
+Node.prototype = {
+  find: function(dn) {
+    // Primitive recursive search for a DN.
+    // Compares DNs a strings, without any regard for 
+    // distinguishedNameMatch rules.
+    // See: https://ldapwiki.com/wiki/DistinguishedNameMatch
+
+    if (this.dn == dn) return this;
+    const suffix = ',' + this.dn;
+    if (!dn.endsWith(suffix) || !this.hasSubordinates) return undefined;
+    return this.subordinates
+      .map(node => node.find(dn))
+      .filter(node => node)[0];
+  },
+
+  get loaded() {
+    return !this.hasSubordinates || this.subordinates.length > 0;
+  },
+
+  visible: function() {
+    if (!this.hasSubordinates || !this.open) return [this];
+    return [this].concat(
+      this.subordinates.flatMap(
+        node => node.visible()));
+  },
+};
+
 
 export default {
 
@@ -40,113 +77,92 @@ export default {
 
   props: {
     active: String,
-    shown: Boolean,
+
+    shown: {
+      type: Boolean,
+      required: true,
+    },
+
+    schema: {
+      type: Object,
+      required: true,
+    },
   },
 
   inject: [ 'xhr' ],
 
   data: function() {
     return {
-      tree: [],              // the tree that has been loaded so far
-      treeMap: {},           // DN -> item mapping to check entry visibility
+      tree: undefined,
     }
   },
 
-  created: function() {
-    this.reload('base');
+  created: async function() {
+    await this.reload('base');
+    this.$emit('base-dn', this.tree.dn);
   },
 
   watch: {
 
     active: async function(selected) {
-      const base = this.tree[0].dn,
-        dn = new DN(selected || base),
-        parents = dn.parents(this.tree[0].dn);
-      parents.reverse();
-      for (let i=0; i < parents.length; ++i) {
-        const p = parents[i].value, node = this.treeMap[p]; 
-        if (!node || !node.open) {
-          await this.reload(p);
-        }
-        this.treeMap[p].open = true;
-      }
 
       // Special case: Full tree reload
-      if (dn == '-') {
-        await this.reload(base);
-        this.treeMap[base].open = true;
+      if (selected == '-' || selected == 'base') {
+        await this.reload('base');
+        return;
+      }
+
+      // Reveal the selected DN in the tree
+      // by opening all parent nodes
+      const dn = new this.schema.DN(selected || this.tree.dn),
+        parents = dn.parents(this.tree.dn);
+
+      parents.reverse();
+      for (let i=0; i < parents.length; ++i) {
+        const p = parents[i].value, node = this.tree.find(p);
+        if (!node.loaded) await this.reload(p);
+        this.$set(node, 'open', true);
       }
 
       // Special case: Item was added, renamed or deleted
-      else if (dn != 'base' && !this.treeMap[dn.value]) {
-        const pdn = dn.parent.value;
-        await this.reload(pdn);
-        this.treeMap[pdn].open = true;
+      if (!this.tree.find(dn.value)) {
+        await this.reload(dn.parent.value);
+        this.$set(this.tree.find(dn.parent.value), 'open', true);
       }
-      this.redraw();
     },
 
   },
     
   methods: {
 
-    clicked: function(dn) {
-      const item = this.treeMap[dn];
-      if (item.hasSubordinates && !item.open) {
-        this.reload(item.dn);
-        item.open = true;
-        this.redraw();
-      }
+    clicked: async function(dn) {
+      const item = this.tree.find(dn);
+      if (item.hasSubordinates && !item.open) await this.toggle(item);
       this.$emit('select-dn', dn);
     },
 
     // Reload the subtree at entry with given DN
     reload: async function(dn) {
-      const treesize = this.tree.length;
-      let pos = this.tree.indexOf(this.treeMap[dn]) + 1;
-      while (pos < this.tree.length && this.tree[pos].dn.includes(dn)) {
-        delete this.treeMap[this.tree[pos].dn];
-        this.tree.splice(pos, 1);
-      }
-
       const response = await this.xhr({ url: 'api/tree/' + dn }) || [];
       response.sort((a, b) => a.dn.toLowerCase().localeCompare(b.dn.toLowerCase()));
 
-      for (let i=0; i < response.length; ++i) {
-        const item = response[i];
-        this.treeMap[item.dn] = item;
-        this.tree.splice(pos++, 0, item);
-        item.level = item.dn.split(',').length - this.tree[0].dn.split(',').length;
+      if (dn == 'base') {
+        this.tree = new Node(response[0]);
+        await this.toggle(this.tree);
+        return;
       }
 
-      if(treesize == 0) this.toggle(this.tree[0]);
+      const item = this.tree.find(dn);
+      this.$set(item, 'subordinates', response.map(node => new Node(node)));
       return response;
     },
 
-    redraw: function() {
-      this.tree = this.tree.slice();
-    },
-
     // Hide / show tree elements
-    toggle: function(item) {
-      item.open = !item.open;
-      if (item.open) this.reload(item.dn);
-      this.redraw();
+    toggle: async function(item) {
+      if (!item.open && !item.loaded) await this.reload(item.dn);
+      this.$set(item, 'open', !item.open);
     },
     
-  },
-
-  computed: {
-      
-    // All visible tree entries (with expanded parents)
-    treeItems: function() {
-      const tm = this.treeMap;
-      return this.tree.filter(item =>
-        new DN(item.dn).parents()
-          .filter(p => tm[p.value])
-          .every(p => tm[p.value].open));
-    },
-
   },
 }
 </script>
