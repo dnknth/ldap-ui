@@ -1,0 +1,29 @@
+---
+# Beta! Test before production use
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ldap-ui
+spec:
+  selector:
+    matchLabels:
+      app: ldap-ui
+  template:
+    metadata:
+      labels:
+        app: ldap-ui
+    spec:
+      containers:
+      - name: ldap-ui
+        image: dnknth/ldap-ui
+        env:
+          - name: LDAP_URL
+            value: "ldap://ldap.cluster.local"
+          - name: BASE_DN
+            value: "dc=example,dc=org"
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 5000
