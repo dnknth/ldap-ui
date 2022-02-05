@@ -208,16 +208,16 @@ export default {
   }
 
   .control {
-    font-size: 150%;
     opacity: 0.4;
     cursor: pointer;
   }
 
   .control:hover {
-    opacity: 0.7;
+    opacity: 0.75;
   }
 
   .close-box {
+    font-size: 150%;
     position: absolute;
     top: 0.2em;
     right: 16px;

@@ -1,5 +1,5 @@
 <template>
-  <span @click="$emit('select-dn', dn)" class="node-label" :class="cssClass">
+  <span @click="$emit('select-dn', dn)" class="node-label" :class="cssClass" :title="dn">
     <i class="fa" :class="icon" v-if="oc"></i>
     <slot>{{ label }}</slot>
   </span>

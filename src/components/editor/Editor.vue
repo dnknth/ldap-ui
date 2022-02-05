@@ -1,27 +1,25 @@
 <template>
   <!-- Entry editor form -->
   <b-form v-if="entry" id="entry-form"
-    @submit.prevent="save" @reset="load(entry.meta.dn);"
-    @focusin="onFocus" @click="onFocus">
+    @submit.prevent="save" @reset="load(entry.meta.dn);" @focusin="onFocus">
 
-    <new-entry-dialog :entry="entry" :schema="schema" @select-dn="$emit('select-dn')"
-      @replace-entry="replaceEntry" @update-form="prepareForm" />
-    <copy-entry-dialog :entry="entry" @replace-entry="replaceEntry"
-      @select-dn="$emit('select-dn', $event)" @update-form="prepareForm" />
-    <rename-entry-dialog :dn="entry.meta.dn" :entry="entry" :info="showInfo"
-      @replace-entry="replaceEntry" @select-dn="$emit('select-dn', $event)" />
+    <new-entry-dialog :entry="entry" :schema="schema"
+      @replace-entry="entry = $event;"
+      @select-dn="$emit('select-dn')" />
+    <copy-entry-dialog :entry="entry"
+      @select-dn="$emit('select-dn', $event)" />
+    <rename-entry-dialog :dn="entry.meta.dn" :entry="entry"
+      @select-dn="$emit('select-dn', $event)" />
     <delete-entry-dialog :dn="entry.meta.dn" :info="showInfo"
       @select-dn="$emit('select-dn', $event)" />
     <discard-entry-dialog :dn="activeDn"
-      @replace-entry="replaceEntry" @select-dn="$emit('select-dn', $event)" />
+      @replace-entry="entry = $event;"
+      @select-dn="$emit('select-dn', $event)" />
 
-    <password-change-dialog :entry="entry" :info="showInfo" :user="user"
-      @replace-entry="replaceEntry" />
+    <password-change-dialog :entry="entry" :user="user" />
     <add-photo-dialog :dn="entry.meta.dn" @select-dn="load" />
-    <add-attribute-dialog :entry="entry" :attributes="may"
-      @replace-entry="replaceEntry" @update-form="prepareForm" />
-    <add-object-class-dialog :entry="entry"
-      @replace-entry="replaceEntry" @update-form="prepareForm" />
+    <add-attribute-dialog :entry="entry" :attributes="may" @update-form="prepareForm" />
+    <add-object-class-dialog :entry="entry" @update-form="prepareForm" />
   
     <b-card id="editor">
       <div slot="header">
@@ -46,7 +44,7 @@
       
       <table id="entry">
         <form-row v-for="key in keys" class="attr" :key="key" :must="must.includes(key)"
-          :attr="schema.attr(key)" :meta="entry.meta" v-model="entry.attrs[key]"
+          :attr="schema.attr(key)" :meta="entry.meta" :values="entry.attrs[key]"
           :changed="entry.changed.includes(key)" :structural="schema.structural" :base-dn="baseDn"
           :may="may.includes(key)" @form-changed="prepareForm"
           @reload-form="load" @valid="valid(key, $event)"
@@ -158,34 +156,26 @@ export default {
       if (el.tagName == 'INPUT' && el.id) this.focused = el.id;
     },
 
-    replaceEntry: function(entry) {
-      this.entry = entry ? Object.assign({}, entry) : null;
-    },
-
     prepareForm: function(focused) {
       this.must.filter(attr => !this.entry.attrs[attr])
         .forEach(attr => this.$set(this.entry.attrs, attr, ['']));
-
-      if (!focused) focused = this.focused;
 
       if (!focused) {
         const empty = this.keys.flatMap(attr => this.entry.attrs[attr]
           .map((value, index) => value.trim() ? undefined : attr + '-' + index)
           .filter(id => id));
-        if (empty[0]) focused = empty[0];
+        focused = empty[0];
       }
 
-      this.$nextTick(function () {
-        document.querySelectorAll('input').forEach(
-          input => input.removeAttribute('disabled'));
-        document.querySelectorAll('input.disabled').forEach(
-          input => input.setAttribute('disabled', 'disabled'));
+      if (!focused) focused = this.focused;
 
+      this.$nextTick(function () {
         let input = focused ? document.getElementById(focused) : undefined;
         if (!input) input = document.querySelector('#entry input:not([disabled])');
       
         if (input) {
-          input.focus();
+          // work around annoying focus jump in OS X Safari
+          window.setTimeout(function() { input.focus(); }, 100);
           this.focused = input.id;
         }
       });
@@ -254,7 +244,7 @@ export default {
     },
     
     attributes: function(kind) {
-      let attrs = this.entry.attrs['objectClass']
+      let attrs = this.entry.attrs.objectClass
         .filter(oc => oc && oc != 'top')
         .map(oc => this.schema.oc(oc))
         .flatMap(oc => oc ? oc.getAttributes(kind): [])
@@ -284,7 +274,7 @@ export default {
     },
 
     structural: function() {
-      const oc = this.entry.attrs['objectClass']
+      const oc = this.entry.attrs.objectClass
         .map(oc => this.schema.oc(oc))
         .filter(oc => oc && oc.isStructural)[0];
       return oc ? oc.name : '';

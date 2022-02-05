@@ -20,12 +20,9 @@ export default {
       type: Object,
       required: true,
     },
+    
     dn: {
       type: String,
-      required: true,
-    },
-    info: {
-      type: Function,
       required: true,
     },
   },
@@ -66,7 +63,6 @@ export default {
       const dnparts = this.dn.split(',');
       dnparts.splice(0, 1, rdn);
 
-      this.info('👍 Saved changes');
       this.$emit('select-dn', dnparts.join(','));
       this.$bvModal.hide('rename-entry');
     },

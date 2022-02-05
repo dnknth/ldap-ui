@@ -382,10 +382,14 @@ async def passwd(dn: str) -> Optional[bool]:
                 return False
                 
         elif 'new1' in args:
-            await empty(request.ldap.passwd(dn, args.get('old') or None, args['new1']))
-            _dn, attrs = await unique(
-                request.ldap.search(dn, ldap.SCOPE_BASE))
-            return attrs['userPassword'][0].decode()
+            if args['new1']:
+                await empty(request.ldap.passwd(dn, args.get('old') or None, args['new1']))
+                _dn, attrs = await unique(
+                    request.ldap.search(dn, ldap.SCOPE_BASE))
+                return attrs['userPassword'][0].decode()
+            else:
+                await empty(request.ldap.modify(dn, [(1, 'userPassword', None)]))
+                return ''
 
     return None # mypy
 

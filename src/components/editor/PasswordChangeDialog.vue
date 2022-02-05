@@ -3,21 +3,21 @@
     @show="reset" @shown="init" @ok="done" @hidden="$emit('update-form')">
     
     <div v-if="oldExists">
-      <small >{{ user == entry.meta.dn ? 'Required' : 'Optional' }}</small>
+      <small >{{ currentUser ? 'Required' : 'Optional' }}</small>
       <i v-if="passwordOk !== undefined" class="fa"
         :class="passwordOk ? 'green fa-check-circle' : 'red fa-times-circle'"></i>
-    </div>
       
-    <input id="old-password" v-model="oldPassword" class="mb-3 form-control"
-      placeholder="Old password" :disabled="!oldExists" type="password" @change="check" />
+      <input id="old-password" v-model="oldPassword" class="mb-3 form-control"
+        placeholder="Old password" type="password" @change="check" />
+    </div>
 
-    <input v-model="newPassword" class="mb-3 form-control" id="new-password"
+    <input id="new-password" v-model="newPassword" class="mb-3 form-control"
       placeholder="New password" type="password" />
 
     <input v-model="repeated" class="mb-3 form-control"
       :class="{ red: repeated &amp;&amp; !passwordsMatch }"
       placeholder="Repeat new password" type="password" @keyup.enter="done" />
-</b-modal>
+  </b-modal>
 </template>
 
 <script>
@@ -30,11 +30,6 @@ export default {
     entry: {
       type: Object,
       required: true
-    },
-
-    info: {
-      type: Function,
-      required: true,
     },
 
     user: {
@@ -81,18 +76,12 @@ export default {
       });
     },
 
-    deletePassword: function() {
-      if (this.user != this.entry.meta.dn) {
-        this.entry.attrs['userPassword'] = [];
-        this.$bvModal.hide('change-password');
-      }
-    },
-
     done: async function(evt) {
+      // old and new passwords are required for current user
       // new passwords must match
-      // old password is required for current user
-      if (this.newPassword == '' || this.newPassword != this.repeated
-      || (this.user == this.entry.meta.dn && this.oldExists && (!this.oldPassword || !this.passwordOk))) {
+      if ((this.currentUser && !this.newPassword)
+      || this.newPassword != this.repeated
+      || (this.currentUser && this.oldExists && !this.passwordOk)) {
         evt.preventDefault();
         return;
       }
@@ -104,25 +93,27 @@ export default {
           headers: { 'Content-Type': 'application/json; charset=utf-8' },
         });
 
-      if (data) {
-        const entry = Object.assign({}, this.entry);
-        entry.attrs['userPassword'] = [ data ];
-        this.$emit('replace-entry', entry);
-        this.info('👍 Password changed');
+      if (data !== undefined) {
+        this.$set(this.entry.attrs, 'userPassword', [ data ]);
+        this.entry.changed.push('userPassword');
         this.$bvModal.hide('change-password');
       }
     },
   },
 
   computed: {
+    currentUser: function() {
+      return this.user == this.entry.meta.dn;
+    },
+
     // Verify that the new password is repeated correctly
     passwordsMatch: function() {
       return this.newPassword && this.newPassword == this.repeated;
     },
 
     oldExists: function() {
-      return this.entry.attrs['userPassword']
-        && this.entry.attrs['userPassword'][0] != '';
+      return this.entry.attrs.userPassword
+      && this.entry.attrs.userPassword[0] != '';
     },
   }
 }

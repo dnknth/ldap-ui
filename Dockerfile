@@ -2,7 +2,7 @@ FROM node:lts-alpine AS builder
 COPY . /app
 WORKDIR /app
 
-RUN npm install && npm run build
+RUN npm update && npm run build
 
 FROM alpine:3.15
 RUN apk add --no-cache python3 py3-pip py3-pyldap py3-pytoml \

@@ -1,9 +1,9 @@
 <template>
   <b-card v-if="attr" :title="attr.desc" title-tag="strong">
-    <span class="header" slot="header">
-      {{ attr.names.join(', ') }}
+    <template slot="header">
+      <span class="header">{{ attr.names.join(', ') }}</span>
       <span class="control close-box" @click="$emit('display-attr')">⊗</span>
-    </span>
+    </template>
     
     <ul>
       <template v-for="(val, key) in attr">

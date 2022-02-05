@@ -1,6 +1,7 @@
 .env
 .git
 .venv3
+dist
 docker-demo
 etc
 node_modules

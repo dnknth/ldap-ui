@@ -62,7 +62,6 @@ export default {
       this.$set(this.entry.meta, 'dn', this.dn);
       this.$set(this.entry.meta, 'isNew', true);
 
-      this.$emit('replace-entry', this.entry);
       this.$bvModal.hide('copy-entry');
       this.$emit('select-dn');
     },

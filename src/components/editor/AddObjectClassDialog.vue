@@ -38,14 +38,13 @@ export default {
 
     done: function() {
       this.entry.attrs.objectClass.push(this.oc);
-      this.$emit('replace-entry', this.entry);
       this.$bvModal.hide('add-oc');
     },
   },
   
   computed: {
     available: function() {
-      const classes = this.entry.attrs['objectClass'];
+      const classes = this.entry.attrs.objectClass;
       return this.entry.meta.aux.filter(cls => !classes.includes(cls));
     },
   },

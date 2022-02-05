@@ -1,9 +1,9 @@
 <template>
   <b-card v-if="oc" :title="oc.desc" title-tag="strong" class="oc-card">
-    <span class="header" slot="header">
-      {{ oc.name }}
+    <template slot="header">
+      <span class="header">{{ oc.name }}</span>
       <span class="control close-box" @click="$emit('display-oc', undefined)">⊗</span>
-    </span>
+    </template>
                 
     <div v-if="oc.must.length"> Required attributes:
       <ul>

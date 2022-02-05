@@ -64,7 +64,7 @@ export default {
 
     done: async function() {
       if (await this.xhr({ url: 'api/entry/' + this.dn, method: 'DELETE' }) !== undefined) {
-        this.info('Deleted entry: ' + this.dn);
+        this.info('Deleted: ' + this.dn);
         this.$emit('select-dn', '-' + this.dn);
       }
     },

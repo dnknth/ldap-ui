@@ -60,7 +60,6 @@ export default {
 
       const entry = Object.assign({}, this.entry);
       this.$set(entry.attrs, this.attr, ['']);
-      this.$emit('replace-entry', entry);
     },
 
     focus: function() {
