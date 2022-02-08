@@ -13,14 +13,19 @@ spec:
       labels:
         app: ldap-ui
     spec:
+      dnsPolicy: ClusterFirst
       containers:
       - name: ldap-ui
         image: dnknth/ldap-ui
         env:
           - name: LDAP_URL
+            # Change this value to the service name of your LDAP deployment
             value: "ldap://ldap.cluster.local"
           - name: BASE_DN
             value: "dc=example,dc=org"
+          - name: BIND_PATTERN
+            # See main README for more info. This sets the main authentication method. 
+            value: "cn=%s,dc=example,dc=org"
         resources:
           limits:
             memory: "128Mi"

@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    app: ldap-ui
+  name: ldap-ui-ingress
+spec:
+  rules:
+    # Update the host to the FQDN you want to use. Be sure to update your DNS records accordingly.
+  - host: ldapui.example.org
+    http:
+      paths:
+      - backend:
+          service:
+            name: ldap-ui-service
+            port:
+              name: http
+        path: /
+        pathType: Prefix
+status:
+  loadBalancer: {}

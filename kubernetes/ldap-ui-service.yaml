@@ -1,5 +1,3 @@
----
-# Beta! Test before production use
 apiVersion: v1
 kind: Service
 metadata:
@@ -8,6 +6,9 @@ metadata:
   name: ldap-ui-service
 spec:
   ports:
-    - port: 5000
+    - port: 80
+      name: http
+      targetPort: 5000
   selector:
     app: ldap-ui
+  type: ClusterIP
