@@ -4,13 +4,13 @@ The files provided are examples and have not been extensively tested. Make sure 
 # Installation
 
 It is recommended to install in the same namespace as the LDAP server. It is most likely possible to connect to LDAP servers outside of the cluster, but this has not been tested.
-----
+
 Notes:
 - Run all commands from the root of the cloned repository.
 - Customize namespaces to reflect your cluster's setup.
 ## Service
 The service can be deployed without modification for most uses. The service will take traffic from port 80 (http) and reroute them to port 5000 on the container. (This is where ldap-ui is being served.) I recommend using an ingress controller like traefik to handle https.  
--------
+
 To install, run:
 ```
 kubectl apply -f kubernetes/ldap-ui-service.yaml --namespace ldap
