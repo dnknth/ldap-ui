@@ -118,7 +118,7 @@ export default {
     color: var(--muted-fg);
     border: 1px solid var(--accent);
     border-radius: 4px;
-  };
+  }
 
   .search-results {
     padding-left: 0px;

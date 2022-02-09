@@ -83,7 +83,7 @@ export default {
     return { xhr: this.xhr, }
   },
 
-  created: async function() { // Runs on page load
+  mounted: async function() { // Runs on page load
 
     // Get the DN of the current user
     this.user = await this.xhr({ url: 'api/whoami'});
@@ -97,12 +97,9 @@ export default {
   methods: {
     
     xhr: function(options) {
-      if (window.webpackHotUpdate) {  // debug mode
-        options.url = 'http://localhost:5000/' + options.url;
-      }
-      return new Promise(resolve => request(options)
-        .then(xhr => resolve(JSON.parse(xhr.response)))
-        .catch(xhr => resolve(this.showException(xhr.response))));
+      return request(options)
+        .then(xhr => JSON.parse(xhr.response))
+        .catch(xhr => this.showException(xhr.response));
     },
     
     displayOc: function(name) {
@@ -150,7 +147,38 @@ export default {
 </script>
 
 <style>
+  :root {
+    --body-fg: #222;
+    --body-bg: white;
+    --muted-fg: #333;
+    --muted-bg: #EEE;
+    --accent: var(--cyan);
+    --active: black;
+    --border: rgb(0,0,0,.125);
+    --input-bg: white;
+    --modal-border: rgba(0,0,0,.2);
+    --modal-divider: #dee2e6;
+    --tree-icon: DarkGray;
+    --tree-bg: var(--body-bg);
+    --tree-shadow: rgba(0,0,0,0.5);
+  }
+
   @media (prefers-color-scheme: dark) {
+    :root {
+      --body-fg: #EEE;
+      --body-bg: #111;
+      --muted-fg: #CCC;
+      --muted-bg: #222;
+      --active: white;
+      --border: #333;
+      --input-bg: #444;
+      --modal-border: #666;
+      --modal-divider: #444;
+      --tree-icon: LightGray;
+      --tree-bg: var(--muted-bg);
+      --tree-shadow: rgba(128,128,128,0.5);
+    }
+
     select.custom-select {
       background: var(--input-bg) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='4' height='5' viewBox='0 0 4 5'%3e%3cpath fill='%23CCC' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") right .75rem center/8px 10px no-repeat;
     }

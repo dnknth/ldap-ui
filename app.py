@@ -5,9 +5,6 @@ from typing import *
 
 
 app = quart.Quart(__name__, static_folder='dist')
-if quart.helpers.get_debug_flag():
-    from quart_cors import cors
-    app = cors(app, allow_origin='*')
 app.config.from_object('settings')
 
 # Constant to add technical attributes in LDAP search results
