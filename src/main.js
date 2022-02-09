@@ -1,10 +1,15 @@
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
-import 'intersection-observer' // Optional
-import './assets/theme.css'
+import 'intersection-observer'
+
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap-vue/dist/bootstrap-vue.css'
 import 'font-awesome/css/font-awesome.min.css'
+
 import Vue from 'vue'
-import './plugins/bootstrap-vue'
+import BootstrapVue from 'bootstrap-vue'
+Vue.use(BootstrapVue)
+
 import App from './App.vue'
 
 Vue.config.productionTip = false

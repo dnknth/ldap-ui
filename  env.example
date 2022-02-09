@@ -1,0 +1,9 @@
+# Example .env file for the online LDAP test server
+# See: https://www.forumsys.com/tutorials/integration-how-to/ldap/online-ldap-test-server/
+
+COMPOSE_FILE=docker-demo/docker-compose.yml
+
+LDAP_URL=ldap://ldap.forumsys.com:389/
+BASE_DN=dc=example,dc=com
+BIND_DN=cn=read-only-admin,dc=example,dc=com
+BIND_PASSWORD=password

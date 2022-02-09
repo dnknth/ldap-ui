@@ -2,4 +2,3 @@ Hypercorn==0.12.*
 python-ldap==3.4.*
 python-dotenv==0.19.*
 Quart==0.16.*
-Quart-CORS==0.5.*

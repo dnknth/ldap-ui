@@ -5,16 +5,13 @@ from typing import *
 
 
 app = quart.Quart(__name__, static_folder='dist')
-if quart.helpers.get_debug_flag():
-    from quart_cors import cors
-    app = cors(app, allow_origin='*')
 app.config.from_object('settings')
 
 # Constant to add technical attributes in LDAP search results
 WITH_OPERATIONAL_ATTRS = ('*','+')
 
 # HTTP 401 headers
-UNAUTHORIZED = { 'WWW-Authenticate': 'Basic realm="Login Required"' }
+UNAUTHORIZED = { 'WWW-Authenticate': 'Basic realm="Login Required", charset="UTF-8"' }
 
 # Special fields
 PHOTO = 'jpegPhoto'

@@ -30,7 +30,7 @@ Prerequisites:
   * RedHat / CentOS: `yum install python-devel openldap-devel`
 
 Check the configuration in [settings.py](settings.py). It is very short and mostly self-explaining.
-Most settings can (and should) be overridden by environment variables or settings in a `.env` file; see [docker-demo/env-example](docker-demo/env-example).
+Most settings can (and should) be overridden by environment variables or settings in a `.env` file; see [docker-demo/env.demo](docker-demo/env.demo) or [env.example](env.example).
 
 ### Authentication methods
 
@@ -44,7 +44,7 @@ The UI always uses a simple `bind` operation to authenticate with the LDAP direc
 
 ### Standalone
 
-Run the app with
+Copy [env.example](env.example) to .env, run the app with
 
     make run
 
@@ -68,7 +68,7 @@ For the even more impatient: A demo is provided in [docker-demo](docker-demo). R
 
     docker-demo/start.sh
 
-You are automatically logged in as `Fred Flintstone`.
+and go to [http://localhost:5000/](http://localhost:5000/). You are automatically logged in as `Fred Flintstone`.
 
 ## Notes
 
