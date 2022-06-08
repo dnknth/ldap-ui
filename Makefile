@@ -8,7 +8,7 @@ debug: app.py .env .venv3 dist
 		.venv3/bin/python3 .venv3/bin/quart run
 
 run: app.py .venv3 dist
-	.venv3/bin/hypercorn -b 0.0.0.0:5000 app:app
+	.venv3/bin/hypercorn -b 0.0.0.0:5000 --access-logfile - app:app
 
 .env: docker-demo/env.demo
 	cp $< $@
@@ -36,6 +36,8 @@ clean:
 tidy: clean
 	rm -rf .venv3 dist node_modules
 
-docker: clean
+image: clean
 	docker build -t dnknth/ldap-ui .
+
+push: image
 	docker push dnknth/ldap-ui

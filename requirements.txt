@@ -1,3 +1,4 @@
+Jinja2<3.1.0
 Hypercorn==0.12.*
 python-ldap==3.4.*
 python-dotenv==0.19.*

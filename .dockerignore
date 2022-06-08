@@ -3,6 +3,7 @@
 .venv3
 dist
 docker-demo
+env-example
 etc
 node_modules
 screenshot.png
