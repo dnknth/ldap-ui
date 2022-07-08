@@ -53,8 +53,16 @@ export default {
         return;
       }
       
-      const rdn = this.rdn + '=' + rdnAttr[0],
-        xhr = await this.xhr({ url: 'api/rename/' + rdn + '/' + this.dn });
+      const rdn = this.rdn + '=' + rdnAttr[0],      
+        xhr = await this.xhr({
+          url: 'api/rename',
+          method: 'POST',
+          data: JSON.stringify({
+            dn:  this.dn,
+            rdn: rdn
+          }),
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        });
       if (!xhr) {
         evt.preventDefault();
         return;

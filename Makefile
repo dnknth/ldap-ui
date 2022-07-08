@@ -31,10 +31,10 @@ docker-demo/data/flintstones-data.ldif: docker-demo/flintstones.ldif
 	cp $< $@
 	
 clean:
-	rm -rf docker-demo/data __pycache__
+	rm -rf docker-demo/data dist __pycache__
 
 tidy: clean
-	rm -rf .venv3 dist node_modules
+	rm -rf .venv3 node_modules
 
 image: clean
 	docker build -t dnknth/ldap-ui .

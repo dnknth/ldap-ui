@@ -154,7 +154,7 @@ async def whoami() -> str:
     return request.ldap.whoami_s().replace('dn:', '')
 
 
-@app.route('/api/tree/<basedn>')
+@app.route('/api/tree/<path:basedn>')
 @no_cache
 @api
 async def tree(basedn: str) -> List[Dict[str, Any]]:
@@ -347,12 +347,13 @@ async def ldifUpload() -> quart.Response:
     return reader.count
 
 
-@app.route('/api/rename/<newrdn>/<path:dn>')
+@app.route('/api/rename', methods=('POST',))
 @no_cache
 @api
-async def rename(dn: str, newrdn: str) -> None:
+async def rename() -> None:
     'Rename an entry'
-    await empty(request.ldap.rename(dn, newrdn, delold=0))
+    args = await request.get_json()
+    await empty(request.ldap.rename(args['dn'], args['rdn'], delold=0))
     return 'OK'
 
 
