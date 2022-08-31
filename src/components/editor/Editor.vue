@@ -17,7 +17,8 @@
       @select-dn="$emit('select-dn', $event)" />
 
     <password-change-dialog :entry="entry" :user="user" />
-    <add-photo-dialog :dn="entry.meta.dn" @select-dn="load" />
+    <add-photo-dialog id="upload-jpegPhoto" attr="jpegPhoto" :dn="entry.meta.dn" @select-dn="load" />
+    <add-photo-dialog id="upload-thumbnailPhoto" attr="thumbnailPhoto" :dn="entry.meta.dn" @select-dn="load" />
     <add-attribute-dialog :entry="entry" :attributes="may" @update-form="prepareForm" />
     <add-object-class-dialog :entry="entry" @update-form="prepareForm" />
   

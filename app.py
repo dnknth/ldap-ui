@@ -14,7 +14,7 @@ WITH_OPERATIONAL_ATTRS = ('*','+')
 UNAUTHORIZED = { 'WWW-Authenticate': 'Basic realm="Login Required", charset="UTF-8"' }
 
 # Special fields
-PHOTO = 'jpegPhoto'
+PHOTO = ['jpegPhoto', 'thumbnailPhoto']
 PASSWORDS = ('userPassword',)
 
 # Special syntaxes
@@ -240,7 +240,7 @@ async def entry(dn: str) -> Optional[dict]:
         # Copy JSON payload into a dictionary of non-empty byte strings
         req  = { k: [s.encode() for s in filter(None, v)]
                     for k,v in json.items()
-                    if k != PHOTO
+                    if k not in PHOTO
                     and (k not in PASSWORDS or request.method == 'PUT') }
         
     if request.method == 'GET':
