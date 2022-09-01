@@ -13,14 +13,14 @@
           class="clickable remove-btn control" :title="'Remove ' + val">⊖</span>
         <span v-else-if="password" class="fa fa-question-circle control"
           v-b-modal.change-password tabindex="-1" title="change password"></span>
-        <span v-else-if="attr == 'jpegPhoto'" v-b-modal.upload-photo tabindex="-1"
+        <span v-else-if="attr == 'jpegPhoto' || attr == 'thumbnailPhoto'" v-b-modal.upload-photo tabindex="-1"
           class="clickable add-btn control" title="Add photo…">⊕</span>
         <span v-else-if="multiple(index)" @click="addRow"
           class="clickable add-btn control" title="Add row">⊕</span>
         <span v-else class="no-btn"></span>
 
-        <span v-if="attr == 'jpegPhoto'" class="photo">
-          <img v-if="val" :src="'data:image/jpeg;base64,' + val" />
+        <span v-if="attr == 'jpegPhoto' || attr == 'thumbnailPhoto'" class="photo">
+          <img v-if="val" :src="'data:image/' + ((attr == 'jpegPhoto') ? 'jpeg' : '*') +';base64,' + val" />
           <span v-if="val" class="clickable control remove-btn"
             @click="deleteBlob(index)" title="Remove photo">⊖</span>
         </span>
@@ -229,7 +229,7 @@ export default {
   computed: {
 
     shown: function() {
-      return this.attr.name == 'jpegPhoto'
+      return (this.attr.name == 'jpegPhoto' || this.attr.name == 'thumbnailPhoto')
         || (!this.attr.no_user_mod && !this.binary);
     },
 

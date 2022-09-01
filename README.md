@@ -9,7 +9,7 @@ Features:
 * Directory tree view
 * Entry creation / modification / deletion
 * LDIF import / export
-* JPEG support for `inetOrgPerson`
+* Image support for the `jpegPhoto` and `thumbnailPhoto` attributes
 * Schema aware
 * Simple search (configurable)
 * Asynchronous LDAP backend with decent scalability

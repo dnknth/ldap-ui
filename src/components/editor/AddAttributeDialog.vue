@@ -49,8 +49,8 @@ export default {
 
       this.$bvModal.hide('add-attribute');
 
-      if (this.attr == 'jpegPhoto') {
-        this.$bvModal.show('upload-photo');
+      if (this.attr == 'jpegPhoto' || this.attr == 'thumbnailPhoto') {
+        this.$bvModal.show('upload-' + this.attr);
         return;
       }
       if (this.attr == 'userPassword') {
