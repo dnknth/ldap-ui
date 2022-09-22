@@ -81,6 +81,7 @@ import NewEntryDialog from './NewEntryDialog.vue'
 import NodeLabel from '../NodeLabel.vue'
 import PasswordChangeDialog from './PasswordChangeDialog.vue'
 import RenameEntryDialog from './RenameEntryDialog.vue'
+import { request } from '../../request.js'
 
 
 function unique(element, index, array) {
@@ -230,10 +231,10 @@ export default {
 
     // Download LDIF
     ldif: async function() {
-      const xhr = await this.xhr({
+      const xhr = await request({
         url: 'api/ldif/' + this.entry.meta.dn,
         responseType: 'blob'
-      });
+      }).catch(xhr => console.error(xhr));
       if (!xhr) return;
 
       const a = document.createElement("a"),

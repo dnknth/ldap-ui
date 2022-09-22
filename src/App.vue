@@ -99,7 +99,7 @@ export default {
     xhr: function(options) {
       return request(options)
         .then(xhr => JSON.parse(xhr.response))
-        .catch(xhr => this.showException(xhr.response));
+        .catch(xhr => this.showException(xhr.response || "Unknown error"));
     },
     
     displayOc: function(name) {
