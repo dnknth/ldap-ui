@@ -25,18 +25,19 @@ export default {
   data: function() {
     return {
       icons: {               // OC -> icon mapping in tree
+        account:            'user',
+        groupOfNames:       'users',
+        groupOfURLs:        'users',
+        groupOfUniqueNames: 'users',
         inetOrgPerson:      'address-book',
+        krbContainer:       'lock',
+        krbPrincipal:       'user-o',
+        krbRealmContainer:  'globe',
         organization:       'globe',
         organizationalRole: 'android',
         organizationalUnit: 'sitemap',
-        groupOfNames:       'users',
-        groupOfUniqueNames: 'users',
-        posixGroup:         'users',
         person:             'user',
-        account:            'user',
-        krbContainer:       'lock',
-        krbRealmContainer:  'globe',
-        krbPrincipal:       'user-o',
+        posixGroup:         'users',
       }
     }
   },
