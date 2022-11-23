@@ -22,15 +22,15 @@ OCTET_STRING = '1.3.6.1.4.1.1466.115.121.1.40'
 
 
 def authenticated(view: Callable):
-    ''' Require authentication for a view,
-        set up the LDAP connection
-        and authenticate against the directory
-        with a simple_bind
+    ''' Require authentication for a view.
+        Connects to LDAP and authenticates with a simple_bind.
     '''
 
     @functools.wraps(view)
     async def wrapped_view(**values):
-        if not request.authorization and not app.config['BIND_DN']:
+        get_dn = app.config['GET_BIND_DN']
+        dn = get_dn(request.authorization) if get_dn else None
+        if dn is None and request.authorization is None:
             return quart.Response(
                 'Please log in', 401, UNAUTHORIZED)
 
@@ -38,28 +38,11 @@ def authenticated(view: Callable):
             # Set up LDAP connection
             request.ldap = ldap.initialize(app.config['LDAP_URL'])
 
-            if app.config['BIND_DN'] and app.config['BIND_PASSWORD']:
-                dn = app.config['BIND_DN']
-                pw = app.config['BIND_PASSWORD']
-
-            elif app.config['BIND_PATTERN']:
-                dn = app.config['BIND_PATTERN'] % (request.authorization.username)
-                pw = request.authorization.password
-
-            else: # Search user in HTTP headers
-                pw = request.authorization.password
-                try:
-                    dn, _attrs = await unique(request.ldap.search(
-                        app.config['BASE_DN'],
-                        ldap.SCOPE_SUBTREE,
-                        '(%s=%s)' % (app.config['LOGIN_ATTR'], request.authorization.username)))
-                except ValueError:
-                    raise ldap.INVALID_CREDENTIALS({
-                        'desc': 'Invalid user',
-                        'info': "User '%s' unknown" % request.authorization.username})
-
             # Try authenticating
-            await empty(request.ldap.simple_bind(dn, pw))
+            get_passwd = app.config['GET_BIND_PASSWORD']
+            await empty(request.ldap.simple_bind(
+                dn or await search_user_by_attr(),
+                get_passwd(request.authorization)))
 
             # On success, call the view function and release connection
             data = await view(**values)
@@ -76,6 +59,21 @@ def authenticated(view: Callable):
                 + ': ' + args.get('desc', ''))
 
     return wrapped_view
+
+
+async def search_user_by_attr():
+    'Search for the login DN with a given user name'
+    try:
+        get_dn_filter = app.config['GET_BIND_DN_FILTER']
+        dn, _attrs = await unique(request.ldap.search(
+            app.config['BASE_DN'],
+            ldap.SCOPE_SUBTREE,
+            get_dn_filter(request.authorization)))
+        return dn
+    except ValueError:
+        raise ldap.INVALID_CREDENTIALS({
+            'desc': 'Invalid user',
+            'info': "User '%s' unknown" % request.authorization.username})
 
 
 def api(view: Callable) -> quart.Response:
