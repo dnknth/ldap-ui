@@ -1,7 +1,7 @@
 FROM node:lts-alpine AS builder
 COPY . /app
 WORKDIR /app
-RUN npm i && npm run build
+RUN npm audit && npm i && npm run build
 
 FROM alpine:3.15
 COPY --from=builder /app/dist /app/dist
