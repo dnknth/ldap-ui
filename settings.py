@@ -1,4 +1,7 @@
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
 
 # App settings
 PREFERRED_URL_SCHEME = 'https'

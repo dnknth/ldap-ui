@@ -3,7 +3,7 @@ COPY . /app
 WORKDIR /app
 RUN npm audit && npm i && npm run build
 
-FROM alpine:3.15
+FROM alpine:3
 COPY --from=builder /app/dist /app/dist
 RUN apk add --no-cache python3 py3-pip py3-pyldap py3-pytoml \
     && pip3 install 'python-dotenv==0.19.*' \
