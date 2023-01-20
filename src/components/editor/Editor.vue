@@ -4,7 +4,7 @@
     @submit.prevent="save" @reset="load(entry.meta.dn);" @focusin="onFocus">
 
     <new-entry-dialog :entry="entry" :schema="schema"
-      @replace-entry="entry = $event;"
+      @replace-entry="newEntry"
       @select-dn="$emit('select-dn')" />
     <copy-entry-dialog :entry="entry"
       @select-dn="$emit('select-dn', $event)" />
@@ -23,24 +23,26 @@
     <add-object-class-dialog :entry="entry" @update-form="prepareForm" />
   
     <b-card id="editor">
-      <div slot="header">
-        <b-nav>
-          <b-nav-item v-if="entry.meta.isNew">
-            <node-label :dn="entry.meta.dn" :oc="structural" />
-          </b-nav-item>
-          <b-nav-item-dropdown v-else extra-toggle-classes="nav-link-custom" right class="entry-menu">
-            <template #button-content>
+      <div>
+        <slot name="header">
+          <b-nav>
+            <b-nav-item v-if="entry.meta.isNew">
               <node-label :dn="entry.meta.dn" :oc="structural" />
-            </template>
-            <b-dropdown-item v-b-modal.new-entry>Add child…</b-dropdown-item>
-            <b-dropdown-item v-b-modal.copy-entry>Copy…</b-dropdown-item>
-            <b-dropdown-item v-b-modal.rename-entry>Rename…</b-dropdown-item>
-            <b-dropdown-item @click="ldif">Export</b-dropdown-item>
-            <b-dropdown-item v-b-modal.confirm><span class="red">Delete…</span></b-dropdown-item>
-          </b-nav-item-dropdown>
-        </b-nav>
-        <span v-if="entry.meta.isNew" class="close-box control" v-b-modal.confirm-discard>⊗</span>
-        <span v-else class="close-box control" @click="$emit('select-dn')">⊗</span>
+            </b-nav-item>
+            <b-nav-item-dropdown v-else extra-toggle-classes="nav-link-custom" right class="entry-menu">
+              <template #button-content>
+                <node-label :dn="entry.meta.dn" :oc="structural" />
+              </template>
+              <b-dropdown-item v-b-modal.new-entry>Add child…</b-dropdown-item>
+              <b-dropdown-item v-b-modal.copy-entry>Copy…</b-dropdown-item>
+              <b-dropdown-item v-b-modal.rename-entry>Rename…</b-dropdown-item>
+              <b-dropdown-item @click="ldif">Export</b-dropdown-item>
+              <b-dropdown-item v-b-modal.confirm><span class="red">Delete…</span></b-dropdown-item>
+            </b-nav-item-dropdown>
+          </b-nav>
+          <span v-if="entry.meta.isNew" class="close-box control" v-b-modal.confirm-discard>⊗</span>
+          <span v-else class="close-box control" @click="$emit('select-dn')">⊗</span>
+        </slot>
       </div>
       
       <table id="entry">
@@ -70,18 +72,18 @@
 
 <script>
 
-import AddAttributeDialog from './AddAttributeDialog.vue'
-import AddObjectClassDialog from './AddObjectClassDialog.vue'
-import AddPhotoDialog from './AddPhotoDialog.vue'
-import CopyEntryDialog from './CopyEntryDialog.vue'
-import DeleteEntryDialog from './DeleteEntryDialog.vue'
-import DiscardEntryDialog from './DiscardEntryDialog.vue'
-import FormRow from './FormRow.vue'
-import NewEntryDialog from './NewEntryDialog.vue'
-import NodeLabel from '../NodeLabel.vue'
-import PasswordChangeDialog from './PasswordChangeDialog.vue'
-import RenameEntryDialog from './RenameEntryDialog.vue'
-import { request } from '../../request.js'
+import AddAttributeDialog from './AddAttributeDialog.vue';
+import AddObjectClassDialog from './AddObjectClassDialog.vue';
+import AddPhotoDialog from './AddPhotoDialog.vue';
+import CopyEntryDialog from './CopyEntryDialog.vue';
+import DeleteEntryDialog from './DeleteEntryDialog.vue';
+import DiscardEntryDialog from './DiscardEntryDialog.vue';
+import FormRow from './FormRow.vue';
+import NewEntryDialog from './NewEntryDialog.vue';
+import NodeLabel from '../NodeLabel.vue';
+import PasswordChangeDialog from './PasswordChangeDialog.vue';
+import RenameEntryDialog from './RenameEntryDialog.vue';
+import { request } from '../../request.js';
 
 
 function unique(element, index, array) {
@@ -156,6 +158,11 @@ export default {
     onFocus: function(evt) {
       const el = evt.target;
       if (el.tagName == 'INPUT' && el.id) this.focused = el.id;
+    },
+
+    newEntry: function(entry) {
+      this.entry = entry;
+      this.prepareForm();
     },
 
     prepareForm: function(focused) {

@@ -14,14 +14,14 @@
     "vue": "^2.7.0"
   },
   "devDependencies": {
-    "vite": "^4.0.0",
     "@vitejs/plugin-vue2": "^2.0.0",
-    "eslint": "latest"
+    "eslint": "latest",
+    "vite": "^4.0.0",
+    "vite-plugin-compression": "^0.5.1"
   },
   "eslintConfig": {
-    "extends": [
-      "eslint:recommended"
-    ],
+    "root": true,
+    "extends": "eslint:recommended",
     "parserOptions": {
       "sourceType": "module",
       "ecmaVersion": 2015

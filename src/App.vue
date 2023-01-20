@@ -18,7 +18,7 @@
         
         <b-col id="main">
           <b-alert dismissible fade :variant="error.type"
-              :show="error &amp;&amp; error.counter" @dismissed="error.counter=0">
+              :show="error && error.counter" @dismissed="error.counter=0">
             {{ error.msg }}
           </b-alert>
           
@@ -34,14 +34,14 @@
 
 <script>
 
-import AttributeCard from './components/schema/AttributeCard.vue'
-import Editor from './components/editor/Editor.vue'
-import { LdapSchema } from './components/schema/schema.js'
-import LdifImportDialog from './components/LdifImportDialog.vue'
-import NavBar from './components/NavBar.vue'
-import ObjectClassCard from './components/schema/ObjectClassCard.vue'
-import { request } from './request.js'
-import TreeView from './components/TreeView.vue'
+import AttributeCard from './components/schema/AttributeCard.vue';
+import Editor from './components/editor/Editor.vue';
+import { LdapSchema } from './components/schema/schema.js';
+import LdifImportDialog from './components/LdifImportDialog.vue';
+import NavBar from './components/NavBar.vue';
+import ObjectClassCard from './components/schema/ObjectClassCard.vue';
+import { request } from './request.js';
+import TreeView from './components/TreeView.vue';
 
 
 export default {

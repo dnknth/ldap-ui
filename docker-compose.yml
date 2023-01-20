@@ -5,7 +5,6 @@ services:
         image: dnknth/ldap-demo
         ports:
             - 127.0.0.1:389:389
-        env_file: env.demo
         restart: unless-stopped
         healthcheck:
             test: "ldapsearch -x -b dc=flintstones,dc=com cn > /dev/null"
@@ -22,8 +21,8 @@ services:
         environment:
             LDAP_URL: "ldap://ldap/"
             BASE_DN: "dc=flintstones,dc=com"
-            BIND_DN: "cn=Fred Flintstone,ou=People,dc=flintstones,dc=com"
-            BIND_PASSWORD: yabbadabbado
+            BIND_DN: "${BIND_DN:-cn=Fred Flintstone,ou=People,dc=flintstones,dc=com}"
+            BIND_PASSWORD: "${BIND_PASSWORD:-yabbadabbado}"
         restart: unless-stopped
         healthcheck:
             test: "wget -q -O /dev/null http://localhost:5000"

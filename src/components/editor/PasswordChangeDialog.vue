@@ -15,7 +15,7 @@
       placeholder="New password" type="password" />
 
     <input v-model="repeated" class="mb-3 form-control"
-      :class="{ red: repeated &amp;&amp; !passwordsMatch }"
+      :class="{ red: repeated && !passwordsMatch }"
       placeholder="Repeat new password" type="password" @keyup.enter="done" />
   </b-modal>
 </template>

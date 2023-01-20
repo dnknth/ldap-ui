@@ -1,13 +1,13 @@
 <template>
-  <b-card v-if="attr" :title="attr.desc" title-tag="strong">
-    <template slot="header">
-      <span class="header">{{ attr.names.join(', ') }}</span>
+  <b-card v-if="attr" :title="attr.names.join(', ')" title-tag="strong">
+    <slot name="header">
+      <div class="header">{{ attr.desc }}</div>
       <span class="control close-box" @click="$emit('display-attr')">⊗</span>
-    </template>
+    </slot>
     
     <ul>
       <template v-for="(val, key) in attr">
-        <li :key="key" v-if="val &amp;&amp; hiddenFields.indexOf(key) == -1">
+        <li :key="key" v-if="val && hiddenFields.indexOf(key) == -1">
           {{ key }}: {{ val }}
         </li>
       </template>
@@ -26,7 +26,7 @@
 
 <script>
 
-import { LdapSchema } from './schema.js'
+import { LdapSchema } from './schema.js';
 
 export default {
 
@@ -51,7 +51,7 @@ export default {
 </script>
 
 <style scoped>
-  span.header {
-    font-weight: bold;
+  div.header {
+    margin-bottom: 1ex;
   }
 </style>

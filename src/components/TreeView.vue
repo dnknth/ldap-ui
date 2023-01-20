@@ -1,6 +1,6 @@
 <template>
   <div id="tree-view">
-    <ul id="tree" v-if="shown &amp;&amp; tree" class="list-unstyled">
+    <ul id="tree" v-if="shown && tree" class="list-unstyled">
       <li v-for="item in tree.visible()" :key="item.dn"
         :id="item.dn" :class="item.structuralObjectClass">
           <span v-for="i in (item.level - tree.level)" class="indent" :key="i"></span>
@@ -22,7 +22,7 @@
 
 <script>
 
-import NodeLabel from './NodeLabel.vue'
+import NodeLabel from './NodeLabel.vue';
 
 
 function Node(json) {

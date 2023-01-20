@@ -2,8 +2,6 @@
 .git
 .venv3
 dist
-docker-demo
-env-example
+env.*
 etc
 node_modules
-screenshot.png

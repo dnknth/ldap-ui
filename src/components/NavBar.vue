@@ -35,7 +35,7 @@
 
 <script>
 
-import NodeLabel from './NodeLabel.vue'
+import NodeLabel from './NodeLabel.vue';
 import SearchResults from './SearchResults.vue';
 
 export default {

@@ -4,7 +4,7 @@
 
     <p class="strong">This action is irreversible.</p>
 
-    <div v-if="subtree &amp;&amp; subtree.length">
+    <div v-if="subtree && subtree.length">
       <p class="red">The following child nodes will be also deleted:</p>
       <div v-for="node in subtree" :key="node.dn">
         <span v-for="i in node.level" class="indent" :key="i"></span>
@@ -22,7 +22,7 @@
 
 <script>
 
-import NodeLabel from '../NodeLabel.vue'
+import NodeLabel from '../NodeLabel.vue';
 
 export default {
 

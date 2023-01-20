@@ -12,8 +12,8 @@
  * }
  */
 export function request(opts) {
-  return new Promise(function(resolve, reject) {
-    var xhr = new XMLHttpRequest();
+  return new Promise(function(resolve, reject) { // eslint-disable-line no-undef
+    var xhr = new XMLHttpRequest(); // eslint-disable-line no-undef
     xhr.open(opts.method || 'GET', opts.url);
     if (opts.responseType) xhr.responseType = opts.responseType;
     xhr.onload = function () {

@@ -16,9 +16,13 @@ run: app.py settings.py .env .venv3 dist
 	.venv3/bin/pip3 install -r $<
 	touch $@
 
-dist: package.json
-	npm install
+dist: node_modules
 	npm run build
+
+node_modules: package.json
+	npm install
+	npm audit
+	touch $@
 
 clean:
 	rm -rf dist __pycache__

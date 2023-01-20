@@ -1,10 +1,10 @@
 <template>
-  <b-card v-if="oc" :title="oc.desc" title-tag="strong" class="oc-card">
-    <template slot="header">
-      <span class="header">{{ oc.name }}</span>
+  <b-card v-if="oc" :title="oc.name" title-tag="strong" class="oc-card">
+    <slot name="header">
+      <div class="header">{{ oc.desc }}</div>
       <span class="control close-box" @click="$emit('display-oc', undefined)">⊗</span>
-    </template>
-                
+    </slot>
+    
     <div v-if="oc.must.length"> Required attributes:
       <ul>
         <li v-for="name in oc.must" :key="name">
@@ -33,7 +33,7 @@
 
 <script>
 
-import { LdapSchema } from './schema.js'
+import { LdapSchema } from './schema.js';
 
 export default {
 
@@ -49,7 +49,7 @@ export default {
 </script>
 
 <style scoped>
-  span.header {
-    font-weight: bold;
+  div.header {
+    margin-bottom: 1ex;
   }
 </style>
