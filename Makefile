@@ -1,4 +1,7 @@
-.PHONY: debug run clean tidy docker
+.PHONY: debug run clean tidy image push manifest
+
+ARCH=$(shell uname -m)
+TAG=latest-$(ARCH)
 
 debug: app.py settings.py .env .venv3 dist
 	QUART_APP=$< QUART_ENV=development \
@@ -31,7 +34,14 @@ tidy: clean
 	rm -rf .venv3 node_modules
 
 image: clean
-	docker build -t dnknth/ldap-ui .
+	docker build -t dnknth/ldap-ui:$(TAG) .
 
 push: image
-	docker push dnknth/ldap-ui
+	docker push dnknth/ldap-ui:$(TAG)
+
+manifest:
+	docker manifest create \
+		dnknth/ldap-ui \
+		--amend dnknth/ldap-ui:latest-x86_64 \
+		--amend dnknth/ldap-ui:latest-aarch64
+	docker manifest push dnknth/ldap-ui

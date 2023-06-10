@@ -1,6 +1,6 @@
 # Simple LDAP editor
 
-This is a *minimal* web interface for LDAP directories.
+This is a *minimal* web interface for LDAP directories. Docker images for `linux/amd64` and `linux/arm64/v8` are [available](https://hub.docker.com/r/dnknth/ldap-ui).
 
 ![Screenshot](screenshot.png?raw=true)
 
@@ -27,7 +27,7 @@ For the impatient: Run it with
       -e LDAP_URL=ldap://your.ldap.server/ \
       -e BASE_DN=dc=example,dc=org dnknth/ldap-ui
 
-For the even more impatient: Start a demo with
+For the even more impatient with `X86_64` machines: Start a demo with
 
     docker compose up -d
 
