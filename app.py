@@ -21,22 +21,51 @@ PASSWORDS = ('userPassword',)
 OCTET_STRING = '1.3.6.1.4.1.1466.115.121.1.40'
 
 
+def connected(view: Callable):
+    'Connect to LDAP'
+
+    @functools.wraps(view)
+    async def wrapped_view(**values):
+        try:
+            # Set up LDAP connection
+            url = app.config['LDAP_URL']
+            request.ldap = ldap.initialize(url)
+            
+            # #43 TLS, see https://stackoverflow.com/a/8795694
+            if app.config['USE_TLS'] or app.config['INSECURE_TLS']:
+                cert_level = ldap.OPT_X_TLS_NEVER \
+                    if app.config['INSECURE_TLS'] \
+                    else ldap.OPT_X_TLS_DEMAND
+                
+                request.ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, cert_level)
+                # See https://stackoverflow.com/a/38136255
+                request.ldap.set_option(ldap.OPT_X_TLS_NEWCTX, 0)
+                if not url.startswith('ldaps://'): request.ldap.start_tls_s()
+            
+            # On success, call the view function and release connection
+            data = await view(**values)
+            request.ldap.unbind_s()
+            return data
+
+        except ldap.LDAPError as err:
+            args = err.args[0]
+            quart.abort(500, args.get('info', '')
+                + ': ' + args.get('desc', ''))
+
+    return wrapped_view
+
+
 def authenticated(view: Callable):
-    ''' Require authentication for a view.
-        Connects to LDAP and authenticates with a simple_bind.
-    '''
+    'Require simple_bind() authentication for a view'
 
     @functools.wraps(view)
     async def wrapped_view(**values):
         get_dn = app.config['GET_BIND_DN']
         dn = get_dn(request.authorization) if get_dn else None
-        if dn is None and request.authorization is None:
-            return quart.Response(
-                'Please log in', 401, UNAUTHORIZED)
 
         try:
-            # Set up LDAP connection
-            request.ldap = ldap.initialize(app.config['LDAP_URL'])
+            if dn is None and request.authorization is None:
+                raise ldap.INVALID_CREDENTIALS()
 
             # Try authenticating
             get_passwd = app.config['GET_BIND_PASSWORD']
@@ -44,19 +73,12 @@ def authenticated(view: Callable):
                 dn or await search_user_by_attr(),
                 get_passwd(request.authorization)))
 
-            # On success, call the view function and release connection
-            data = await view(**values)
-            request.ldap.unbind_s()
-            return data
+            # On success, call the view function
+            return await view(**values)
 
         except ldap.INVALID_CREDENTIALS:
             return quart.Response(
                 'Please log in', 401, UNAUTHORIZED)
-
-        except ldap.LDAPError as err:
-            args = err.args[0]
-            quart.abort(500, args.get('info', '')
-                + ': ' + args.get('desc', ''))
 
     return wrapped_view
 
@@ -76,19 +98,6 @@ async def search_user_by_attr():
             'info': "User '%s' unknown" % request.authorization.username})
 
 
-def api(view: Callable) -> quart.Response:
-    ''' View decorator for JSON endpoints.
-        Forces authentication.
-    '''
-    @functools.wraps(view)
-    async def wrapped_view(**values) -> quart.Response:
-        data = await authenticated(view)(**values)
-        if type(data) is not quart.Response:
-            data = quart.jsonify(data)
-        return data
-    return wrapped_view
-
-
 def no_cache(view: types.FunctionType) -> quart.Response:
     'View decorator to prevent browser caching. Must precede @api.'
     
@@ -99,6 +108,19 @@ def no_cache(view: types.FunctionType) -> quart.Response:
         resp.headers['Pragma'] = 'no-cache'
         resp.headers['Expires'] = '0'
         return resp
+    return wrapped_view
+
+
+def api(view: Callable) -> quart.Response:
+    ''' View decorator for JSON endpoints.
+        Forces authentication.
+    '''
+    @functools.wraps(view)
+    async def wrapped_view(**values) -> quart.Response:
+        data = await connected(authenticated(view))(**values)
+        if type(data) is not quart.Response:
+            data = quart.jsonify(data)
+        return data
     return wrapped_view
 
 
@@ -309,6 +331,7 @@ async def blob(attr: str, index: int, dn: str):
 @app.route('/api/ldif/<path:dn>')
 @no_cache
 @authenticated
+@connected
 async def ldifDump(dn: str) -> quart.Response:
     'Dump an entry as LDIF'
     

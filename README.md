@@ -41,6 +41,9 @@ LDAP access is controlled by these environment variables, possibly from a `.env`
 * `BASE_DN` (required): Search base, e.g. `dc=example,dc=org`.
 * `LOGIN_ATTR` (optional): User name attribute, defaults to `uid`.
 
+* `USE_TLS` (optional): Enable TLS, defaults to true for `ldaps` connections. Set it to a non-empty string to force `STARTTLS` on `ldap` connections.
+* `INSECURE_TLS` (optional): Do not require a valid server TLS certificate, defaults to false, implies `USE_TLS`.
+ 
 For finer-grained control, adjust [settings.py](settings.py).
 
 ### Standalone
