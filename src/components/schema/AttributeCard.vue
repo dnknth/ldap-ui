@@ -1,11 +1,9 @@
 <template>
-  <b-card v-if="attr" :title="attr.names.join(', ')" title-tag="strong">
-    <slot name="header">
-      <div class="header">{{ attr.desc }}</div>
-      <span class="control close-box" @click="$emit('display-attr')">⊗</span>
-    </slot>
+  <card :title="attr.names.join(', ')" @close="$emit('display-attr')">
+
+    <div class="header">{{ attr.desc }}</div>
     
-    <ul>
+    <ul class="list-disc mt-2">
       <template v-for="(val, key) in attr">
         <li :key="key" v-if="val && hiddenFields.indexOf(key) == -1">
           {{ key }}: {{ val }}
@@ -13,45 +11,38 @@
       </template>
     </ul>
     
-    <div v-if="attr.sup.length > 0">
-      Superclasses:
-      <ul>
+    <div v-if="attr.sup.length > 0" class="mt-2"><i>Parents:</i>
+      <ul class="list-disc mt-2">
         <li v-for="name in attr.sup" :key="name">
-          <span class="clickable u" @click="$emit('display-attr', name)">{{ name }}</span>
+          <span class="cursor-pointer" @click="$emit('display-attr', name)">{{ name }}</span>
         </li>
       </ul>
     </div>
-  </b-card>
+  </card>
 </template>
 
 <script>
+  import { LdapSchema } from './schema.js';
+  import Card from '../Card.vue';
 
-import { LdapSchema } from './schema.js';
+  export default {
+    name: 'AttributeCard',
 
-export default {
+    components: {
+      Card,
+    },
 
-  name: 'AttributeCard',
+    props: {
+      attr: LdapSchema.Attribute,
+    },
 
-  props: {
-    attr: {
-      type: LdapSchema.Attribute,
-      required: true,
-    }
-  },
-
-  data: function() {
-    return {
-      hiddenFields: [         // not shown in schema panel
-        'desc', 'name', 'names',
-        'no_user_mod', 'obsolete', 'oid',
-        'usage', 'syntax', 'sup' ]
+    data: function() {
+      return {
+        hiddenFields: [         // not shown in schema panel
+          'desc', 'name', 'names',
+          'no_user_mod', 'obsolete', 'oid',
+          'usage', 'syntax', 'sup' ]
+      }
     }
   }
-}
 </script>
-
-<style scoped>
-  div.header {
-    margin-bottom: 1ex;
-  }
-</style>

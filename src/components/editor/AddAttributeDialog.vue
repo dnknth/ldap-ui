@@ -1,79 +1,67 @@
 <template>
-  <b-modal id="add-attribute" title="Add attribute"
-    @show="reset" @shown="init" @ok="done" @hidden="focus">
+  <modal title="Add attribute" :open="modal == 'add-attribute'"
+    @show="attr = null;" @shown="$refs.attr.focus()"
+    @ok="onOk" @cancel="$emit('close')">
 
-    <b-form-select v-model="attr" id="new-attr" :options="available" class="mb-3"
-      @keydown.native.enter.prevent="done" />
-  </b-modal>
+    <select v-model="attr" ref="attr" @keyup.enter="onOk">
+      <option v-for="attr in available">{{ attr }}</option>
+    </select>
+  </modal>
 </template>
 
 <script>
+  import Modal from '../Modal.vue';
 
-export default {
+  export default {
+    name: 'AddAttributeDialog',
 
-  name: 'AddAttributeDialog',
-
-  props: {
-    entry: {
-      type: Object,
-      required: true,
-    },
-    attributes: {
-      type: Array,
-      required: true,
-    },
-  },
-
-  data: function() {
-    return {
-      attr: null,
-    }
-  },
-
-  methods: {
-
-    reset: function() {
-      this.attr = null;
+    components: {
+      Modal,
     },
 
-    init: function() {
-      document.getElementById('new-attr').focus();
+    props: {
+      entry: Object,
+      attributes: Array,
+      modal: String,
     },
 
-    // Add the selected attribute
-    done: function(evt) {
-      if (!this.attr) {
-        evt.preventDefault();
-        return;
+    model: {
+      prop: 'modal',
+      event: 'close',
+    },
+
+    data: function() {
+      return {
+        attr: null,
       }
-
-      this.$bvModal.hide('add-attribute');
-
-      if (this.attr == 'jpegPhoto' || this.attr == 'thumbnailPhoto') {
-        this.$bvModal.show('upload-' + this.attr);
-        return;
-      }
-      if (this.attr == 'userPassword') {
-        this.$bvModal.show('change-password');
-        return;
-      }
-
-      const entry = Object.assign({}, this.entry);
-      this.$set(entry.attrs, this.attr, ['']);
     },
 
-    focus: function() {
-      this.$emit('update-form', this.attr + '-0');
-    },
-  },
-            
-  computed: {
+    methods: {
+      // Add the selected attribute
+      onOk: function() {
+        if (!this.attr) return;
 
-    // Choice list for new attribute selection popup
-    available: function() {
-      const attrs = Object.keys(this.entry.attrs);
-      return this.attributes.filter(attr => !attrs.includes(attr));
+        if (this.attr == 'jpegPhoto' || this.attr == 'thumbnailPhoto') {
+          this.$emit('show-modal', 'add-' + this.attr);
+          return;
+        }
+        
+        if (this.attr == 'userPassword') {
+          this.$emit('show-modal', 'change-password');
+          return;
+        }
+        
+        this.$emit('close');
+        this.$emit('ok', this.attr);
+      },
     },
-  },
-}
+              
+    computed: {
+      // Choice list for new attribute selection popup
+      available: function() {
+        const attrs = Object.keys(this.entry.attrs);
+        return this.attributes.filter(attr => !attrs.includes(attr));
+      },
+    },
+  }
 </script>

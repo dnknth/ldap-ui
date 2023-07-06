@@ -1,91 +1,69 @@
 <template>
-  <b-modal id="rename-entry" title="Rename entry"
-    @show="reset" @shown="init" @ok="done" @hidden="$emit('update-form')">
+  <modal title="Rename entry" :open="modal == 'rename-entry'"
+    @ok="onOk" @cancel="$emit('close')"
+    @show="init" @shown="$refs.rdn.focus()">
     
-    <b-form-group label="New RDN attribute:" label-for="rename-rdn">
-      <b-form-select id="rdn" v-model="rdn" :options="rdns" class="mb-3"
-        @keydown.native.enter.prevent="done" />
-    </b-form-group>
-  </b-modal>
+    <label>New RDN attribute:
+      <select ref="rdn" v-model="rdn" @keyup.enter="onOk">
+        <option v-for="rdn in rdns">{{ rdn }}</option>
+      </select>
+    </label>
+  </modal>
 </template>
 
 <script>
+  import Modal from '../Modal.vue';
 
-export default {
+  export default {
+    name: 'RenameEntryDialog',
 
-  name: 'RenameEntryDialog',
-
-  props: {
-    entry: {
-      type: Object,
-      required: true,
-    },
-    
-    dn: {
-      type: String,
-      required: true,
-    },
-  },
-
-  inject: [ 'xhr' ],
-
-  data: function() {
-    return {
-      rdn: undefined,
-    }
-  },
-
-  methods: {
-
-    reset: function() {
-      this.rdn = undefined;
+    components: {
+      Modal,
     },
 
-    init: function() {
-      document.getElementById('rdn').focus();
-      if (this.rdns.length == 1) this.rdn = this.rdns[0];
+    props: {
+      entry: Object,
+      modal: String,
     },
 
-    done: async function(evt) {
-      const rdnAttr = this.entry.attrs[this.rdn];
-      if (!rdnAttr || !rdnAttr[0]) {
-        evt.preventDefault();
-        return;
+    model: {
+      prop: 'modal',
+      event: 'close',
+    },
+
+    data: function() {
+      return {
+        rdn: undefined,
       }
+    },
+
+    methods: {
+      init: function() {
+        this.rdn = this.rdns.length == 1 ? this.rdns[0] : undefined;
+      },
+
+      onOk: async function() {
+        const rdnAttr = this.entry.attrs[this.rdn];
+        if (!rdnAttr || !rdnAttr[0]) {
+          return;
+        }
+        
+        this.$emit('close');
+        const rdn = this.rdn + '=' + rdnAttr[0];
+        this.$emit('ok', rdn);
+      },
+
+      ok: function(key) {
+        const rdn = this.entry.meta.dn.split('=')[0];
+        return key != rdn && !this.entry.attrs[key].every(val => !val);
+      },
+    },
+
+    computed: {
+      rdns: function() {
+        return Object.keys(this.entry.attrs).filter(a => this.ok(a));
+      },
       
-      const rdn = this.rdn + '=' + rdnAttr[0],      
-        xhr = await this.xhr({
-          url: 'api/rename',
-          method: 'POST',
-          data: JSON.stringify({
-            dn:  this.dn,
-            rdn: rdn
-          }),
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        });
-      if (!xhr) {
-        evt.preventDefault();
-        return;
-      }
-
-      const dnparts = this.dn.split(',');
-      dnparts.splice(0, 1, rdn);
-
-      this.$emit('select-dn', dnparts.join(','));
-      this.$bvModal.hide('rename-entry');
-    },
-
-    ok: function(key) {
-      const rdn = this.entry.meta.dn.split('=')[0];
-      return key != rdn && !this.entry.attrs[key].every(val => !val);
-    },
-  },
-
-  computed: {
-    rdns: function() {
-      return Object.keys(this.entry.attrs).filter(a => this.ok(a));
-    },
-    
+    }
   }
-}
 </script>

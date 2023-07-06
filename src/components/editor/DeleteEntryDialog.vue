@@ -1,13 +1,14 @@
 <template>
-  <b-modal id="confirm" title="Are you sure?" @show="reset" @shown="init" @ok="done"
-    cancel-variant="primary" ok-variant="danger">
+  <modal title="Are you sure?" :open="modal == 'delete-entry'"
+    cancel-variant="primary" ok-variant="danger"
+    @show="init" @ok="onOk" @cancel="$emit('close')">
 
     <p class="strong">This action is irreversible.</p>
 
     <div v-if="subtree && subtree.length">
-      <p class="red">The following child nodes will be also deleted:</p>
+      <p class="text-danger mb-2">The following child nodes will be also deleted:</p>
       <div v-for="node in subtree" :key="node.dn">
-        <span v-for="i in node.level" class="indent" :key="i"></span>
+        <span v-for="i in node.level" class="ml-6" :key="i"></span>
         <node-label :oc="node.structuralObjectClass">
           {{ node.dn.split(',')[0] }}
         </node-label>
@@ -17,69 +18,49 @@
     <template #modal-ok>
       <i class="fa fa-trash-o fa-lg"></i> Delete
     </template>
-  </b-modal>
+  </modal>
 </template>
 
 <script>
+  import Modal from '../Modal.vue';
+  import NodeLabel from '../NodeLabel.vue';
 
-import NodeLabel from '../NodeLabel.vue';
+  export default {
+    name: 'DeleteEntryDialog',
 
-export default {
-
-  name: 'DeleteEntryDialog',
-
-  components: {
-    NodeLabel,
-  },
-
-  props: {
-    dn: {
-      type: String,
-      required: true,
-    },
-    info: {
-      type: Function,
-      required: true,
-    },
-  },
-
-  inject: [ 'xhr' ],
-
-  data: function() {
-    return {
-      subtree: [],
-    }
-  },
-
-  methods: {
-
-    reset: function() {
-      this.subtree = [];
+    components: {
+      Modal,
+      NodeLabel,
     },
 
-    // List subordinate elements of a DN
-    init: async function() {
-      this.subtree = await this.xhr({ url:  'api/subtree/' + this.dn});
+    props: {
+      dn: String,
+      modal: String,
     },
 
-    done: async function() {
-      if (await this.xhr({ url: 'api/entry/' + this.dn, method: 'DELETE' }) !== undefined) {
-        this.info('Deleted: ' + this.dn);
-        this.$emit('select-dn', '-' + this.dn);
+    model: {
+      prop: 'modal',
+      event: 'close',
+    },
+
+    inject: [ 'xhr' ],
+
+    data: function() {
+      return {
+        subtree: [],
       }
     },
-  },
-}
+
+    methods: {
+      // List subordinate elements to be deleted
+      init: async function() {
+        this.subtree = await this.xhr({ url: 'api/subtree/' + this.dn}) || [];
+      },
+
+      onOk: function() {
+        this.$emit('close');
+        this.$emit('ok', this.dn);
+      },
+    },
+  }
 </script>
-
-<style scoped>
-
-  .red {
-    color: red !important;
-  }
-
-  span.indent {
-    margin-left: 1.2em;
-  }
-
-</style>

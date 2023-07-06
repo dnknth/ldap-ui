@@ -104,4 +104,5 @@ Additionally, arbitrary attributes can be searched with an LDAP filter specifica
 
 The Python backend uses [Quart](https://pgjones.gitlab.io/quart/index.html) which is an asynchronous [Flask](http://flask.pocoo.org/). Kudos for the authors of these elegant frameworks!
 
-The UI uses [Vue.js](https://vuejs.org) with the excellent [Bootstrap Vue](https://bootstrap-vue.js.org) components. Thanks to the authors for making frontend work much more enjoyable.
+The UI is built with [Vue.js](https://vuejs.org) and UI elements based on [Vue Tailwind](https://vuetailwind.com/).
+Thanks to the authors for making frontend work much more enjoyable.

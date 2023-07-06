@@ -1,52 +1,54 @@
 <template>
-  <b-modal id="add-oc" title="Add objectClass"
-    @show="reset" @shown="init" @ok="done" @hidden="$emit('update-form')">
+  <modal title="Add objectClass" :open="modal == 'add-object-class'"
+    @show="oc = null;" @shown="$refs.oc.focus()"
+    @ok="onOk" @cancel="$emit('close')">
     
-    <b-form-select v-model="oc" id="oc-select" class="mb-3" :options="available"
-      @keydown.native.enter.prevent="done" />
-  </b-modal>
+    <select v-model="oc" ref="oc" @keyup.enter="onOk">
+      <option v-for="cls in available">{{ cls }}</option>
+    </select>
+  </modal>
 </template>
 
 <script>
+  import Modal from '../Modal.vue';
 
-export default {
+  export default {
+    name: 'AddObjectClassDialog',
 
-  name: 'AddObjectClassDialog',
-
-  props: {
-    entry: {
-      type: Object,
-      required: true,
-    },
-  },
-
-  data: function() {
-    return {
-      oc: null,
-    }
-  },
-
-  methods: {
-
-    reset: function() {
-      this.oc = null;
+    components: {
+      Modal,
     },
 
-    init: function() {
-      document.getElementById('oc-select').focus();
+    props: {
+      entry: Object,
+      modal: String,
     },
 
-    done: function() {
-      this.entry.attrs.objectClass.push(this.oc);
-      this.$bvModal.hide('add-oc');
+    model: {
+      prop: 'modal',
+      event: 'close',
     },
-  },
-  
-  computed: {
-    available: function() {
-      const classes = this.entry.attrs.objectClass;
-      return this.entry.meta.aux.filter(cls => !classes.includes(cls));
+
+    data: function() {
+      return {
+        oc: null,
+      }
     },
-  },
-}
+
+    methods: {
+      onOk: function() {
+        if (this.oc) {
+          this.$emit('close');
+          this.$emit('ok', this.oc);
+        }
+      },
+    },
+    
+    computed: {
+      available: function() {
+        const classes = this.entry.attrs.objectClass;
+        return this.entry.meta.aux.filter(cls => !classes.includes(cls));
+      },
+    },
+  }
 </script>

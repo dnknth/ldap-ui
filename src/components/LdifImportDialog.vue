@@ -1,65 +1,76 @@
 <template>
-  <b-modal id="ldif-import" title="Import" ok-title="Import" @show="reset" @ok="done">
-    <textarea v-model="ldifData" class="mb-3 form-control"
-        id="ldif-data" placeholder="Paste or upload LDIF">
+  <modal title="Import" :open="modal == 'ldif-import'" ok-title="Import"
+    @show="init" @ok="onOk" @cancel="$emit('close')">
+    
+    <textarea v-model="ldifData" id="ldif-data" placeholder="Paste or upload LDIF">
     </textarea>
+    
     <input type="file" value="Upload…" @change="upload" accept=".ldif" />
-  </b-modal>
+  </modal>
 </template>
 
 <script>
+  import Modal from './Modal.vue';
 
-export default {
+  export default {
+    name: 'LdifImportDialog',
 
-  name: 'LdifImportDialog',
-
-  inject: [ 'xhr' ],
-
-  data: function() {
-    return {
-      ldifData: '',
-      ldifFile: null,
-    }
-  },
-
-  methods: {
-
-    reset: function() {
-      this.ldifData = '';
-      this.ldifFile = null;
+    components: {
+      Modal,
     },
-    
-    // Load LDIF from file
-    upload: function(evt) {
-      const file = evt.target.files[0],
-          reader = new FileReader(),
-          vm = this;
-      reader.onload = function() {
-        vm.ldifData = reader.result;
-        evt.target.value = null;
+
+    inject: [ 'xhr' ],
+
+    props: {
+      modal: String,
+    },
+
+    model: {
+      prop: 'modal',
+      event: 'close',
+    },
+
+    data: function() {
+      return {
+        ldifData: '',
+        ldifFile: null,
       }
-      reader.readAsText(file);
     },
-    
-    // Import LDIF
-    done: async function(evt) {
-      if (!this.ldifData) {
-        evt.preventDefault();
-        return;
-      }
 
-      const xhr = await this.xhr({
-        url: 'api/ldif',
-        method: 'POST',
-        data: this.ldifData,
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-      });
+    methods: {
+      init: function() {
+        this.ldifData = '';
+        this.ldifFile = null;
+      },
+      
+      // Load LDIF from file
+      upload: function(evt) {
+        const file = evt.target.files[0],
+            reader = new FileReader(),
+            vm = this;
+        reader.onload = function() {
+          vm.ldifData = reader.result;
+          evt.target.value = null;
+        }
+        reader.readAsText(file);
+      },
+      
+      // Import LDIF
+      onOk: async function() {
+        if (!this.ldifData) {
+          return;
+        }
 
-      if (xhr) this.$emit('select-dn', '-');
+        this.$emit('close');
+        const xhr = await this.xhr({
+          url: 'api/ldif',
+          method: 'POST',
+          data: this.ldifData,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
+
+        if (xhr) this.$emit('ok', '-');
+      },
     },
-  },
-}
+  }
 </script>
-
-<style scoped>
-</style>

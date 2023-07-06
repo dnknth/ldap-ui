@@ -1,5 +1,6 @@
 .mypy_cache
 .venv*
+.activate
 __pycache__
 
 .DS_Store
@@ -17,7 +18,8 @@ pnpm-debug.log*
 
 # Editor directories and files
 .idea
-.vscode
+# https://github.com/tailwindlabs/tailwindcss/discussions/5258
+# .vscode 
 *.suo
 *.ntvs*
 *.njsproj

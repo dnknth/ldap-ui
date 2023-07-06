@@ -1,42 +1,48 @@
 <template>
-  <b-modal id="confirm-discard" title="Are you sure?" @shown="init" @ok="done"
-    @cancel="$emit('select-dn')" cancel-variant="primary" ok-variant="danger">
+  <modal title="Are you sure?" :open="modal == 'discard-entry'"
+    cancel-variant="primary" ok-variant="danger"
+    @show="next = dn;" @shown="$emit('shown')"
+    @ok="onOk" @cancel="$emit('close')">
 
     <p class="strong">All changes will be irreversibly lost.</p>
 
     <template #modal-ok>
       <i class="fa fa-trash-o fa-lg"></i> Discard
     </template>
-  </b-modal>
+  </modal>
 </template>
 
 <script>
+  import Modal from '../Modal.vue';
 
-export default {
+  export default {
+    name: 'DiscardEntryDialog',
 
-  name: 'DiscardEntryDialog',
-
-  props: {
-    dn: String,
-  },
-
-  data: function() {
-    return {
-      next: undefined,
-    }
-  },
-
-  methods: {
-
-    init: function() {
-      this.next = this.dn;
-      this.$emit('select-dn');
+    components: {
+      Modal,
     },
 
-    done: function() {
-      this.$emit('replace-entry', null);
-      this.$emit('select-dn', this.next);
+    props: {
+      dn: String,
+      modal: String,
     },
-  },
-}
+
+    model: {
+      prop: 'modal',
+      event: 'close',
+    },
+
+    data: function() {
+      return {
+        next: undefined,
+      }
+    },
+
+    methods: {
+      onOk: function() {
+        this.$emit('close');
+        this.$emit('ok', this.next);
+      },
+    },
+  }
 </script>
