@@ -330,8 +330,8 @@ async def blob(attr: str, index: int, dn: str):
 
 @app.route('/api/ldif/<path:dn>')
 @no_cache
-@authenticated
 @connected
+@authenticated
 async def ldifDump(dn: str) -> quart.Response:
     'Dump an entry as LDIF'
     
