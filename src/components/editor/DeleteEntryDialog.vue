@@ -1,7 +1,7 @@
 <template>
   <modal title="Are you sure?" :open="modal == 'delete-entry'"
     cancel-variant="primary" ok-variant="danger"
-    @show="init" @ok="onOk" @cancel="$emit('close')">
+    @show="init" @ok="onOk" @cancel="$emit('update:modal')">
 
     <p class="strong">This action is irreversible.</p>
 
@@ -22,7 +22,7 @@
 </template>
 
 <script>
-  import Modal from '../Modal.vue';
+  import Modal from '../ui/Modal.vue';
   import NodeLabel from '../NodeLabel.vue';
 
   export default {
@@ -38,27 +38,22 @@
       modal: String,
     },
 
-    model: {
-      prop: 'modal',
-      event: 'close',
-    },
-
-    inject: [ 'xhr' ],
+    inject: [ 'app' ],
 
     data: function() {
       return {
         subtree: [],
-      }
+      };
     },
 
     methods: {
       // List subordinate elements to be deleted
       init: async function() {
-        this.subtree = await this.xhr({ url: 'api/subtree/' + this.dn}) || [];
+        this.subtree = await this.app.xhr({ url: 'api/subtree/' + this.dn}) || [];
       },
 
       onOk: function() {
-        this.$emit('close');
+        this.$emit('update:modal');
         this.$emit('ok', this.dn);
       },
     },

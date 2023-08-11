@@ -83,12 +83,11 @@ The UI always uses a simple `bind` operation to authenticate with the LDAP direc
 
 Search uses a (configurable) set of criteria (`cn`, `gn`, `sn`, and `uid`) if the query does not contain `=`.
 Wildcards are supported, e.g. `f*` will match all `cn`, `gn`, `sn`, and `uid` starting with `f`.
-Additionally, arbitrary attributes can be searched with an LDAP filter specification, for example
-`sn=F*` or `uidNumber>=100`.
+Additionally, arbitrary attributes can be searched with an LDAP filter specification, for example `sn=F*`.
 
 ### Caveats
 
-* The software is fairly new. I use it on production directories, but you should probably test-drive it first.
+* The software is fairly new. I use it on production directories, but advise caution.
 * It works with [OpenLdap](http://www.openldap.org) using simple bind. Other directories have not been tested, and SASL authentication schemes are presently not supported.
 * Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLdap 2.4 does). I strongly recommend to expose the app through a TLS-enabled web server.
 * HTTP *Basic Authentication* is triggered unless the `AUTHORIZATION` request variable is already set by some upstream HTTP server.
@@ -102,7 +101,4 @@ Additionally, arbitrary attributes can be searched with an LDAP filter specifica
 
 ## Acknowledgements
 
-The Python backend uses [Quart](https://pgjones.gitlab.io/quart/index.html) which is an asynchronous [Flask](http://flask.pocoo.org/). Kudos for the authors of these elegant frameworks!
-
-The UI is built with [Vue.js](https://vuejs.org) and UI elements based on [Vue Tailwind](https://vuetailwind.com/).
-Thanks to the authors for making frontend work much more enjoyable.
+The Python backend uses [Quart](https://pgjones.gitlab.io/quart/index.html) which is an asynchronous [Flask](http://flask.pocoo.org/). The UI is built with [Vue.js](https://vuejs.org) and [Tailwind](https://tailwindcss.com/) for CSS. Kudos for the authors of these elegant frameworks!

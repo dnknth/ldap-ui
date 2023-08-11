@@ -10,7 +10,7 @@
       <div ref="backdrop" v-if="open" @click.self="onDismiss"
         class="fixed w-full h-full top-0 left-0 flex items-center justify-center z-30" >
 
-        <div class="modal absolute max-h-full w-1/2 max-w-lg container text-front overflow-hidden rounded bg-back border border-front/40">
+        <div class=" absolute max-h-full w-1/2 max-w-lg container text-front overflow-hidden rounded bg-back border border-front/40">
           <div class="flex justify-between items-start">
 
             <div class="max-h-full w-full divide-y divide-front/30">
@@ -22,7 +22,7 @@
                 <div v-if="closable" class="control text-xl" @click="onCancel">⊗</div>
               </div>
 
-              <div class="p-4 space-y-4">
+              <div class="ui-modal-body p-4 space-y-4">
                 <slot />
               </div>
 
@@ -49,38 +49,14 @@
     name: 'Modal',
 
     props: {
-      title: String,
+      title: { type: String, required: true },
       open: Boolean,
-
-      okTitle: {
-        type: String,
-        default: "OK",
-      },
-
-      okVariant: {
-        type: String,
-        default: "primary",
-      },
-
-      cancelTitle: {
-        type: String,
-        default: "Cancel",
-      },
-
-      cancelVariant: {
-        type: String,
-        default: "secondary",
-      },
-
-      closable: {
-        type: Boolean,
-        default: true,
-      },
-
-      hideFooter: {
-        type: Boolean,
-        default: false,
-      },
+      okTitle: { type: String, default: 'OK' },
+      okVariant: { type: String, default: 'primary' },
+      cancelTitle: { type: String, default: 'Cancel' },
+      cancelVariant: { type: String, default: 'secondary' },
+      closable: { type: Boolean, default: true },
+      hideFooter: { type: Boolean, default: false },
     },
 
     methods: {
@@ -98,14 +74,22 @@
     },
 
     mounted: function() {
-      if (this.closable) useEventListener(document, "keydown", e => {
-        if (e.key == "Esc" || e.key == "Escape") this.onDismiss();
+      if (this.closable) useEventListener(document, 'keydown', e => {
+        if (e.key == 'Esc' || e.key == 'Escape') this.onDismiss();
       });
     },
   }
 </script>
 
-<style scoped>
+<style>
+  .ui-modal-body label {
+    @apply block text-front/70;
+  }
+
+  .ui-modal-body input, .ui-modal-body textarea, .ui-modal-body select {
+    @apply w-full border border-front/20 rounded p-2 mt-1 outline-none focus:border-accent text-front bg-gray-200/80 dark:bg-gray-800/80;
+  }
+
   .bounce-enter-active {
     animation: bounce-in 0.5s;
   }

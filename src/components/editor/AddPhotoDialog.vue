@@ -1,6 +1,6 @@
 <template>
   <modal title="Upload photo" hide-footer :open="modal == 'add-' + attr"
-    @shown="$refs.upload.focus()" @cancel="$emit('close')">
+    @shown="$refs.upload.focus()" @cancel="$emit('update:modal')">
 
     <input name="photo" type="file" ref="upload" @change="onOk"
       :accept="attr == 'jpegPhoto' ? 'image/jpeg' : 'image/*'" />
@@ -8,7 +8,7 @@
 </template>
 
 <script>
-  import Modal from '../Modal.vue';
+  import Modal from '../ui/Modal.vue';
 
   export default {
     name: 'AddPhotoDialog',
@@ -26,12 +26,7 @@
       modal: String,
     },
 
-    model: {
-      prop: 'modal',
-      event: 'close',
-    },
-
-    inject: [ 'xhr' ],
+    inject: [ 'app' ],
 
     methods: {
       // add an image
@@ -40,7 +35,7 @@
         
         const fd = new FormData();
         fd.append('blob', evt.target.files[0])
-        const data = await this.xhr({
+        const data = await this.app.xhr({
           url:  'api/blob/' + this.attr + '/0/' + this.dn,
           method: 'PUT',
           data: fd,
@@ -48,7 +43,7 @@
         });
 
         if (data) {
-          this.$emit('close');
+          this.$emit('update:modal');
           this.$emit('ok', this.dn, data.changed);
         }
       },

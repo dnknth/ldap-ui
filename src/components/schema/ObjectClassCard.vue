@@ -1,11 +1,11 @@
 <template>
-  <card :title="oc.name" @close="$emit('display-oc')">
+  <card v-if="modelValue" :title="oc.name" @close="$emit('update:modelValue')">
     <div class="header">{{ oc.desc }}</div>
     
     <div v-if="oc.sup.length" class="mt-2"><i>Superclasses:</i>
       <ul class="list-disc">
         <li v-for="name in oc.sup" :key="name">
-          <span class="cursor-pointer" @click="$emit('display-oc', name)">{{ name }}</span>
+          <span class="cursor-pointer" @click="$emit('update:modelValue', name)">{{ name }}</span>
         </li>
       </ul>
     </div>
@@ -13,7 +13,7 @@
     <div v-if="oc.must.length" class="mt-2"><i>Required attributes:</i>
       <ul class="list-disc">
         <li v-for="name in oc.must" :key="name">
-          <span class="cursor-pointer" @click="$emit('display-attr', name)">{{ name }}</span>
+          <span class="cursor-pointer" @click="app.attr = name;">{{ name }}</span>
         </li>
       </ul>
     </div>
@@ -21,7 +21,7 @@
     <div v-if="oc.may.length" class="mt-2"><i>Optional attributes:</i>
       <ul class="list-disc">
         <li v-for="name in oc.may" :key="name">
-          <span class="cursor-pointer" @click="$emit('display-attr', name)">{{ name }}</span>
+          <span class="cursor-pointer" @click="app.attr = name;">{{ name }}</span>
         </li>
       </ul>
     </div>
@@ -30,8 +30,7 @@
 </template>
 
 <script>
-  import { LdapSchema } from './schema.js';
-  import Card from '../Card.vue';
+  import Card from '../ui/Card.vue';
 
   export default {
     name: 'ObjectClassCard',
@@ -41,7 +40,15 @@
     },
 
     props: {
-      oc: LdapSchema.ObjectClass,
+      modelValue: String,
     },
-  }
+
+    inject: [ 'app' ],
+
+    computed: {
+      oc: function() {
+        return this.modelValue ? this.app.schema.oc(this.modelValue) : undefined;
+      },
+    },
+}
 </script>

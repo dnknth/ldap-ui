@@ -2,7 +2,7 @@
   <modal title="Are you sure?" :open="modal == 'discard-entry'"
     cancel-variant="primary" ok-variant="danger"
     @show="next = dn;" @shown="$emit('shown')"
-    @ok="onOk" @cancel="$emit('close')">
+    @ok="onOk" @cancel="$emit('update:modal')">
 
     <p class="strong">All changes will be irreversibly lost.</p>
 
@@ -13,7 +13,7 @@
 </template>
 
 <script>
-  import Modal from '../Modal.vue';
+  import Modal from '../ui/Modal.vue';
 
   export default {
     name: 'DiscardEntryDialog',
@@ -27,20 +27,15 @@
       modal: String,
     },
 
-    model: {
-      prop: 'modal',
-      event: 'close',
-    },
-
     data: function() {
       return {
         next: undefined,
-      }
+      };
     },
 
     methods: {
       onOk: function() {
-        this.$emit('close');
+        this.$emit('update:modal');
         this.$emit('ok', this.next);
       },
     },

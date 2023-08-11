@@ -1,11 +1,11 @@
 <template>
   <modal title="New entry" :open="modal == 'new-entry'"
-    @ok="onOk" @cancel="$emit('close')"
+    @ok="onOk" @cancel="$emit('update:modal')"
     @show="init" @shown="$refs.oc.focus()">
     
     <label>Object class:
       <select ref="oc" v-model="objectClass">
-        <option v-for="cls in schema.structural">
+        <option v-for="cls in app.schema.structural" :key="cls.name">
           {{ cls }}
         </option>
       </select>
@@ -13,7 +13,7 @@
     
     <label v-if="objectClass">RDN attribute:
       <select v-model="rdn">
-        <option v-for="rdn in rdns()">
+        <option v-for="rdn in rdns()" :key="rdn">
           {{ rdn }}
         </option>
       </select>
@@ -25,7 +25,7 @@
 </template>
 
 <script>
-  import Modal from '../Modal.vue';
+  import Modal from '../ui/Modal.vue';
 
   export default {
     name: 'NewEntryDialog',
@@ -35,22 +35,21 @@
     },
     
     props: {
-      entry: Object,
-      schema: Object,
+      dn: {
+        type: String,
+        required: true,
+      },
       modal: String,
     },
 
-    model: {
-      prop: 'modal',
-      event: 'close',
-    },
+    inject: [ 'app' ],
 
     data: function() {
       return {
         objectClass: null,
         rdn: null,
         name: null,
-      }
+      };
     },
 
     methods: {
@@ -61,15 +60,13 @@
 
       // Create a new entry in the main editor
       onOk: function() {
-        if (!this.objectClass || !this.rdn || !this.name) {
-            return;
-        }
+        if (!this.objectClass || !this.rdn || !this.name) return;
 
-        this.$emit('close');
+        this.$emit('update:modal');
 
         const entry = {
           meta: {
-            dn: this.rdn + '=' + this.name + ',' + this.entry.meta.dn,
+            dn: this.rdn + '=' + this.name + ',' + this.dn,
             aux: [],
             required: [],
             binary: [],
@@ -100,7 +97,7 @@
 
     computed: {
       oc: function() {
-        return this.schema.oc(this.objectClass);
+        return this.app.schema.oc(this.objectClass);
       },
     },
   }

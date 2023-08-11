@@ -4,8 +4,8 @@
       <i class="cursor-pointer glyph fa-bars fa-lg pt-1 mr-4 md:hidden" @click="collapsed = !collapsed"></i>
       
       <i class="cursor-pointer fa fa-lg mr-2" :class="treeOpen ? 'fa-list-alt' : 'fa-list-ul'"
-        @click="$emit('toggle-tree', !treeOpen)"></i>
-      <node-label oc="person" :dn="user" @select-dn="$emit('select-dn', $event)" class="text-lg" />
+        @click="$emit('update:treeOpen', !treeOpen)"></i>
+      <node-label oc="person" :dn="app.user" @select-dn="$emit('select-dn', $event)" class="text-lg" />
     </div>
 
     <div class="flex items-center space-x-4 text-lg" v-show="!collapsed">
@@ -13,8 +13,8 @@
       <span class="cursor-pointer" @click="$emit('show-modal', 'ldif-import')">Import…</span>
       
       <dropdown-menu title="Schema">
-        <li role="menuitem" v-for="obj in schema.objectClasses._objects"
-          :key="obj.name" @click="$emit('display-oc', obj.name)">
+        <li role="menuitem" v-for="obj in app.schema.objectClasses._objects"
+          :key="obj.name" @click="app.oc = obj.name;">
             {{ obj.name }}
         </li>
       </dropdown-menu>
@@ -24,7 +24,7 @@
           autofocus :placeholder="' \uf002'" name="q" @focusin="$refs.q.select();"
           @keyup.esc="$refs.q.value = ''; query = '';" id="nav-search" ref="q" />
         <search-results for="nav-search" @select-dn="query = ''; $emit('select-dn', $event);"
-          :shorten="baseDn" :query="query" :warning="showWarning" />
+          :shorten="this.app.baseDn" :query="query" />
       </form>
     </div>
 
@@ -32,7 +32,7 @@
 </template>
 
 <script>
-  import DropdownMenu from './DropdownMenu.vue';
+  import DropdownMenu from './ui/DropdownMenu.vue';
   import NodeLabel from './NodeLabel.vue';
   import SearchResults from './SearchResults.vue';
 
@@ -47,23 +47,16 @@
 
     props: {
       dn: String,
-      baseDn: String,
-      user: String,
-      showWarning: Function,
       treeOpen: Boolean,
-      schema: Object,
     },
 
-    model: {
-      prop: 'treeOpen',
-      event: 'toggle-tree',
-    },
+    inject: [ 'app' ],
 
     data: function() {
       return {
         query: '',
         collapsed: false,
-      }
+      };
     },
 
     methods: {

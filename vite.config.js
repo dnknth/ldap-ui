@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import viteCompression from 'vite-plugin-compression';
-import vue from '@vitejs/plugin-vue2';
+import vue from '@vitejs/plugin-vue';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -13,6 +13,7 @@ export default defineConfig({
   base: './',
 
   build: {
+    manifest: true,
     chunkSizeWarningLimit: 600
   },
 

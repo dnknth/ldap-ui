@@ -313,9 +313,8 @@ async def blob(attr: str, index: int, dn: str):
 
     elif request.method == 'PUT':
         data = [(await request.files)['blob'].read()]
-        if attr in attrs:
-            await empty(
-                request.ldap.modify(dn, [(1, attr, None), (0, attr, data + attrs[attr])]))
+        if attr in attrs: await empty(
+            request.ldap.modify(dn, [(1, attr, None), (0, attr, data + attrs[attr])]))
         else: await empty(request.ldap.modify(dn, [(0, attr, data)]))
 
     elif request.method == 'DELETE':

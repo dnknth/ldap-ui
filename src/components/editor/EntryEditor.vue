@@ -2,22 +2,21 @@
   <div v-if="entry" class="rounded border border-front/20 mb-3 mx-4 flex-auto">
 
     <!-- Modals for navigation menu -->
-    <new-entry-dialog v-model="modal" :entry="entry" :schema="schema" @ok="newEntry" />
-    <copy-entry-dialog v-model="modal" :entry="entry" @ok="newEntry" />
-    <rename-entry-dialog v-model="modal" :entry="entry" @ok="renameEntry" />
-    <delete-entry-dialog v-model="modal" :dn="entry.meta.dn" @ok="deleteEntry" />
-    <discard-entry-dialog v-model="modal" :dn="activeDn" @ok="discardEntry"
-      @shown="$emit('select-dn')" />
+    <new-entry-dialog v-model:modal="modal" :dn="entry.meta.dn" @ok="newEntry" />
+    <copy-entry-dialog v-model:modal="modal" :entry="entry" @ok="newEntry" />
+    <rename-entry-dialog v-model:modal="modal" :entry="entry" @ok="renameEntry" />
+    <delete-entry-dialog v-model:modal="modal" :dn="entry.meta.dn" @ok="deleteEntry" />
+    <discard-entry-dialog v-model:modal="modal" :dn="activeDn" @ok="discardEntry"
+      @shown="$emit('update:activeDn')" />
 
     <!-- Modals for main editing area -->
-    <password-change-dialog v-model="modal" :entry="entry" :user="user"
-      @ok="changePassword" />
-    <add-photo-dialog v-model="modal" attr="jpegPhoto" :dn="entry.meta.dn" @ok="load" />
-    <add-photo-dialog v-model="modal" attr="thumbnailPhoto" :dn="entry.meta.dn" @ok="load" />
-    <add-object-class-dialog v-model="modal" :entry="entry" @ok="addObjectClass" />
+    <password-change-dialog v-model:modal="modal" :entry="entry" @ok="changePassword" />
+    <add-photo-dialog v-model:modal="modal" attr="jpegPhoto" :dn="entry.meta.dn" @ok="load" />
+    <add-photo-dialog v-model:modal="modal" attr="thumbnailPhoto" :dn="entry.meta.dn" @ok="load" />
+    <add-object-class-dialog v-model:modal="modal" :entry="entry" @ok="addObjectClass" />
     
     <!-- Modals for footer -->
-    <add-attribute-dialog v-model="modal" :entry="entry" :attributes="may"
+    <add-attribute-dialog v-model:modal="modal" :entry="entry" :attributes="may"
       @ok="addAttribute" @show-modal="modal = $event;" />
     
     <nav class="flex justify-between mb-4 border-b border-front/20">
@@ -39,33 +38,31 @@
 
       <div v-if="entry.meta.isNew" class="control text-2xl mr-2"
         @click="modal = 'discard-entry';">⊗</div>
-      <div v-else class="control text-xl mr-2" @click="$emit('select-dn')">⊗</div>
+      <div v-else class="control text-xl mr-2" @click="$emit('update:activeDn')">⊗</div>
     </nav>
     
     <form id="entry" class="space-y-4 my-4" @submit.prevent="save"
         @reset="load(entry.meta.dn)" @focusin="onFocus">
-      <form-row v-for="key in keys" class="attr" :key="key"
-        :attr="schema.attr(key)" :base-dn="baseDn" :meta="entry.meta" :values="entry.attrs[key]"
-        :changed="entry.changed.includes(key)" :structural="schema.structural"
+      <attribute-row v-for="key in keys" :key="key"
+        :attr="app.schema.attr(key)" :meta="entry.meta" :values="entry.attrs[key]"
+        :changed="entry.changed.includes(key)"
         :may="may.includes(key)" :must="must.includes(key)"
-        @display-attr="$emit('display-attr', $event)"
-        @display-oc="$emit('display-oc', $event)"
-        @form-changed="prepareForm"
+        @update="updateRow"
         @reload-form="load"
         @valid="valid(key, $event)"
         @show-modal="modal = $event;" />
 
       <!-- Footer with buttons -->
       <div class="flex ml-4 mt-2 space-x-4">
-        <div class="w-1/3"></div>
-        <div class="w-2/3 pl-4">
+        <div class="w-1/4"></div>
+        <div class="w-3/4 pl-4">
           <div class="w-[90%] space-x-3">
             <button type="submit" class="btn bg-primary"
               accesskey="s" :disabled="invalid.length != 0">Submit</button>
             <button type="reset" v-if="!entry.meta.isNew"
               class="btn bg-secondary">Reset</button>
             <button class="btn float-right bg-secondary" accesskey="a"
-              v-if="!entry.meta.isNew" @click="modal = 'add-attribute';">
+              v-if="!entry.meta.isNew" @click.prevent="modal = 'add-attribute';">
               Add attribute…
             </button>
           </div>
@@ -79,11 +76,11 @@
   import AddAttributeDialog from './AddAttributeDialog.vue';
   import AddObjectClassDialog from './AddObjectClassDialog.vue';
   import AddPhotoDialog from './AddPhotoDialog.vue';
+  import AttributeRow from './AttributeRow.vue';
   import CopyEntryDialog from './CopyEntryDialog.vue';
   import DeleteEntryDialog from './DeleteEntryDialog.vue';
   import DiscardEntryDialog from './DiscardEntryDialog.vue';
-  import DropdownMenu from '../DropdownMenu.vue';
-  import FormRow from './FormRow.vue';
+  import DropdownMenu from '../ui/DropdownMenu.vue';
   import NewEntryDialog from './NewEntryDialog.vue';
   import NodeLabel from '../NodeLabel.vue';
   import PasswordChangeDialog from './PasswordChangeDialog.vue';
@@ -96,7 +93,7 @@
   }
 
   export default {
-    name: 'Editor',
+    name: 'EntryEditor',
 
     components: {
       AddAttributeDialog,
@@ -106,7 +103,7 @@
       DeleteEntryDialog,
       DiscardEntryDialog,
       DropdownMenu,
-      FormRow,
+      AttributeRow,
       NewEntryDialog,
       NodeLabel,
       PasswordChangeDialog,
@@ -115,18 +112,9 @@
 
     props: {
       activeDn: String,
-      baseDn: String,
-      user: String,
-      showInfo: Function,
-      schema: Object,
     },
 
-    model: {
-      prop: 'activeDn',
-      event: 'select-dn'
-    },
-
-    inject: [ 'xhr' ],
+    inject: [ 'app' ],
 
     data: function() {
       return {
@@ -134,7 +122,7 @@
         focused: undefined,  // currently focused input
         invalid: [],         // field IDs with validation errors
         modal: undefined,    // pop-up dialog
-      }
+      };
     },
 
     watch: {
@@ -156,30 +144,53 @@
         if (el.tagName == 'INPUT' && el.id) this.focused = el.id;
       },
 
-      newEntry: function(entry, dn) {
+      newEntry: function(entry) {
         this.entry = entry;
-        this.$emit('select-dn');
+        this.$emit('update:activeDn');
         this.prepareForm();
       },
 
       discardEntry: function(dn) {
         this.entry = null;
-        this.$emit('select-dn', dn);
+        this.$emit('update:activeDn', dn);
       },
 
       addAttribute: function(attr) {
-        this.$set(this.entry.attrs, attr, ['']);
-        this.prepareForm(attr + '-0');
+        if (attr) { // FIXME: Why is this called with attr=undefined?
+          this.entry.attrs[attr] = [''];
+          this.prepareForm(attr + '-0');
+        }
       },
 
       addObjectClass: function(oc) {
-        this.entry.attrs.objectClass.push(oc);
-        this.prepareForm();
+        if (oc) { // FIXME: Why is this called with oc=undefined?
+          this.entry.attrs.objectClass.push(oc);
+          const aux = this.entry.meta.aux.filter(oc => oc < oc);
+          this.entry.meta.aux.splice(aux.length, 1);
+          this.prepareForm();
+        }
+      },
+
+      // Remove a row from the entry form
+      removeObjectClass: function(newOcs) {
+        const removedOc = this.entry.attrs.objectClass.filter(
+            oc => !newOcs.includes(oc))[0];
+        if (removedOc) {
+          const aux = this.entry.meta.aux.filter(oc => oc < removedOc);
+          this.entry.meta.aux.splice(aux.length, 0, removedOc);
+        }
+      },
+
+      updateRow: function(attr, values, index) {
+        this.entry.attrs[attr] = values;
+        if (attr == 'objectClass') this.removeObjectClass(values);
+        const focused = index != undefined ? attr + '-' + index : undefined;
+        this.prepareForm(focused);
       },
 
       prepareForm: function(focused) {
         this.must.filter(attr => !this.entry.attrs[attr])
-          .forEach(attr => this.$set(this.entry.attrs, attr, ['']));
+          .forEach(attr => this.entry.attrs[attr] = ['']);
 
         if (!focused) {
           const empty = this.keys.flatMap(attr => this.entry.attrs[attr]
@@ -211,7 +222,7 @@
           return;
         }
 
-        this.entry = await this.xhr({ url: 'api/entry/' + dn });
+        this.entry = await this.app.xhr({ url: 'api/entry/' + dn });
         if (!this.entry) return;
 
         this.entry.changed = changed || [];
@@ -229,7 +240,7 @@
         }
 
         this.entry.changed = [];
-        const data = await this.xhr({
+        const data = await this.app.xhr({
           url:  'api/entry/' + this.entry.meta.dn,
           method: this.entry.meta.isNew ? 'PUT' : 'POST',
           data: JSON.stringify(this.entry.attrs),
@@ -239,40 +250,44 @@
         if (!data) return;
         
         if (data.changed && data.changed.length) {
-          this.showInfo('👍 Saved changes');
+          this.app.showInfo('👍 Saved changes');
         }
         if (this.entry.meta.isNew) {
           this.entry.meta.isNew = false;
-          this.$emit('select-dn', this.entry.meta.dn);
+          this.$emit('update:activeDn', this.entry.meta.dn);
         }
         else this.load(this.entry.meta.dn, data.changed);
       },
 
       renameEntry: async function(rdn) {
-        await this.xhr({
-          url: 'api/rename',
-          method: 'POST',
-          data: JSON.stringify({
-            dn:  this.entry.meta.dn,
-            rdn: rdn
-          }),
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        });
+        if (rdn) { // FIXME: Why is this called with rdn=undefined?
+          await this.app.xhr({
+            url: 'api/rename',
+            method: 'POST',
+            data: JSON.stringify({
+              dn:  this.entry.meta.dn,
+              rdn: rdn
+            }),
+            headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          });
 
-        const dnparts = this.entry.meta.dn.split(',');
-        dnparts.splice(0, 1, rdn);
-        this.$emit('select-dn', dnparts.join(','));
+          const dnparts = this.entry.meta.dn.split(',');
+          dnparts.splice(0, 1, rdn);
+          this.$emit('update:activeDn', dnparts.join(','));
+        }
       },
 
       deleteEntry: async function(dn) {
-        if (await this.xhr({ url: 'api/entry/' + dn, method: 'DELETE' }) !== undefined) {
-          this.showInfo('Deleted: ' + dn);
-          this.$emit('select-dn', '-' + dn);
+        if (dn) { // FIXME: Why is this called with dn=undefined?
+          if (await this.app.xhr({ url: 'api/entry/' + dn, method: 'DELETE' }) !== undefined) {
+            this.app.showInfo('Deleted: ' + dn);
+            this.$emit('update:activeDn', '-' + dn);
+          }
         }
       },
 
       changePassword: async function(oldPass, newPass) {
-        const data = await this.xhr({
+        const data = await this.app.xhr({
           url: 'api/entry/password/' + this.entry.meta.dn,
           method: 'POST',
           data: JSON.stringify({ old: oldPass, new1: newPass }),
@@ -280,21 +295,20 @@
         });
 
         if (data !== undefined) {
-          this.$set(this.entry.attrs, 'userPassword', [ data ]);
+          this.entry.attrs.userPassword = [ data ];
           this.entry.changed.push('userPassword');
         }
       },
 
       // Download LDIF
       ldif: async function() {
-        const xhr = await request({
+        const data = await request({
           url: 'api/ldif/' + this.entry.meta.dn,
-          responseType: 'blob'
-        }).catch(xhr => console.error(xhr));
-        if (!xhr) return;
+          responseType: 'blob' });
+        if (!data) return;
 
         const a = document.createElement("a"),
-            url = URL.createObjectURL(xhr.response);
+            url = URL.createObjectURL(data.response);
         a.href = url;
         a.download = this.entry.meta.dn.split(',')[0].split('=')[1] + '.ldif';
         document.body.appendChild(a);
@@ -304,7 +318,7 @@
       attributes: function(kind) {
         let attrs = this.entry.attrs.objectClass
           .filter(oc => oc && oc != 'top')
-          .map(oc => this.schema.oc(oc))
+          .map(oc => this.app.schema.oc(oc))
           .flatMap(oc => oc ? oc.getAttributes(kind): [])
           .filter(unique);
         attrs.sort();
@@ -331,7 +345,7 @@
 
       structural: function() {
         const oc = this.entry.attrs.objectClass
-          .map(oc => this.schema.oc(oc))
+          .map(oc => this.app.schema.oc(oc))
           .filter(oc => oc && oc.isStructural)[0];
         return oc ? oc.name : '';
       },

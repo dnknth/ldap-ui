@@ -1,7 +1,7 @@
 <template>
   <div class="relative inline-block text-left mx-1">
     <span ref="opener" class="inline-flex w-full py-2 select-none cursor-pointer"
-      :aria-expanded="open" aria-haspopup="true" @click.prevent="open = !open;">
+      :aria-expanded="open" aria-haspopup="true" @click.stop="open = !open">
       <slot name="button-content">
         {{ title }}
       </slot>
@@ -9,7 +9,7 @@
         <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
       </svg>
     </span>
-    <popover v-if="open" :open="open" @close="open = false;">
+    <popover v-model:open="open">
       <slot></slot>
     </popover>
   </div>
@@ -32,7 +32,7 @@
     data: function() {
       return {
         open: false,
-      }
+      };
     },
   }
 </script>

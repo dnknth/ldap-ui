@@ -1,16 +1,13 @@
 <template>
   <modal title="Import" :open="modal == 'ldif-import'" ok-title="Import"
-    @show="init" @ok="onOk" @cancel="$emit('close')">
-    
-    <textarea v-model="ldifData" id="ldif-data" placeholder="Paste or upload LDIF">
-    </textarea>
-    
-    <input type="file" value="Upload…" @change="upload" accept=".ldif" />
+    @show="init" @ok="onOk" @cancel="$emit('update:modal')">
+      <textarea v-model="ldifData" id="ldif-data" placeholder="Paste or upload LDIF"></textarea>
+      <input type="file" @change="upload" accept=".ldif" />
   </modal>
 </template>
 
 <script>
-  import Modal from './Modal.vue';
+  import Modal from './ui/Modal.vue';
 
   export default {
     name: 'LdifImportDialog',
@@ -19,22 +16,17 @@
       Modal,
     },
 
-    inject: [ 'xhr' ],
+    inject: [ 'app' ],
 
     props: {
       modal: String,
-    },
-
-    model: {
-      prop: 'modal',
-      event: 'close',
     },
 
     data: function() {
       return {
         ldifData: '',
         ldifFile: null,
-      }
+      };
     },
 
     methods: {
@@ -61,15 +53,15 @@
           return;
         }
 
-        this.$emit('close');
-        const xhr = await this.xhr({
+        this.$emit('update:modal');
+        const data = await this.app.xhr({
           url: 'api/ldif',
           method: 'POST',
           data: this.ldifData,
           headers: { 'Content-Type': 'text/plain; charset=utf-8' }
         });
 
-        if (xhr) this.$emit('ok', '-');
+        if (data) this.$emit('ok');
       },
     },
   }

@@ -1,7 +1,7 @@
 <template>
   <modal title="Change / verify password" :open="modal == 'change-password'"
     @show="init" @shown="focus" @ok="onOk"
-    @cancel="$emit('close')" @hidden="$emit('update-form')">
+    @cancel="$emit('update:modal')" @hidden="$emit('update-form')">
     
     <div v-if="oldExists">
       <small >{{ currentUser ? 'Required' : 'Optional' }}</small>
@@ -20,7 +20,7 @@
 </template>
 
 <script>
-  import Modal from '../Modal.vue';
+  import Modal from '../ui/Modal.vue';
 
   export default {
     name: 'PasswordChangeDialog',
@@ -31,16 +31,10 @@
 
     props: {
       entry: Object,
-      user: String,
       modal: String,
     },
 
-    model: {
-      prop: 'modal',
-      event: 'close',
-    },
-
-    inject: [ 'xhr' ],
+    inject: [ 'app' ],
 
     data: function() {
       return {
@@ -48,7 +42,7 @@
         newPassword: '',
         repeated: '',
         passwordOk: undefined,
-      }
+      };
     },
 
     methods: {
@@ -70,7 +64,7 @@
           this.passwordOk = undefined;
           return;
         }
-        this.passwordOk = await this.xhr({
+        this.passwordOk = await this.app.xhr({
           url: 'api/entry/password/' + this.entry.meta.dn,
           method: 'POST',
           data: JSON.stringify({ check: this.oldPassword }),
@@ -85,14 +79,14 @@
         || this.newPassword != this.repeated
         || (this.currentUser && this.oldExists && !this.passwordOk)) return;
 
-        this.$emit('close');
+        this.$emit('update:modal');
         this.$emit('ok', this.oldPassword, this.newPassword);
       },
     },
 
     computed: {
       currentUser: function() {
-        return this.user == this.entry.meta.dn;
+        return this.app.user == this.entry.meta.dn;
       },
 
       // Verify that the new password is repeated correctly

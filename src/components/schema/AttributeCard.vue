@@ -1,5 +1,5 @@
 <template>
-  <card :title="attr.names.join(', ')" @close="$emit('display-attr')">
+  <card v-if="modelValue" :title="attr.names.join(', ')" @close="$emit('update:modelValue')">
 
     <div class="header">{{ attr.desc }}</div>
     
@@ -14,7 +14,7 @@
     <div v-if="attr.sup.length > 0" class="mt-2"><i>Parents:</i>
       <ul class="list-disc mt-2">
         <li v-for="name in attr.sup" :key="name">
-          <span class="cursor-pointer" @click="$emit('display-attr', name)">{{ name }}</span>
+          <span class="cursor-pointer" @click="$emit('update:modelValue', name)">{{ name }}</span>
         </li>
       </ul>
     </div>
@@ -22,8 +22,7 @@
 </template>
 
 <script>
-  import { LdapSchema } from './schema.js';
-  import Card from '../Card.vue';
+  import Card from '../ui/Card.vue';
 
   export default {
     name: 'AttributeCard',
@@ -33,8 +32,10 @@
     },
 
     props: {
-      attr: LdapSchema.Attribute,
+      modelValue: String,
     },
+
+    inject: [ 'app' ],
 
     data: function() {
       return {
@@ -42,7 +43,13 @@
           'desc', 'name', 'names',
           'no_user_mod', 'obsolete', 'oid',
           'usage', 'syntax', 'sup' ]
-      }
-    }
+      };
+    },
+
+    computed: {
+      attr: function() {
+        return this.modelValue ? this.app.schema.attr(this.modelValue) : undefined;
+      },
+    },
   }
 </script>

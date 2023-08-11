@@ -11,7 +11,7 @@
 
           <node-label :dn="item.dn" :oc="item.structuralObjectClass"
             class="tree-link whitespace-nowrap text-front/80"
-            @select-dn="clicked" :class="{ active : active == item.dn }">
+            @select-dn="clicked" :class="{ active : activeDn == item.dn }">
               <span v-if="!item.level">{{ item.dn }}</span>
           </node-label>
       </li>
@@ -65,22 +65,16 @@
       NodeLabel,
     },
 
-    model: {
-      prop: 'active',
-      event: 'select-dn'
-    },
-
     props: {
-      active: String,
-      schema: Object,
+      activeDn: String,
     },
 
-    inject: [ 'xhr' ],
+    inject: [ 'app' ],
 
     data: function() {
       return {
         tree: undefined,
-      }
+      };
     },
 
     created: async function() {
@@ -89,9 +83,7 @@
     },
 
     watch: {
-
-      active: async function(selected) {
-
+      activeDn: async function(selected) {
         // Special case: Full tree reload
         if (selected == '-' || selected == 'base') {
           await this.reload('base');
@@ -100,36 +92,35 @@
 
         // Reveal the selected DN in the tree
         // by opening all parent nodes
-        const dn = new this.schema.DN(selected || this.tree.dn),
+        const dn = new this.app.schema.DN(selected || this.tree.dn),
           parents = dn.parents(this.tree.dn);
 
         parents.reverse();
         for (let i=0; i < parents.length; ++i) {
           const p = parents[i].value, node = this.tree.find(p);
           if (!node.loaded) await this.reload(p);
-          this.$set(node, 'open', true);
+          node.open = true;
         }
 
         // Special case: Item was added, renamed or deleted
         if (!this.tree.find(dn.value)) {
           await this.reload(dn.parent.value);
-          this.$set(this.tree.find(dn.parent.value), 'open', true);
+          this.tree.find(dn.parent.value).open = true;
         }
       },
 
     },
       
     methods: {
-
       clicked: async function(dn) {
         const item = this.tree.find(dn);
         if (item.hasSubordinates && !item.open) await this.toggle(item);
-        this.$emit('select-dn', dn);
+        this.$emit('update:activeDn', dn);
       },
 
       // Reload the subtree at entry with given DN
       reload: async function(dn) {
-        const response = await this.xhr({ url: 'api/tree/' + dn }) || [];
+        const response = await this.app.xhr({ url: 'api/tree/' + dn }) || [];
         response.sort((a, b) => a.dn.toLowerCase().localeCompare(b.dn.toLowerCase()));
 
         if (dn == 'base') {
@@ -139,14 +130,15 @@
         }
 
         const item = this.tree.find(dn);
-        this.$set(item, 'subordinates', response.map(node => new Node(node)));
+        item.subordinates = response.map(node => new Node(node));
+        item.hasSubordinates = item.subordinates.length > 0;
         return response;
       },
 
       // Hide / show tree elements
       toggle: async function(item) {
         if (!item.open && !item.loaded) await this.reload(item.dn);
-        this.$set(item, 'open', !item.open);
+        item.open = !item.open;
       },
       
     },

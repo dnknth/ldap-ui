@@ -1,16 +1,16 @@
 <template>
   <modal title="Add attribute" :open="modal == 'add-attribute'"
     @show="attr = null;" @shown="$refs.attr.focus()"
-    @ok="onOk" @cancel="$emit('close')">
+    @ok="onOk" @cancel="$emit('update:modal')">
 
     <select v-model="attr" ref="attr" @keyup.enter="onOk">
-      <option v-for="attr in available">{{ attr }}</option>
+      <option v-for="attr in available" :key="attr">{{ attr }}</option>
     </select>
   </modal>
 </template>
 
 <script>
-  import Modal from '../Modal.vue';
+  import Modal from '../ui/Modal.vue';
 
   export default {
     name: 'AddAttributeDialog',
@@ -25,15 +25,10 @@
       modal: String,
     },
 
-    model: {
-      prop: 'modal',
-      event: 'close',
-    },
-
     data: function() {
       return {
         attr: null,
-      }
+      };
     },
 
     methods: {
@@ -51,7 +46,7 @@
           return;
         }
         
-        this.$emit('close');
+        this.$emit('update:modal');
         this.$emit('ok', this.attr);
       },
     },

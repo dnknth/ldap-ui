@@ -1,6 +1,6 @@
 {
   "name": "ldap-ui",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -13,30 +13,30 @@
     "@vueuse/components": "^10.2.1",
     "@vueuse/core": "^10.2.1",
     "font-awesome": "^4.7.0",
-    "vue": "^2.7.0"
+    "vue": "^3.2.37"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue2": "^2.0.0",
+    "@vitejs/plugin-vue": "^4",
     "autoprefixer": "^10.4.14",
     "eslint": "latest",
     "eslint-plugin-vue": "^9.15.1",
     "tailwind-config-viewer": "^1.7.2",
-    "tailwindcss": "^3.3.2",
-    "vite": "^4.0.0",
-    "vite-plugin-compression": "^0.5.1"
+    "tailwindcss": "^3.3",
+    "vite": "^4",
+    "vite-plugin-compression": "^0.5.0"
   },
   "eslintConfig": {
     "root": true,
     "env": {
-      "node": true
+      "node": true,
+      "es6": true
     },
     "extends": [
       "eslint:recommended",
-      "plugin:vue/vue-essential"
+      "plugin:vue/vue3-essential"
     ],
     "parserOptions": {
-      "sourceType": "module",
-      "ecmaVersion": 2015
+      "sourceType": "module"
     }
   },
   "browserslist": [

@@ -1,18 +1,18 @@
 <template>
   <modal title="Rename entry" :open="modal == 'rename-entry'"
-    @ok="onOk" @cancel="$emit('close')"
+    @ok="onOk" @cancel="$emit('update:modal')"
     @show="init" @shown="$refs.rdn.focus()">
     
     <label>New RDN attribute:
       <select ref="rdn" v-model="rdn" @keyup.enter="onOk">
-        <option v-for="rdn in rdns">{{ rdn }}</option>
+        <option v-for="rdn in rdns" :key="rdn">{{ rdn }}</option>
       </select>
     </label>
   </modal>
 </template>
 
 <script>
-  import Modal from '../Modal.vue';
+  import Modal from '../ui/Modal.vue';
 
   export default {
     name: 'RenameEntryDialog',
@@ -26,15 +26,10 @@
       modal: String,
     },
 
-    model: {
-      prop: 'modal',
-      event: 'close',
-    },
-
     data: function() {
       return {
         rdn: undefined,
-      }
+      };
     },
 
     methods: {
@@ -48,7 +43,7 @@
           return;
         }
         
-        this.$emit('close');
+        this.$emit('update:modal');
         const rdn = this.rdn + '=' + rdnAttr[0];
         this.$emit('ok', rdn);
       },

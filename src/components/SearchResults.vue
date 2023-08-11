@@ -1,5 +1,5 @@
 <template>
-  <popover :target="elementId" v-if="show" :open="show" @close="clear">
+  <popover :open="show" @update:open="results = []">
     <li v-for="item in results" :key="item.dn" @click="done(item.dn)"
       :title="label == 'dn' ? '' : trim(item.dn)" role="menuitem">
         {{ item[label] }}
@@ -8,7 +8,7 @@
 </template>
 
 <script>
-  import Popover from './Popover.vue';
+  import Popover from './ui/Popover.vue';
 
   export default {
     name: 'SearchResults',
@@ -20,37 +20,36 @@
     props: {
       query: String,
       for: String,
-
       label: {
         type: String,
         default: 'name',
         validator: value => ['name', 'dn' ].includes(value)
       },
-
       shorten: String,
-      warning: Function,
+      silent: {
+        type: Boolean,
+        default: false,
+      },
     },
 
     data: function() {
       return {
         results: [],
-        popup: null,
-      }
+      };
     },
 
-    inject: [ 'xhr' ],
+    inject: [ 'app' ],
 
     watch: {
       
       query: async function(q) {
         if (!q) return;
 
-        this.clear();
-        this.results = await this.xhr({ url: 'api/search/' + q });
-        if (!this.results) return; // XHR failed
+        this.results = await this.app.xhr({ url: 'api/search/' + q });
+        if (!this.results) return; // app.xhr failed
 
-        if (this.results.length == 0) {
-          if (this.warning) this.warning('No search results');
+        if (this.results.length == 0 && !this.silent) {
+          this.app.showWarning('No search results');
           return;
         }
 
@@ -75,27 +74,20 @@
       // use an auto-completion choice
       done: function(dn) {
         this.$emit('select-dn', dn);
-        this.clear();
+        this.results = [];
 
-        // Return focus to search input
         this.$nextTick(function() {
+          // Return focus to search input
           const el = document.getElementById(this.for);
           if (el) el.focus();
         });
       },
-
-      clear: function() {
-        this.results = [];
-      },
     },
 
     computed: {
-      elementId: function() { // alias "for" prop for templates
-        return this.for;
-      },
-
       show: function() {
-        return this.query && this.results && this.results.length > 1;
+        return this.query.trim() != ''
+          && this.results && this.results.length > 1;
       },
     }
 

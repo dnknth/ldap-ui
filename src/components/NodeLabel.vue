@@ -32,7 +32,7 @@
           person:             'user',
           posixGroup:         'users',
         }
-      }
+      };
     },
 
     computed: {

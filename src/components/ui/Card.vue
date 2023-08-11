@@ -17,7 +17,7 @@
     name: 'Card',
 
     props: {
-      title: String,
+      title: { type: String, required: true },
     },
   }
 </script>

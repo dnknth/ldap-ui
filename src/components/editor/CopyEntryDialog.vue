@@ -1,7 +1,7 @@
 <template>
   <modal title="Copy entry" :open="modal == 'copy-entry'"
     @show="init" @shown="$refs.dn.focus()"
-    @ok="onOk" @cancel="$emit('close')">
+    @ok="onOk" @cancel="$emit('update:modal')">
     
     <div>
       <div class="text-danger text-xs mb-1" v-if="error">{{ error }}</div>
@@ -11,7 +11,7 @@
 </template>
 
 <script>
-  import Modal from '../Modal.vue';
+  import Modal from '../ui/Modal.vue';
 
   export default {
     name: 'CopyEntryDialog',
@@ -25,16 +25,11 @@
       modal: String,
     },
 
-    model: {
-      prop: 'modal',
-      event: 'close',
-    },
-
     data: function() {
       return {
         dn: undefined,
         error: '',
-      }
+      };
     },
 
     methods: {
@@ -60,7 +55,7 @@
           return;
         }
 
-        this.$emit('close');
+        this.$emit('update:modal');
         const entry = JSON.parse(JSON.stringify(this.entry));
         entry.attrs[rdn] = [rdnpart[1]];
         entry.meta.dn = this.dn;

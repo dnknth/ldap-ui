@@ -1,33 +1,27 @@
 <template>
   <div id="app">
-    <nav-bar v-model="treeOpen" :dn="activeDn" :base-dn="baseDn"
-      :schema="schema" :user="user" :showWarning="showWarning" 
-      @show-modal="modal = $event;"
-      @select-dn="activeDn = $event;"
-      @display-oc="displayOc" />
+    <nav-bar v-model:treeOpen="treeOpen" :dn="activeDn"
+      @show-modal="modal = $event;" @select-dn="activeDn = $event;" />
 
-    <ldif-import-dialog v-model="modal" @ok="activeDn = $event;" />
+    <ldif-import-dialog v-model:modal="modal" @ok="activeDn = '-';" />
 
     <div class="flex container">
       <div class="space-y-4"><!-- left column -->
-        <tree-view v-model="activeDn" v-show="treeOpen" :schema="schema" @base-dn="baseDn = $event;" />
-        <object-class-card v-if="oc" :oc="oc" @display-oc="displayOc" @display-attr="displayAttr" />
-        <attribute-card v-if="attr" :attr="attr" @display-attr="displayAttr" />
+        <tree-view v-model:activeDn="activeDn" v-show="treeOpen" @base-dn="baseDn = $event;" />
+        <object-class-card v-model="oc" />
+        <attribute-card v-model="attr" />
       </div>
       
       <div class="flex-auto mt-4"><!-- main editing area -->
-
         <transition name="fade"><!-- Notifications -->
           <div v-if="error"
-              class="rounded mx-4 mb-4 p-4 border border-front/70 text-back/70" :class="error.type">
+              class="rounded mx-4 mb-4 p-3 border border-front/70 text-back/70" :class="error.type">
             {{ error.msg }}
-            <span class="float-right pr-2 hover:text-back" @click="error = undefined">✖</span>
+            <span class="float-right control" @click="error = undefined">✖</span>
           </div>
         </transition>
       
-        <editor v-model="activeDn" :showInfo="showInfo"
-          :schema="schema" :user="user" :base-dn="baseDn"
-          @display-attr="displayAttr" @display-oc="displayOc" />
+        <entry-editor v-model:activeDn="activeDn" />
       </div>
     </div>
 
@@ -44,7 +38,7 @@
 
 <script>
   import AttributeCard from './components/schema/AttributeCard.vue';
-  import Editor from './components/editor/Editor.vue';
+  import EntryEditor from './components/editor/EntryEditor.vue';
   import { LdapSchema } from './components/schema/schema.js';
   import LdifImportDialog from './components/LdifImportDialog.vue';
   import NavBar from './components/NavBar.vue';
@@ -57,7 +51,7 @@
 
     components: {
       AttributeCard,
-      Editor,
+      EntryEditor,
       LdifImportDialog,
       NavBar,
       ObjectClassCard,
@@ -85,13 +79,13 @@
         // Flash cards
         oc: undefined,          // objectClass info in side panel
         attr: undefined,        // attribute info in side panel
-      }
+      };
     },
 
     provide: function () {
       return {
-        xhr: this.xhr,
-      }
+        app: this,
+      };
     },
 
     mounted: async function() { // Runs on page load
@@ -102,21 +96,16 @@
       this.schema = new LdapSchema(await this.xhr({ url: 'api/schema' }));
     },
 
+    watch: {
+      attr: function(a) { if (a) this.oc = undefined; },
+      oc: function(o) { if (o) this.attr = undefined; },
+    },
+
     methods: {
       xhr: function(options) {
         return request(options)
           .then(xhr => JSON.parse(xhr.response))
           .catch(xhr => this.showException(xhr.response || "Unknown error"));
-      },
-      
-      displayOc: function(name) {
-        this.attr = undefined;
-        this.oc = name ? this.schema.oc(name) : undefined;
-      },
-      
-      displayAttr: function(name) {
-        this.oc = undefined;
-        this.attr = name ? this.schema.attr(name) : undefined;
       },
       
       // Display an info popup
@@ -159,18 +148,6 @@
 <style>
   .control {
     @apply opacity-70 hover:opacity-90 cursor-pointer select-none leading-none pt-1 pr-1;
-  }
-
-  .form-control {
-    @apply text-front bg-gray-200/80 dark:bg-gray-800/80;
-  }
-
-  .modal input, .modal textarea, .modal select {
-    @apply form-control w-full border border-front/20 rounded p-2 mt-1 outline-none focus:border-accent text-front;
-  }
-
-  .modal label {
-    @apply block text-front/70;
   }
 
   button, .btn, [type="button"] {

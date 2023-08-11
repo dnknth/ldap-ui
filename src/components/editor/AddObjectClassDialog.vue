@@ -1,16 +1,16 @@
 <template>
   <modal title="Add objectClass" :open="modal == 'add-object-class'"
     @show="oc = null;" @shown="$refs.oc.focus()"
-    @ok="onOk" @cancel="$emit('close')">
+    @ok="onOk" @cancel="$emit('update:modal')">
     
     <select v-model="oc" ref="oc" @keyup.enter="onOk">
-      <option v-for="cls in available">{{ cls }}</option>
+      <option v-for="cls in available" :key="cls">{{ cls }}</option>
     </select>
   </modal>
 </template>
 
 <script>
-  import Modal from '../Modal.vue';
+  import Modal from '../ui/Modal.vue';
 
   export default {
     name: 'AddObjectClassDialog',
@@ -24,21 +24,16 @@
       modal: String,
     },
 
-    model: {
-      prop: 'modal',
-      event: 'close',
-    },
-
     data: function() {
       return {
         oc: null,
-      }
+      };
     },
 
     methods: {
       onOk: function() {
         if (this.oc) {
-          this.$emit('close');
+          this.$emit('update:modal');
           this.$emit('ok', this.oc);
         }
       },
