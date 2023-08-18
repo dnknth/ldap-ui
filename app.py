@@ -520,16 +520,18 @@ SCHEMA_ATTR_USAGE = {
 }
     
 def _at(obj) -> dict:
-    'Additional information about an object class'
+    'Additional information about an attribute'
     r = _el(obj)
     r.update({
         'single_value' : bool(obj.single_value),
         'no_user_mod'  : bool(obj.no_user_mod),
+        'usage'        : SCHEMA_ATTR_USAGE[obj.usage],
+
+        # FIXME avoid null values below
         'equality'     : obj.equality,
         'syntax'       : obj.syntax,
         'substr'       : obj.substr,
         'ordering'     : obj.ordering,
-        'usage'        : SCHEMA_ATTR_USAGE[obj.usage],
     })
     return r
 

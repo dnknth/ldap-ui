@@ -49,6 +49,17 @@
     get loaded() {
       return !this.hasSubordinates || this.subordinates.length > 0;
     },
+    
+    parentDns: function(baseDn) {
+      const dns = [];
+        for (let dn = this.dn;;) {
+          dns.push(dn);
+          const idx = dn.indexOf(',');
+          if (idx == -1 || dn == baseDn) break;
+          dn = dn.subString(idx + 1);
+        }
+        return dns;
+    },
 
     visible: function() {
       if (!this.hasSubordinates || !this.open) return [this];
@@ -90,25 +101,30 @@
           return;
         }
 
-        // Reveal the selected DN in the tree
-        // by opening all parent nodes
-        const dn = new this.app.schema.DN(selected || this.tree.dn),
-          parents = dn.parents(this.tree.dn);
+        // Get all parents of the selected entry in the tree
+        const dn = new this.app.schema.DN(selected || this.tree.dn);
+        let hierarchy = [];
+        for (let node = dn; node; node = node.parent) {
+          hierarchy.push(node);
+          if (node == this.tree.dn) break;
+        }
 
-        parents.reverse();
-        for (let i=0; i < parents.length; ++i) {
-          const p = parents[i].value, node = this.tree.find(p);
+        // Reveal the selected entry by opening all parents
+        hierarchy.reverse();
+        for (let i = 0; i < hierarchy.length; ++i) {
+          const p = hierarchy[i].toString(),
+            node = this.tree.find(p);
+          if (!node) break;
           if (!node.loaded) await this.reload(p);
           node.open = true;
         }
 
-        // Special case: Item was added, renamed or deleted
-        if (!this.tree.find(dn.value)) {
-          await this.reload(dn.parent.value);
-          this.tree.find(dn.parent.value).open = true;
+        // Reload parent if entry was added, renamed or deleted
+        if (!this.tree.find(dn.toString())) {
+          await this.reload(dn.parent.toString());
+          this.tree.find(dn.parent.toString()).open = true;
         }
       },
-
     },
       
     methods: {
@@ -140,7 +156,6 @@
         if (!item.open && !item.loaded) await this.reload(item.dn);
         item.open = !item.open;
       },
-      
     },
   }
 </script>

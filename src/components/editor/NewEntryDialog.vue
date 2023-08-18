@@ -5,9 +5,9 @@
     
     <label>Object class:
       <select ref="oc" v-model="objectClass">
-        <option v-for="cls in app.schema.structural" :key="cls.name">
-          {{ cls }}
-        </option>
+        <template v-for="cls in app.schema.ObjectClass.values" :key="cls.name">
+          <option v-if="cls.structural">{{ cls }}</option>
+        </template>
       </select>
     </label>
     
@@ -64,6 +64,13 @@
 
         this.$emit('update:modal');
 
+        const objectClasses = [this.objectClass];
+        for (let oc = this.oc.$super; oc; oc = oc.$super) {
+          if (!oc.structural && oc.kind != 'abstract') {
+              objectClasses.push(oc.name);
+          }
+        }
+        
         const entry = {
           meta: {
             dn: this.rdn + '=' + this.name + ',' + this.dn,
@@ -75,10 +82,7 @@
             isNew: true,
           },
           attrs: {
-            objectClass: [ this.objectClass ].concat(
-              this.oc.superClasses
-              .filter(oc => !oc.isStructural && oc.kind != 'abstract')
-              .map(oc => oc.name)),
+            objectClass: objectClasses,
           },
           changed: [],
         };
@@ -89,7 +93,7 @@
       // Choice list of RDN attributes for a new entry
       rdns: function() {
         if (!this.objectClass) return [];
-        const ocs = this.oc.getAttributes('must');
+        const ocs = this.oc.$collect('must');
         if (ocs.length == 1) this.rdn = ocs[0];
         return ocs;
       },

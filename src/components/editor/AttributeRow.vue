@@ -30,10 +30,9 @@
         </span>
         <input v-else :value="values[index]" :id="attr + '-' + index" :type="type"
           class="w-[90%] glyph outline-none bg-back border-x-0 border-t-0 border-b border-solid border-front/20 focus:border-accent px-1"
-          :class="{ structural: isStructural(val), auto: defaultValue,
-          illegal: (illegal && !empty) || duplicate(index) }"
+          :class="{ structural: isStructural(val), auto: defaultValue, illegal: (illegal && !empty) || duplicate(index) }"
           :placeholder="placeholder" :disabled="disabled"
-          :title="equality == 'generalizedTimeMatch' ? dateString(val) : ''"
+          :title="attr.equality == 'generalizedTimeMatch' ? dateString(val) : ''"
           @input="update" @focusin="query = ''"
           @keyup="search" @keyup.esc="query = ''" />
 
@@ -166,12 +165,12 @@
 
       // Is the given value a structural object class?
       isStructural: function(val) {
-        return this.attr.name == 'objectClass' && this.app.schema.structural.includes(val);
+        return this.attr.name == 'objectClass' && this.app.schema.oc(val).structural;
       },
 
       // Is the given value an auxillary object class?
       isAux: function(val) {
-        return this.attr.name == 'objectClass' && !this.app.schema.structural.includes(val);
+        return this.attr.name == 'objectClass' && !this.app.schema.oc(val).structural;
       },
 
       duplicate: function(index) {
@@ -218,7 +217,6 @@
           || (!this.attr.no_user_mod && !this.binary);
       },
 
-      equality: function() { return this.attr.getField('equality'); },
       password: function() { return this.attr.name == 'userPassword'; },
 
       binary: function() {
@@ -234,7 +232,7 @@
       },
 
       completable: function() {
-        return this.equality == 'distinguishedNameMatch';
+        return this.attr.equality == 'distinguishedNameMatch';
       },
 
       placeholder: function() {
@@ -249,7 +247,7 @@
       // Guess the <input> type for an attribute
       type: function() {
         if (this.password) return 'password';
-        if (this.equality == 'integerMatch') return 'number';
+        if (this.attr.equality == 'integerMatch') return 'number';
         return 'text';
       },
 

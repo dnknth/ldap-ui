@@ -13,7 +13,7 @@
       <span class="cursor-pointer" @click="$emit('show-modal', 'ldif-import')">Import…</span>
       
       <dropdown-menu title="Schema">
-        <li role="menuitem" v-for="obj in app.schema.objectClasses._objects"
+        <li role="menuitem" v-for="obj in app.schema.ObjectClass.values"
           :key="obj.name" @click="app.oc = obj.name;">
             {{ obj.name }}
         </li>

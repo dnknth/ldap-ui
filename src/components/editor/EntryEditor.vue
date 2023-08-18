@@ -319,7 +319,7 @@
         let attrs = this.entry.attrs.objectClass
           .filter(oc => oc && oc != 'top')
           .map(oc => this.app.schema.oc(oc))
-          .flatMap(oc => oc ? oc.getAttributes(kind): [])
+          .flatMap(oc => oc ? oc.$collect(kind): [])
           .filter(unique);
         attrs.sort();
         return attrs;
@@ -346,7 +346,7 @@
       structural: function() {
         const oc = this.entry.attrs.objectClass
           .map(oc => this.app.schema.oc(oc))
-          .filter(oc => oc && oc.isStructural)[0];
+          .filter(oc => oc && oc.structural)[0];
         return oc ? oc.name : '';
       },
 

@@ -10,17 +10,17 @@
       </ul>
     </div>
 
-    <div v-if="oc.must.length" class="mt-2"><i>Required attributes:</i>
+    <div v-if="oc.$collect('must').length" class="mt-2"><i>Required attributes:</i>
       <ul class="list-disc">
-        <li v-for="name in oc.must" :key="name">
+        <li v-for="name in oc.$collect('must')" :key="name">
           <span class="cursor-pointer" @click="app.attr = name;">{{ name }}</span>
         </li>
       </ul>
     </div>
 
-    <div v-if="oc.may.length" class="mt-2"><i>Optional attributes:</i>
+    <div v-if="oc.$collect('may').length" class="mt-2"><i>Optional attributes:</i>
       <ul class="list-disc">
-        <li v-for="name in oc.may" :key="name">
+        <li v-for="name in oc.$collect('may')" :key="name">
           <span class="cursor-pointer" @click="app.attr = name;">{{ name }}</span>
         </li>
       </ul>

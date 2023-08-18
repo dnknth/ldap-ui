@@ -7,149 +7,165 @@ export function LdapSchema(json) {
   }
 
   function RDN(value) {
-    this.value = value;
-    this.length = value.length;
+    this.text = value;
     const parts = value.split('=');
-    this.attr = parts[0];
-    this.name = parts[1];
+    this.attrName = parts[0].trim();
+    this.value = parts[1].trim();
   }
 
   RDN.prototype = {
-    schema: this,
-    toString: function() { return this.value; },
-    valueOf: function() { return this.value; },
-    equals: function(other) {
-      return this.schema.attr(this.attr).equals(this.name, other.name);
+    toString: function() { return this.text; },
+
+    eq: function(other) {
+      return other
+        && this.attr.eq(other.attr)
+        && this.attr.matcher(this.value, other.value);
+    },
+
+    get attr() {
+      return this.$attributes.$get(this.attrName);
     },
   };
 
-
   function DN(value) {
-    this.value = value;
+    this.text = value;
     const parts = value.split(',');
-    this.length = parts.length;
     this.rdn = new RDN(parts[0]);
+    this.parent = parts.length == 1 ? undefined
+      : new DN(value.slice(parts[0].length + 1));
   }
   
   DN.prototype = {
-    toString: function() { return this.value; },
-    valueOf: function() { return this.value; },
-  
-    get parent() {
-      return !this.value.includes(',') ? undefined
-        : new DN(this.value.slice(this.rdn.length + 1));
-    },
-  
-    parents: function(base) {
-      const p = this.parent;
-      return p && p.value.includes(base || '')
-        ? [p].concat(p.parents(base)) : [];
-    },
+    toString: function() { return this.text; },
 
-    parts: function() {
-      return this.value.split(',').map(rdn => new RDN(rdn));
-    },
-
-    equals: function(other) {
-      if (this.length != other.length) return false;
-      const parts = other.parts;
-      return this.parts.every((e, i) => e.equals(parts[i]));
+    eq: function(other) {
+      if (!other || !this.rdn.eq(other.rdn)) return false;
+      if (!this.parent && !other.parent) return true;
+      return this.parent && this.parent.eq(other.parent);
     },
   };
-
 
   function ObjectClass(json) {
     Object.assign(this, json);
   }
 
   ObjectClass.prototype = {
-    
-    schema: this,
-    
-    get superClasses() {
-      let result = [];
-      for (let oc = this; oc; oc = this.schema.oc(oc.sup[0])) result.push(oc);
-      return result;
-    },
-    
-    get isStructural() { return this.kind == 'structural'; },
+    get structural() { return this.kind == 'structural'; },
 
-    // collect values from a field, across all superclasses
-    getAttributes: function(name) {
-      const result = this.superClasses
-        .map(oc => oc[name])
-        .filter(attrs => attrs)
-        .flat()
-        .map(attr => this.schema.attr(attr).name)
+    // gather values from a field across all superclasses
+    $collect: function(name) {
+      let attributes = [];
+      for (let oc = this; oc; oc = oc.$super) {
+        const attrs = oc[name];
+        if (attrs) attributes.push(attrs);
+      }
+
+      const result = attributes.flat()
+        .map(attr => this.$attributes.$get(attr).name)
         .filter(unique);
       result.sort();
       return result;
     },
 
     toString: function() { return this.names[0]; },
+
+    get $super() {
+      const parent = Object.getPrototypeOf(this);
+      return parent.sup ? parent : undefined;
+    },
   };
 
-
   function Attribute(json) {
-    Object.assign(this, json);
+    Object.getOwnPropertyNames(json)
+      .forEach(prop => {
+        const value = json[prop];
+        if (value !== null) this[prop] = value;
+      });
   }
 
   Attribute.prototype = {
-    schema: this,
     toString: function() { return this.names[0]; },
-    
-    // look up a field across superclasses
-    getField: function(name) {
-      for (let attr = this; attr; attr = this.schema.attr(attr.sup[0])) {
-        const val = attr[name];
-        if (val) return val;
-      }
-    },
 
     matchRules: {
-      "distinguishedNameMatch": (a, b) => new DN(a).equals(new DN(b)),
-      "caseIgnoreIA5Match": (a, b) => a.toLowerCase() == b.toLowerCase(),
-      "caseIgnoreMatch": (a, b) => a.toLowerCase() == b.toLowerCase(),
-      // "generalizedTimeMatch",
-      "integerMatch": (a, b) => +a == +b,
-      "numericStringMatch": (a, b) => +a == +b,
+      // See: https://ldap.com/matching-rules/
+      distinguishedNameMatch: (a, b) => new DN(a).eq(new DN(b)),
+      caseIgnoreIA5Match: (a, b) => a.toLowerCase() == b.toLowerCase(),
+      caseIgnoreMatch: (a, b) => a.toLowerCase() == b.toLowerCase(),
+      // generalizedTimeMatch: ...
+      integerMatch: (a, b) => +a == +b,
+      numericStringMatch: (a, b) => +a == +b,
+      octetStringMatch: (a, b) => a == b,
     },
 
-    equals: function(a, b) {
-      const predicate = this.matchRules[this.getField('equality')]
-        || ((a, b) => a == b);
-      return predicate(a, b);
+    get matcher() {
+      return this.matchRules[this.equality]
+        || this.matchRules.octetStringMatch;
+    },
+
+    eq: function(other) { return other && this.oid == other.oid; },
+
+    get binary() {
+      if (this.equality == 'octetStringMatch') return undefined;
+      return this.$syntax.not_human_readable;
+    },
+
+    get $syntax() { return this.$syntaxes[this.syntax]; },
+
+    get $super() {
+      const parent = Object.getPrototypeOf(this);
+      return parent.sup ? parent : undefined;
     },
   };
 
-  function FlatMap(json, ctor) {
-    this._objects = [];
-    if (!json) return;
+  function Syntax(json) {
+    Object.assign(this, json);
+  }
 
-    this._objects = Object.getOwnPropertyNames(json)
-      .map(prop => ctor ? new ctor(json[prop]) : json[prop]);
+  Syntax.prototype = {
+    toString: function() { return this.desc; },
+  };
+
+  function PropertyMap(json, ctor, prop) {
+    Object.getOwnPropertyNames(json || {})
+      .map(prop => new ctor(json[prop]))
+      .forEach(obj => { this[obj[prop]] = obj; });
+  }
+
+  function FlatPropertyMap(json, ctor, prop) {
+    this.$values = Object.getOwnPropertyNames(json || {})
+      .map(key => new ctor(json[key]));
     
-    this._objects.forEach(obj => obj.names.forEach(
-      name => { this[name.toLowerCase()] = obj; }));
+    // Map objects to each available prop value
+    this.$values.forEach(obj => obj[prop].forEach(
+      key => { this[key.toLowerCase()] = obj; }));
+
+    // Model object inheritance as JS prototype chain
+    this.$values.forEach(obj => {
+      const key = obj.sup[0],
+        parent = key ? this[key.toLowerCase()] : undefined;
+      if (parent) Object.setPrototypeOf(obj, parent);
+    });
+
+    this.$get = function(name) {
+      return name ? this[name.toLowerCase()] : undefined;
+    };
   }
 
+  // LdapSchema constructor
+  const syntaxes = new PropertyMap(json.syntaxes, Syntax, 'oid'),
+    attributes = new FlatPropertyMap(json.attributes, Attribute, 'names'),
+    objectClasses = new FlatPropertyMap(json.objectClasses, ObjectClass, 'names');
 
-  this.attributes = new FlatMap(json.attributes, Attribute);
-  this.objectClasses = new FlatMap(json.objectClasses, ObjectClass);
-  this.syntaxes = json.syntaxes || [];
+  Attribute.prototype.$syntaxes = syntaxes;
+  RDN.prototype.$attributes = attributes;
+  ObjectClass.prototype.$attributes = attributes;
+  ObjectClass.values = objectClasses;
+
+  this.attr = (name) => attributes.$get(name);
+  this.oc = (name) => objectClasses.$get(name);
+
   this.DN = DN;
-
-  this.structural = this.objectClasses._objects
-    .filter(oc => oc.isStructural)
-    .map(oc => oc.name);
+  this.RDN = RDN;
+  this.Attribute = Attribute;
+  this.ObjectClass = ObjectClass;
 }
-
-LdapSchema.prototype = {
-  attr: function(name) {
-    return name ? this.attributes[name.toLowerCase()] : undefined;
-  },
-  
-  oc: function(name) {
-    return name ? this.objectClasses[name.toLowerCase()] : undefined;
-  }
-};

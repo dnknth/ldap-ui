@@ -4,20 +4,15 @@
     <div class="header">{{ attr.desc }}</div>
     
     <ul class="list-disc mt-2">
-      <template v-for="(val, key) in attr">
-        <li :key="key" v-if="val && hiddenFields.indexOf(key) == -1">
-          {{ key }}: {{ val }}
-        </li>
-      </template>
+      <li v-if="attr.$super">Parent:
+        <span class="cursor-pointer"
+          @click="$emit('update:modelValue', attr.$super.name)">{{ attr.$super }}</span>
+      </li>
+      <li v-if="attr.equality">Equality: {{ attr.equality }}</li>
+      <li v-if="attr.ordering">Ordering: {{ attr.ordering }}</li>
+      <li v-if="attr.substr">Substring: {{ attr.substr }}</li>
+      <li>Syntax: {{ attr.$syntax }} <span v-if="attr.binary">(binary)</span></li>
     </ul>
-    
-    <div v-if="attr.sup.length > 0" class="mt-2"><i>Parents:</i>
-      <ul class="list-disc mt-2">
-        <li v-for="name in attr.sup" :key="name">
-          <span class="cursor-pointer" @click="$emit('update:modelValue', name)">{{ name }}</span>
-        </li>
-      </ul>
-    </div>
   </card>
 </template>
 
