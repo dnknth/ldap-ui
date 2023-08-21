@@ -7,17 +7,11 @@
   </popover>
 </template>
 
-<script>
+<script setup>
+  import { computed, inject, nextTick, ref, watch } from 'vue';
   import Popover from './ui/Popover.vue';
 
-  export default {
-    name: 'SearchResults',
-
-    components: {
-      Popover,
-    },
-
-    props: {
+  const props = defineProps({
       query: String,
       for: String,
       label: {
@@ -30,66 +24,49 @@
         type: Boolean,
         default: false,
       },
-    },
+    }),
+    app = inject('app'),
+    results = ref([]),
+    show = computed(() => props.query.trim() != ''
+          && results.value && results.value.length > 1),
+    emit = defineEmits(['select-dn']);
 
-    data: function() {
-      return {
-        results: [],
-      };
-    },
+  watch(() => props.query,
+    async (q) => {
+      if (!q) return;
 
-    inject: [ 'app' ],
+      results.value = await app.xhr({ url: 'api/search/' + q });
+      if (!results.value) return; // app.xhr failed
 
-    watch: {
-      
-      query: async function(q) {
-        if (!q) return;
+      if (results.value.length == 0 && !props.silent) {
+        app.showWarning('No search results');
+        return;
+      }
 
-        this.results = await this.app.xhr({ url: 'api/search/' + q });
-        if (!this.results) return; // app.xhr failed
+      if (results.value.length == 1) {
+        done(results.value[0].dn);
+        return;
+      }
 
-        if (this.results.length == 0 && !this.silent) {
-          this.app.showWarning('No search results');
-          return;
-        }
+      results.value.sort((a, b) =>
+        a[props.label].toLowerCase().localeCompare(
+          b[props.label].toLowerCase()));
+  });
 
-        if (this.results.length == 1) {
-          this.done(this.results[0].dn);
-          return;
-        }
+  function trim(dn) {
+    return props.shorten && props.shorten != dn
+      ? dn.replace(props.shorten, '…') : dn;
+  }
 
-        this.results.sort((a, b) =>
-          a[this.label].toLowerCase().localeCompare(
-            b[this.label].toLowerCase()));
-      },
-    },
+  // use an auto-completion choice
+  function done(dn) {
+    emit('select-dn', dn);
+    results.value = [];
 
-    methods: {
-
-      trim: function(dn) {
-        return this.shorten && this.shorten != dn
-          ? dn.replace(this.shorten, '…') : dn;
-      },
-
-      // use an auto-completion choice
-      done: function(dn) {
-        this.$emit('select-dn', dn);
-        this.results = [];
-
-        this.$nextTick(function() {
-          // Return focus to search input
-          const el = document.getElementById(this.for);
-          if (el) el.focus();
-        });
-      },
-    },
-
-    computed: {
-      show: function() {
-        return this.query.trim() != ''
-          && this.results && this.results.length > 1;
-      },
-    }
-
+    nextTick(()=> {
+      // Return focus to search input
+      const el = document.getElementById(props.for);
+      if (el) el.focus();
+    });
   }
 </script>

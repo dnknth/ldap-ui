@@ -16,11 +16,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        accent: withOpacityValue('--color-accent'),
+        primary: withOpacityValue('--color-primary'),
         back: withOpacityValue('--color-back'),
         danger: withOpacityValue('--color-danger'),
         front: withOpacityValue('--color-front'),
-        primary: withOpacityValue('--color-primary'),
         secondary: withOpacityValue('--color-secondary'),
       }
     },

@@ -152,20 +152,16 @@ export function LdapSchema(json) {
   }
 
   // LdapSchema constructor
-  const syntaxes = new PropertyMap(json.syntaxes, Syntax, 'oid'),
-    attributes = new FlatPropertyMap(json.attributes, Attribute, 'names'),
-    objectClasses = new FlatPropertyMap(json.objectClasses, ObjectClass, 'names');
-
-  Attribute.prototype.$syntaxes = syntaxes;
-  RDN.prototype.$attributes = attributes;
-  ObjectClass.prototype.$attributes = attributes;
-  ObjectClass.values = objectClasses;
-
-  this.attr = (name) => attributes.$get(name);
-  this.oc = (name) => objectClasses.$get(name);
-
   this.DN = DN;
   this.RDN = RDN;
   this.Attribute = Attribute;
   this.ObjectClass = ObjectClass;
+
+  Attribute.prototype.$syntaxes = new PropertyMap(json.syntaxes, Syntax, 'oid');
+  ObjectClass.prototype.$attributes = new FlatPropertyMap(json.attributes, Attribute, 'names'),
+  RDN.prototype.$attributes = ObjectClass.prototype.$attributes;
+  ObjectClass.values = new FlatPropertyMap(json.objectClasses, ObjectClass, 'names');
+
+  this.attr = (name) => ObjectClass.prototype.$attributes.$get(name);
+  this.oc = (name) => ObjectClass.values.$get(name);
 }

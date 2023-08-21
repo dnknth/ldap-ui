@@ -1,68 +1,51 @@
 <template>
   <modal title="Import" :open="modal == 'ldif-import'" ok-title="Import"
-    @show="init" @ok="onOk" @cancel="$emit('update:modal')">
+    @show="init" @ok="onOk" @cancel="emit('update:modal')">
       <textarea v-model="ldifData" id="ldif-data" placeholder="Paste or upload LDIF"></textarea>
       <input type="file" @change="upload" accept=".ldif" />
   </modal>
 </template>
 
-<script>
+<script setup>
+  import { inject, ref } from 'vue';
   import Modal from './ui/Modal.vue';
 
-  export default {
-    name: 'LdifImportDialog',
+  const
+    app = inject('app'),
+    ldifData = ref(''),
+    ldifFile = ref(null),
+    emit = defineEmits(['ok', 'update:modal']);
 
-    components: {
-      Modal,
-    },
+  defineProps({ modal: String });
+  
+  function init() {
+    ldifData.value = '';
+    ldifFile.value = null;
+  }
+  
+  // Load LDIF from file
+  function upload(evt) {
+    const file = evt.target.files[0],
+      reader = new FileReader();
 
-    inject: [ 'app' ],
+    reader.onload = function() {
+      ldifData.value = reader.result;
+      evt.target.value = null;
+    }
+    reader.readAsText(file);
+  }
+  
+  // Import LDIF
+  async function onOk() {
+    if (!ldifData.value) return;
 
-    props: {
-      modal: String,
-    },
+    emit('update:modal');
+    const data = await app.xhr({
+      url: 'api/ldif',
+      method: 'POST',
+      data: ldifData.value,
+    });
 
-    data: function() {
-      return {
-        ldifData: '',
-        ldifFile: null,
-      };
-    },
-
-    methods: {
-      init: function() {
-        this.ldifData = '';
-        this.ldifFile = null;
-      },
-      
-      // Load LDIF from file
-      upload: function(evt) {
-        const file = evt.target.files[0],
-            reader = new FileReader(),
-            vm = this;
-        reader.onload = function() {
-          vm.ldifData = reader.result;
-          evt.target.value = null;
-        }
-        reader.readAsText(file);
-      },
-      
-      // Import LDIF
-      onOk: async function() {
-        if (!this.ldifData) {
-          return;
-        }
-
-        this.$emit('update:modal');
-        const data = await this.app.xhr({
-          url: 'api/ldif',
-          method: 'POST',
-          data: this.ldifData,
-          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-        });
-
-        if (data) this.$emit('ok');
-      },
-    },
+    if (data) emit('ok');
   }
 </script>

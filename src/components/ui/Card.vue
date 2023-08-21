@@ -3,7 +3,9 @@
     <slot name="header">
       <div class="py-2 border-b border-front/20">
         <strong class="pl-6">{{ title }}</strong>
-        <span class="control text-l float-right mr-2 pl-2" @click="$emit('close')">⊗</span>
+        <span class="control text-l float-right mr-2 pl-2" title="close"
+          @click="emit('close')">⊗
+        </span>
       </div>
     </slot>
     <div class="px-6 py-2">
@@ -12,12 +14,10 @@
   </div>
 </template>
 
-<script>
-  export default {
-    name: 'Card',
+<script setup>
+  defineProps({
+    title: { type: String, required: true },
+  });
 
-    props: {
-      title: { type: String, required: true },
-    },
-  }
+  const emit = defineEmits('close');
 </script>

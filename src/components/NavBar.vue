@@ -1,70 +1,57 @@
 <template>
-  <nav class="px-4 flex flex-col md:flex-row flex-wrap justify-between mt-0 py-1 bg-accent text-back dark:text-front">
+  <nav class="px-4 flex flex-col md:flex-row flex-wrap justify-between mt-0 py-1 bg-primary/40">
     <div class="flex items-center">
       <i class="cursor-pointer glyph fa-bars fa-lg pt-1 mr-4 md:hidden" @click="collapsed = !collapsed"></i>
       
       <i class="cursor-pointer fa fa-lg mr-2" :class="treeOpen ? 'fa-list-alt' : 'fa-list-ul'"
-        @click="$emit('update:treeOpen', !treeOpen)"></i>
-      <node-label oc="person" :dn="app.user" @select-dn="$emit('select-dn', $event)" class="text-lg" />
+        @click="emit('update:treeOpen', !treeOpen)"></i>
+      <node-label oc="person" :dn="user" @select-dn="emit('select-dn', $event)" class="text-lg" />
     </div>
 
     <div class="flex items-center space-x-4 text-lg" v-show="!collapsed">
       <!-- Right aligned nav items -->      
-      <span class="cursor-pointer" @click="$emit('show-modal', 'ldif-import')">Import…</span>
+      <span class="cursor-pointer" @click="emit('show-modal', 'ldif-import')">Import…</span>
       
       <dropdown-menu title="Schema">
         <li role="menuitem" v-for="obj in app.schema.ObjectClass.values"
-          :key="obj.name" @click="app.oc = obj.name;">
+          :key="obj.name" @click="emit('show-oc', obj.name)">
             {{ obj.name }}
         </li>
       </dropdown-menu>
 
       <form @submit.prevent="search">
-        <input class="glyph px-2 py-1 rounded border border-front/80 outline-none dark:bg-gray-800/80"
-          autofocus :placeholder="' \uf002'" name="q" @focusin="$refs.q.select();"
-          @keyup.esc="$refs.q.value = ''; query = '';" id="nav-search" ref="q" />
-        <search-results for="nav-search" @select-dn="query = ''; $emit('select-dn', $event);"
-          :shorten="this.app.baseDn" :query="query" />
+        <input class="glyph px-2 py-1 rounded border border-front/80 outline-none text-front dark:bg-gray-800/80"
+          autofocus :placeholder="' \uf002'" name="q" @focusin="input.select();" accesskey="k"
+          @keyup.esc="query = '';" id="nav-search" ref="input" />
+        <search-results for="nav-search" @select-dn="query = ''; emit('select-dn', $event);"
+          :shorten="baseDn" :query="query" />
       </form>
     </div>
 
   </nav>
 </template>
 
-<script>
+<script setup>
+  import { inject, nextTick, ref } from 'vue';
   import DropdownMenu from './ui/DropdownMenu.vue';
   import NodeLabel from './NodeLabel.vue';
   import SearchResults from './SearchResults.vue';
 
-  export default {
-    name: 'NavBar',
+  const
+    app = inject('app'),
+    input = ref(null),
+    query = ref(''),
+    collapsed = ref(false),
+    emit = defineEmits(['select-dn', 'show-modal', 'show-oc']);
 
-    components: {
-      DropdownMenu,
-      NodeLabel,
-      SearchResults,
-    },
+  defineProps({
+    baseDn: String,
+    treeOpen: Boolean,
+    user: String,
+  });
 
-    props: {
-      dn: String,
-      treeOpen: Boolean,
-    },
-
-    inject: [ 'app' ],
-
-    data: function() {
-      return {
-        query: '',
-        collapsed: false,
-      };
-    },
-
-    methods: {
-      search: function() {
-        const q = this.$refs.q.value;
-        this.query = '';
-        this.$nextTick(() => { this.query = q; });
-      },
-    },
+  function search() {
+    query.value = '';
+    nextTick(() => { query.value = input.value.value; });
   }
 </script>

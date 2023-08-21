@@ -19,7 +19,8 @@
   </div>
 </template>
 
-<script>
+<script setup>
+  import { inject, onMounted, ref, watch } from 'vue';
   import NodeLabel from './NodeLabel.vue';
 
   function Node(json) {
@@ -69,94 +70,79 @@
     },
   };
 
-  export default {
-    name: 'TreeView',
-
-    components: {
-      NodeLabel,
-    },
-
-    props: {
+  const props = defineProps({
       activeDn: String,
-    },
+    }),
+    app = inject('app'),
+    tree = ref(null),
+    emit = defineEmits(['base-dn', 'update:activeDn']);
 
-    inject: [ 'app' ],
+  onMounted(async () => {
+    await reload('base');
+    emit('base-dn', tree.value.dn);
+  });
 
-    data: function() {
-      return {
-        tree: undefined,
-      };
-    },
+  watch(() => props.activeDn, async (selected) => {
+    if (!selected) return;
+    
+    // Special case: Full tree reload
+    if (selected == '-' || selected == 'base') {
+      await reload('base');
+      return;
+    }
+    
+    // Get all parents of the selected entry in the tree
+    const dn = new app.schema.DN(selected || tree.value.dn);
+    let hierarchy = [];
+    for (let node = dn; node; node = node.parent) {
+      hierarchy.push(node);
+      if (node == tree.value.dn) break;
+    }
 
-    created: async function() {
-      await this.reload('base');
-      this.$emit('base-dn', this.tree.dn);
-    },
+    // Reveal the selected entry by opening all parents
+    hierarchy.reverse();
+    for (let i = 0; i < hierarchy.length; ++i) {
+      const p = hierarchy[i].toString(),
+        node = tree.value.find(p);
+      if (!node) break;
+      if (!node.loaded) await reload(p);
+      node.open = true;
+    }
 
-    watch: {
-      activeDn: async function(selected) {
-        // Special case: Full tree reload
-        if (selected == '-' || selected == 'base') {
-          await this.reload('base');
-          return;
-        }
-
-        // Get all parents of the selected entry in the tree
-        const dn = new this.app.schema.DN(selected || this.tree.dn);
-        let hierarchy = [];
-        for (let node = dn; node; node = node.parent) {
-          hierarchy.push(node);
-          if (node == this.tree.dn) break;
-        }
-
-        // Reveal the selected entry by opening all parents
-        hierarchy.reverse();
-        for (let i = 0; i < hierarchy.length; ++i) {
-          const p = hierarchy[i].toString(),
-            node = this.tree.find(p);
-          if (!node) break;
-          if (!node.loaded) await this.reload(p);
-          node.open = true;
-        }
-
-        // Reload parent if entry was added, renamed or deleted
-        if (!this.tree.find(dn.toString())) {
-          await this.reload(dn.parent.toString());
-          this.tree.find(dn.parent.toString()).open = true;
-        }
-      },
-    },
+    // Reload parent if entry was added, renamed or deleted
+    if (!tree.value.find(dn.toString())) {
+      await reload(dn.parent.toString());
+      tree.value.find(dn.parent.toString()).open = true;
+    }
+  });
       
-    methods: {
-      clicked: async function(dn) {
-        const item = this.tree.find(dn);
-        if (item.hasSubordinates && !item.open) await this.toggle(item);
-        this.$emit('update:activeDn', dn);
-      },
+  async function clicked(dn) {
+    const item = tree.value.find(dn);
+    if (item.hasSubordinates && !item.open) await toggle(item);
+    emit('update:activeDn', dn);
+  }
 
       // Reload the subtree at entry with given DN
-      reload: async function(dn) {
-        const response = await this.app.xhr({ url: 'api/tree/' + dn }) || [];
-        response.sort((a, b) => a.dn.toLowerCase().localeCompare(b.dn.toLowerCase()));
+  async function reload(dn) {
+    const response = await app.xhr({ url: 'api/tree/' + dn }) || [];
+    response.sort((a, b) => a.dn.toLowerCase().localeCompare(b.dn.toLowerCase()));
 
-        if (dn == 'base') {
-          this.tree = new Node(response[0]);
-          await this.toggle(this.tree);
-          return;
-        }
+    if (dn == 'base') {
+      tree.value = new Node(response[0]);
+      await toggle(tree.value);
+      return;
+    }
 
-        const item = this.tree.find(dn);
-        item.subordinates = response.map(node => new Node(node));
-        item.hasSubordinates = item.subordinates.length > 0;
-        return response;
-      },
+    const item = tree.value.find(dn);
+    item.subordinates = response.map(node => new Node(node));
+    item.hasSubordinates = item.subordinates.length > 0;
+    return response;
+  }
 
-      // Hide / show tree elements
-      toggle: async function(item) {
-        if (!item.open && !item.loaded) await this.reload(item.dn);
-        item.open = !item.open;
-      },
-    },
+  // Hide / show tree elements
+  async function toggle(item) {
+    if (!item.open && !item.loaded) await reload(item.dn);
+    item.open = !item.open;
   }
 </script>
 

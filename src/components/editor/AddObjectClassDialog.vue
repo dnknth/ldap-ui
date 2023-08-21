@@ -1,49 +1,34 @@
 <template>
   <modal title="Add objectClass" :open="modal == 'add-object-class'"
-    @show="oc = null;" @shown="$refs.oc.focus()"
-    @ok="onOk" @cancel="$emit('update:modal')">
+    @show="oc = null;" @shown="select.focus()"
+    @ok="onOk" @cancel="emit('update:modal')">
     
-    <select v-model="oc" ref="oc" @keyup.enter="onOk">
+    <select v-model="oc" ref="select" @keyup.enter="onOk">
       <option v-for="cls in available" :key="cls">{{ cls }}</option>
     </select>
   </modal>
 </template>
 
-<script>
+<script setup>
+  import { computed, ref } from 'vue';
   import Modal from '../ui/Modal.vue';
 
-  export default {
-    name: 'AddObjectClassDialog',
-
-    components: {
-      Modal,
-    },
-
-    props: {
-      entry: Object,
+  const props = defineProps({
+      entry: { type: Object, required: true },
       modal: String,
-    },
+    }),
+    oc = ref(null),
+    select = ref(null),
+    available = computed(() => {
+      const classes = props.entry.attrs.objectClass;
+      return props.entry.meta.aux.filter(cls => !classes.includes(cls));
+    }),
+    emit = defineEmits(['ok', 'update:modal']);
 
-    data: function() {
-      return {
-        oc: null,
-      };
-    },
-
-    methods: {
-      onOk: function() {
-        if (this.oc) {
-          this.$emit('update:modal');
-          this.$emit('ok', this.oc);
-        }
-      },
-    },
-    
-    computed: {
-      available: function() {
-        const classes = this.entry.attrs.objectClass;
-        return this.entry.meta.aux.filter(cls => !classes.includes(cls));
-      },
-    },
+  function onOk() {
+    if (oc.value) {
+      emit('update:modal');
+      emit('ok', oc.value);
+    }
   }
 </script>

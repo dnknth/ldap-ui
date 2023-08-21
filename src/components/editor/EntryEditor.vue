@@ -2,24 +2,31 @@
   <div v-if="entry" class="rounded border border-front/20 mb-3 mx-4 flex-auto">
 
     <!-- Modals for navigation menu -->
-    <new-entry-dialog v-model:modal="modal" :dn="entry.meta.dn" @ok="newEntry" />
-    <copy-entry-dialog v-model:modal="modal" :entry="entry" @ok="newEntry" />
-    <rename-entry-dialog v-model:modal="modal" :entry="entry" @ok="renameEntry" />
-    <delete-entry-dialog v-model:modal="modal" :dn="entry.meta.dn" @ok="deleteEntry" />
-    <discard-entry-dialog v-model:modal="modal" :dn="activeDn" @ok="discardEntry"
-      @shown="$emit('update:activeDn')" />
+    <new-entry-dialog v-model:modal="modal" :dn="entry.meta.dn" :return-to="focused" @ok="newEntry" />
+    <copy-entry-dialog v-model:modal="modal" :entry="entry" :return-to="focused" @ok="newEntry" />
+    <rename-entry-dialog v-model:modal="modal" :entry="entry" :return-to="focused" @ok="renameEntry" />
+    <delete-entry-dialog v-model:modal="modal" :dn="entry.meta.dn" :return-to="focused" @ok="deleteEntry" />
+    <discard-entry-dialog v-model:modal="modal" :dn="props.activeDn" :return-to="focused"
+      @ok="discardEntry" @shown="emit('update:activeDn')" />
 
     <!-- Modals for main editing area -->
-    <password-change-dialog v-model:modal="modal" :entry="entry" @ok="changePassword" />
-    <add-photo-dialog v-model:modal="modal" attr="jpegPhoto" :dn="entry.meta.dn" @ok="load" />
-    <add-photo-dialog v-model:modal="modal" attr="thumbnailPhoto" :dn="entry.meta.dn" @ok="load" />
-    <add-object-class-dialog v-model:modal="modal" :entry="entry" @ok="addObjectClass" />
+    <password-change-dialog v-model:modal="modal"
+      :entry="entry" :return-to="focused" :user="user"
+      @ok="changePassword" />
+    <add-photo-dialog v-model:modal="modal" attr="jpegPhoto"
+      :dn="entry.meta.dn" :return-to="focused"
+      @ok="load" />
+    <add-photo-dialog v-model:modal="modal" attr="thumbnailPhoto"
+      :dn="entry.meta.dn" :return-to="focused" @ok="load" />
+    <add-object-class-dialog v-model:modal="modal"
+      :entry="entry" :return-to="focused" @ok="addObjectClass" />
     
     <!-- Modals for footer -->
-    <add-attribute-dialog v-model:modal="modal" :entry="entry" :attributes="may"
+    <add-attribute-dialog v-model:modal="modal"
+      :entry="entry" :attributes="attributes('may')" :return-to="focused"
       @ok="addAttribute" @show-modal="modal = $event;" />
     
-    <nav class="flex justify-between mb-4 border-b border-front/20">
+    <nav class="flex justify-between mb-4 border-b border-front/20 bg-primary/70">
       <div v-if="entry.meta.isNew" class="py-2 ml-3">
         <node-label :dn="entry.meta.dn" :oc="structural" />
       </div>
@@ -37,29 +44,32 @@
       </div>
 
       <div v-if="entry.meta.isNew" class="control text-2xl mr-2"
-        @click="modal = 'discard-entry';">⊗</div>
-      <div v-else class="control text-xl mr-2" @click="$emit('update:activeDn')">⊗</div>
+        @click="modal = 'discard-entry';" title="close">⊗</div>
+      <div v-else class="control text-xl mr-2" title="close"
+        @click="emit('update:activeDn')">⊗</div>
     </nav>
     
     <form id="entry" class="space-y-4 my-4" @submit.prevent="save"
         @reset="load(entry.meta.dn)" @focusin="onFocus">
-      <attribute-row v-for="key in keys" :key="key"
+      <attribute-row v-for="key in keys" :key="key" :base-dn="props.baseDn"
         :attr="app.schema.attr(key)" :meta="entry.meta" :values="entry.attrs[key]"
         :changed="entry.changed.includes(key)"
-        :may="may.includes(key)" :must="must.includes(key)"
+        :may="attributes('may').includes(key)" :must="attributes('must').includes(key)"
         @update="updateRow"
         @reload-form="load"
         @valid="valid(key, $event)"
-        @show-modal="modal = $event;" />
+        @show-modal="modal = $event;"
+        @show-attr="emit('show-attr', $event)"
+        @show-oc="emit('show-oc', $event)" />
 
       <!-- Footer with buttons -->
       <div class="flex ml-4 mt-2 space-x-4">
         <div class="w-1/4"></div>
         <div class="w-3/4 pl-4">
           <div class="w-[90%] space-x-3">
-            <button type="submit" class="btn bg-primary"
+            <button type="submit" class="btn bg-primary/70"
               accesskey="s" :disabled="invalid.length != 0">Submit</button>
-            <button type="reset" v-if="!entry.meta.isNew"
+            <button type="reset" v-if="!entry.meta.isNew" accesskey="r"
               class="btn bg-secondary">Reset</button>
             <button class="btn float-right bg-secondary" accesskey="a"
               v-if="!entry.meta.isNew" @click.prevent="modal = 'add-attribute';">
@@ -72,7 +82,8 @@
   </div>
 </template>
 
-<script>
+<script setup>
+  import { computed, inject, nextTick, ref, watch } from 'vue';
   import AddAttributeDialog from './AddAttributeDialog.vue';
   import AddObjectClassDialog from './AddObjectClassDialog.vue';
   import AddPhotoDialog from './AddPhotoDialog.vue';
@@ -87,276 +98,228 @@
   import RenameEntryDialog from './RenameEntryDialog.vue';
   import { request } from '../../request.js';
 
-
   function unique(element, index, array) {
     return array.indexOf(element) == index;
   }
 
-  export default {
-    name: 'EntryEditor',
+  const inputTags = ['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'],
 
-    components: {
-      AddAttributeDialog,
-      AddObjectClassDialog,
-      AddPhotoDialog,
-      CopyEntryDialog,
-      DeleteEntryDialog,
-      DiscardEntryDialog,
-      DropdownMenu,
-      AttributeRow,
-      NewEntryDialog,
-      NodeLabel,
-      PasswordChangeDialog,
-      RenameEntryDialog,
-    },
-
-    props: {
+    props = defineProps({
       activeDn: String,
-    },
+      baseDn: String,
+      user: String,
+    }),
 
-    inject: [ 'app' ],
+    app = inject('app'),
+    entry = ref(null),   // entry in editor
+    focused = ref(null), // currently focused input
+    invalid = ref([]),   // field IDs with validation errors
+    modal = ref(null),   // pop-up dialog
 
-    data: function() {
-      return {
-        entry: undefined,    // entry in editor
-        focused: undefined,  // currently focused input
-        invalid: [],         // field IDs with validation errors
-        modal: undefined,    // pop-up dialog
-      };
-    },
+    keys = computed(() => {
+      let keys = Object.keys(entry.value.attrs);
+      keys.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+      return keys;
+    }),
 
-    watch: {
-      activeDn: function(dn) {
-        if (!this.entry || dn != this.entry.meta.dn) this.focused = undefined;
-        
-        if (dn && this.entry && this.entry.meta.isNew) {
-          this.modal = 'discard-entry';
-        }
-        else if (dn) this.load(dn);
-        else if (this.entry && !this.entry.meta.isNew) this.entry = null;
+    structural = computed(() => {
+      const oc = entry.value.attrs.objectClass
+        .map(oc => app.schema.oc(oc))
+        .filter(oc => oc && oc.structural)[0];
+      return oc ? oc.name : '';
+    }),
+
+    emit = defineEmits(['update:activeDn', 'show-attr', 'show-oc']);
+
+  watch(() => props.activeDn, (dn) => {
+    if (!entry.value || dn != entry.value.meta.dn) focused.value = undefined;
+    
+    if (dn && entry.value && entry.value.meta.isNew) {
+      modal.value = 'discard-entry';
+    }
+    else if (dn) load(dn);
+    else if (entry.value && !entry.value.meta.isNew) entry.value = null;
+  });
+
+  function focus(focused) {
+    nextTick(() => {
+      const input = focused ? document.getElementById(focused)
+      : document.querySelector('form#entry input:not([disabled])');
+    
+      if (input) {
+        // work around annoying focus jump in OS X Safari
+        window.setTimeout(() => input.focus(), 100);
       }
-    },
+    });
+  }
 
-    methods: {
-      // Track focus changes
-      onFocus: function(evt) {
-        const el = evt.target;
-        if (el.tagName == 'INPUT' && el.id) this.focused = el.id;
-      },
+    // Track focus changes
+  function onFocus(evt) {
+    const el = evt.target;
+    if (el.id && inputTags.includes(el.tagName)) focused.value = el.id;
+  }
 
-      newEntry: function(entry) {
-        this.entry = entry;
-        this.$emit('update:activeDn');
-        this.prepareForm();
-      },
+  function newEntry(newEntry) {
+    entry.value = newEntry;
+    emit('update:activeDn');
+    focus(addMandatoryRows());
+  }
 
-      discardEntry: function(dn) {
-        this.entry = null;
-        this.$emit('update:activeDn', dn);
-      },
+  function discardEntry(dn) {
+    entry.value = null;
+    emit('update:activeDn', dn);
+  }
 
-      addAttribute: function(attr) {
-        if (attr) { // FIXME: Why is this called with attr=undefined?
-          this.entry.attrs[attr] = [''];
-          this.prepareForm(attr + '-0');
-        }
-      },
+  function addAttribute(attr) {
+    entry.value.attrs[attr] = [''];
+    focus(attr + '-0');
+  }
 
-      addObjectClass: function(oc) {
-        if (oc) { // FIXME: Why is this called with oc=undefined?
-          this.entry.attrs.objectClass.push(oc);
-          const aux = this.entry.meta.aux.filter(oc => oc < oc);
-          this.entry.meta.aux.splice(aux.length, 1);
-          this.prepareForm();
-        }
-      },
+  function addObjectClass(oc) {
+    entry.value.attrs.objectClass.push(oc);
+    const aux = entry.value.meta.aux.filter(oc => oc < oc);
+    entry.value.meta.aux.splice(aux.length, 1);
+    focus(addMandatoryRows() || focused.value);
+  }
 
-      // Remove a row from the entry form
-      removeObjectClass: function(newOcs) {
-        const removedOc = this.entry.attrs.objectClass.filter(
-            oc => !newOcs.includes(oc))[0];
-        if (removedOc) {
-          const aux = this.entry.meta.aux.filter(oc => oc < removedOc);
-          this.entry.meta.aux.splice(aux.length, 0, removedOc);
-        }
-      },
+  // Remove a row from the entry form
+  function removeObjectClass(newOcs) {
+    const removedOc = entry.value.attrs.objectClass.filter(
+        oc => !newOcs.includes(oc))[0];
+    if (removedOc) {
+      const aux = entry.value.meta.aux.filter(oc => oc < removedOc);
+      entry.value.meta.aux.splice(aux.length, 0, removedOc);
+    }
+  }
 
-      updateRow: function(attr, values, index) {
-        this.entry.attrs[attr] = values;
-        if (attr == 'objectClass') this.removeObjectClass(values);
-        const focused = index != undefined ? attr + '-' + index : undefined;
-        this.prepareForm(focused);
-      },
+  function updateRow(attr, values, index) {
+    entry.value.attrs[attr] = values;
+    if (attr == 'objectClass') {
+      removeObjectClass(values);
+      focus(focused.value);
+    }
+    if (index !== undefined) focus(attr + '-' + index);
+  }
 
-      prepareForm: function(focused) {
-        this.must.filter(attr => !this.entry.attrs[attr])
-          .forEach(attr => this.entry.attrs[attr] = ['']);
+  function addMandatoryRows() {
+    const must = attributes('must')
+      .filter(attr => !entry.value.attrs[attr]);
+    must.forEach(attr => entry.value.attrs[attr] = ['']);
+    return must.length ? must[0] + '-0' : undefined;
+  }
 
-        if (!focused) {
-          const empty = this.keys.flatMap(attr => this.entry.attrs[attr]
-            .map((value, index) => value.trim() ? undefined : attr + '-' + index)
-            .filter(id => id));
-          focused = empty[0];
-        }
+  // Load an entry into the editing form
+  async function load(dn, changed, focused) {
+    invalid.value = [];
 
-        if (!focused) focused = this.focused;
+    if (!dn || dn.startsWith('-')) {
+      entry.value = null;
+      return;
+    }
 
-        this.$nextTick(function () {
-          let input = focused ? document.getElementById(focused) : undefined;
-          if (!input) input = document.querySelector('form#entry input:not([disabled])');
-        
-          if (input) {
-            // work around annoying focus jump in OS X Safari
-            window.setTimeout(() => input.focus(), 100);
-            this.focused = input.id;
-          }
-        });
-      },
+    entry.value = await app.xhr({ url: 'api/entry/' + dn });
+    if (!entry.value) return;
 
-      // Load an entry into the editing form
-      load: async function(dn, changed) {
-        this.invalid = [];
+    entry.value.changed = changed || [];
+    entry.value.meta.isNew = false;
 
-        if (!dn || dn.startsWith('-')) {
-          this.entry = null;
-          return;
-        }
+    document.title = dn.split(',')[0];
+    focus(focused);
+  }
 
-        this.entry = await this.app.xhr({ url: 'api/entry/' + dn });
-        if (!this.entry) return;
+  // Submit the entry form via AJAX
+  async function save() {
+    if (invalid.value.length > 0) {
+      focus(focused.value);
+      return;
+    }
 
-        this.entry.changed = changed || [];
-        this.entry.meta.isNew = false;
+    entry.value.changed = [];
+    const data = await app.xhr({
+      url:  'api/entry/' + entry.value.meta.dn,
+      method: entry.value.meta.isNew ? 'PUT' : 'POST',
+      data: JSON.stringify(entry.value.attrs),
+    });
 
-        document.title = dn.split(',')[0];
-        this.prepareForm();
-      },
+    if (!data) return;
+    
+    if (data.changed && data.changed.length) {
+      app.showInfo('👍 Saved changes');
+    }
+    if (entry.value.meta.isNew) {
+      entry.value.meta.isNew = false;
+      emit('update:activeDn', entry.value.meta.dn);
+    }
+    else load(entry.value.meta.dn, data.changed, focused.value);
+  }
 
-      // Submit the entry form via AJAX
-      save: async function() {
-        if (this.invalid.length > 0) {
-          this.prepareForm();
-          return;
-        }
+  async function renameEntry(rdn) {
+    await app.xhr({
+      url: 'api/rename',
+      method: 'POST',
+      data: JSON.stringify({
+        dn:  entry.value.meta.dn,
+        rdn: rdn
+      }),
+    });
 
-        this.entry.changed = [];
-        const data = await this.app.xhr({
-          url:  'api/entry/' + this.entry.meta.dn,
-          method: this.entry.meta.isNew ? 'PUT' : 'POST',
-          data: JSON.stringify(this.entry.attrs),
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        });
+    const dnparts = entry.value.meta.dn.split(',');
+    dnparts.splice(0, 1, rdn);
+    emit('update:activeDn', dnparts.join(','));
+  }
 
-        if (!data) return;
-        
-        if (data.changed && data.changed.length) {
-          this.app.showInfo('👍 Saved changes');
-        }
-        if (this.entry.meta.isNew) {
-          this.entry.meta.isNew = false;
-          this.$emit('update:activeDn', this.entry.meta.dn);
-        }
-        else this.load(this.entry.meta.dn, data.changed);
-      },
+  async function deleteEntry(dn) {
+    if (await app.xhr({ url: 'api/entry/' + dn, method: 'DELETE' }) !== undefined) {
+      app.showInfo('Deleted: ' + dn);
+      emit('update:activeDn', '-' + dn);
+    }
+  }
 
-      renameEntry: async function(rdn) {
-        if (rdn) { // FIXME: Why is this called with rdn=undefined?
-          await this.app.xhr({
-            url: 'api/rename',
-            method: 'POST',
-            data: JSON.stringify({
-              dn:  this.entry.meta.dn,
-              rdn: rdn
-            }),
-            headers: { 'Content-Type': 'application/json; charset=utf-8' },
-          });
+  async function changePassword(oldPass, newPass) {
+    const data = await app.xhr({
+      url: 'api/entry/password/' + entry.value.meta.dn,
+      method: 'POST',
+      data: JSON.stringify({ old: oldPass, new1: newPass }),
+    });
 
-          const dnparts = this.entry.meta.dn.split(',');
-          dnparts.splice(0, 1, rdn);
-          this.$emit('update:activeDn', dnparts.join(','));
-        }
-      },
+    if (data !== undefined) {
+      entry.value.attrs.userPassword = [ data ];
+      entry.value.changed.push('userPassword');
+    }
+  }
 
-      deleteEntry: async function(dn) {
-        if (dn) { // FIXME: Why is this called with dn=undefined?
-          if (await this.app.xhr({ url: 'api/entry/' + dn, method: 'DELETE' }) !== undefined) {
-            this.app.showInfo('Deleted: ' + dn);
-            this.$emit('update:activeDn', '-' + dn);
-          }
-        }
-      },
+  // Download LDIF
+  async function ldif() {
+    const data = await request({
+      url: 'api/ldif/' + entry.value.meta.dn,
+      responseType: 'blob' });
+    if (!data) return;
 
-      changePassword: async function(oldPass, newPass) {
-        const data = await this.app.xhr({
-          url: 'api/entry/password/' + this.entry.meta.dn,
-          method: 'POST',
-          data: JSON.stringify({ old: oldPass, new1: newPass }),
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        });
+    const a = document.createElement("a"),
+        url = URL.createObjectURL(data.response);
+    a.href = url;
+    a.download = entry.value.meta.dn.split(',')[0].split('=')[1] + '.ldif';
+    document.body.appendChild(a);
+    a.click();
+  }
+  
+  function attributes(kind) {
+    let attrs = entry.value.attrs.objectClass
+      .filter(oc => oc && oc != 'top')
+      .map(oc => app.schema.oc(oc))
+      .flatMap(oc => oc ? oc.$collect(kind): [])
+      .filter(unique);
+    attrs.sort();
+    return attrs;
+  }
 
-        if (data !== undefined) {
-          this.entry.attrs.userPassword = [ data ];
-          this.entry.changed.push('userPassword');
-        }
-      },
-
-      // Download LDIF
-      ldif: async function() {
-        const data = await request({
-          url: 'api/ldif/' + this.entry.meta.dn,
-          responseType: 'blob' });
-        if (!data) return;
-
-        const a = document.createElement("a"),
-            url = URL.createObjectURL(data.response);
-        a.href = url;
-        a.download = this.entry.meta.dn.split(',')[0].split('=')[1] + '.ldif';
-        document.body.appendChild(a);
-        a.click();
-      },
-      
-      attributes: function(kind) {
-        let attrs = this.entry.attrs.objectClass
-          .filter(oc => oc && oc != 'top')
-          .map(oc => this.app.schema.oc(oc))
-          .flatMap(oc => oc ? oc.$collect(kind): [])
-          .filter(unique);
-        attrs.sort();
-        return attrs;
-      },
-
-      valid: function(key, valid) {
-        if (valid) {
-          const pos = this.invalid.indexOf(key);
-          if (pos >= 0) this.invalid.splice(pos, 1);
-        }
-        else if (!valid && !this.invalid.includes(key)) {
-          this.invalid.push(key);
-        }
-      },
-    },
-
-    computed: {
-      keys: function() {
-        let keys = Object.keys(this.entry.attrs);
-        keys.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-        return keys;
-      },
-
-      structural: function() {
-        const oc = this.entry.attrs.objectClass
-          .map(oc => this.app.schema.oc(oc))
-          .filter(oc => oc && oc.structural)[0];
-        return oc ? oc.name : '';
-      },
-
-      must: function() {
-        return this.attributes('must');
-      },
-
-      may: function() {
-        return this.attributes('may');
-      },
-    },
+  function valid(key, valid) {
+    if (valid) {
+      const pos = invalid.value.indexOf(key);
+      if (pos >= 0) invalid.value.splice(pos, 1);
+    }
+    else if (!invalid.value.includes(key)) {
+      invalid.value.push(key);
+    }
   }
 </script>

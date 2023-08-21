@@ -39,9 +39,10 @@ image: clean
 push: image
 	docker push dnknth/ldap-ui:$(TAG)
 
-manifest:
+manifest: push
 	docker manifest create \
 		dnknth/ldap-ui \
 		--amend dnknth/ldap-ui:latest-x86_64 \
 		--amend dnknth/ldap-ui:latest-aarch64
 	docker manifest push --purge dnknth/ldap-ui
+	docker compose pull

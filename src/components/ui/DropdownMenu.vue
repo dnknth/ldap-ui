@@ -15,24 +15,10 @@
   </div>
 </template>
 
-<script>
+<script setup>
+  import { ref } from 'vue';
   import Popover from './Popover.vue';
 
-  export default {
-    name: 'DropdownMenu',
-
-    components: {
-      Popover,
-    },
-
-    props: {
-      title: String,
-    },
-
-    data: function() {
-      return {
-        open: false,
-      };
-    },
-  }
+  const open = ref(false);
+  defineProps({ title: String });
 </script>

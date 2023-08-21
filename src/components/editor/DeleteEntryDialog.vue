@@ -1,7 +1,7 @@
 <template>
-  <modal title="Are you sure?" :open="modal == 'delete-entry'"
-    cancel-variant="primary" ok-variant="danger"
-    @show="init" @ok="onOk" @cancel="$emit('update:modal')">
+  <modal title="Are you sure?" :open="modal == 'delete-entry'" :return-to="returnTo"
+    cancel-classes="bg-primary/80" ok-classes="bg-danger/80"
+    @show="init" @shown="onShown" @ok="onOk" @cancel="emit('update:modal')">
 
     <p class="strong">This action is irreversible.</p>
 
@@ -21,41 +21,31 @@
   </modal>
 </template>
 
-<script>
+<script setup>
+  import { inject, ref } from 'vue';
   import Modal from '../ui/Modal.vue';
   import NodeLabel from '../NodeLabel.vue';
 
-  export default {
-    name: 'DeleteEntryDialog',
-
-    components: {
-      Modal,
-      NodeLabel,
-    },
-
-    props: {
-      dn: String,
+  const props = defineProps({
+      dn: { type: String, required: true },
       modal: String,
-    },
+      returnTo: String,
+    }),
+    app = inject('app'),
+    subtree = ref([]),
+    emit = defineEmits(['ok', 'update:modal']);
 
-    inject: [ 'app' ],
+  // List subordinate elements to be deleted
+  async function init() {
+    subtree.value = await app.xhr({ url: 'api/subtree/' + props.dn}) || [];
+  }
 
-    data: function() {
-      return {
-        subtree: [],
-      };
-    },
+  function onShown() {
+    document.getElementById('ui-modal-ok').focus();
+  }
 
-    methods: {
-      // List subordinate elements to be deleted
-      init: async function() {
-        this.subtree = await this.app.xhr({ url: 'api/subtree/' + this.dn}) || [];
-      },
-
-      onOk: function() {
-        this.$emit('update:modal');
-        this.$emit('ok', this.dn);
-      },
-    },
+  function onOk() {
+    emit('update:modal');
+    emit('ok', props.dn);
   }
 </script>

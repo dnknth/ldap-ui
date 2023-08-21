@@ -1,42 +1,43 @@
 <template>
-  <div id="app">
-    <nav-bar v-model:treeOpen="treeOpen" :dn="activeDn"
-      @show-modal="modal = $event;" @select-dn="activeDn = $event;" />
+  <div id="app" v-if="user">
+    <nav-bar v-model:treeOpen="treeOpen" :dn="activeDn" :base-dn="baseDn" :user="user"
+      @show-modal="modal = $event;" @select-dn="activeDn = $event;" @show-oc="oc = $event;" />
 
     <ldif-import-dialog v-model:modal="modal" @ok="activeDn = '-';" />
 
     <div class="flex container">
       <div class="space-y-4"><!-- left column -->
         <tree-view v-model:activeDn="activeDn" v-show="treeOpen" @base-dn="baseDn = $event;" />
-        <object-class-card v-model="oc" />
-        <attribute-card v-model="attr" />
+        <object-class-card v-model="oc" @show-attr="attr = $event;" @show-oc="oc = $event;" />
+        <attribute-card v-model="attr"  @show-attr="attr = $event;" />
       </div>
       
       <div class="flex-auto mt-4"><!-- main editing area -->
         <transition name="fade"><!-- Notifications -->
-          <div v-if="error"
-              class="rounded mx-4 mb-4 p-3 border border-front/70 text-back/70" :class="error.type">
+          <div v-if="error" :class="error.cssClass"
+              class="rounded mx-4 mb-4 p-3 border border-front/70 text-front/70 dark:text-back/70">
             {{ error.msg }}
             <span class="float-right control" @click="error = undefined">✖</span>
           </div>
         </transition>
       
-        <entry-editor v-model:activeDn="activeDn" />
+        <entry-editor v-model:activeDn="activeDn" :user="user"
+          @show-attr="attr = $event;" @show-oc="oc = $event;"/>
       </div>
     </div>
 
     <div v-if="false"><!-- Not rendered, prevents color pruning -->
-      <span class="text-accent bg-accent"></span>
+      <span class="text-primary bg-primary"></span>
       <span class="text-back bg-back"></span>
       <span class="text-danger bg-danger"></span>
       <span class="text-front bg-front"></span>
-      <span class="text-primary bg-primary"></span>
       <span class="text-secondary bg-secondary"></span>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
+  import { onMounted, provide, readonly, ref, watch } from 'vue';
   import AttributeCard from './components/schema/AttributeCard.vue';
   import EntryEditor from './components/editor/EntryEditor.vue';
   import { LdapSchema } from './components/schema/schema.js';
@@ -46,102 +47,89 @@
   import { request } from './request.js';
   import TreeView from './components/TreeView.vue';
 
-  export default {
-    name: 'App',
+  const
+    // Authentication
+    user = ref(null),        // logged in user
+    baseDn = ref(null),
+    
+    // Components
+    treeOpen = ref(true),    // Is the tree visible?
+    activeDn = ref(null),    // currently active DN in the editor
+    modal = ref(null),       // modal popup
 
-    components: {
-      AttributeCard,
-      EntryEditor,
-      LdifImportDialog,
-      NavBar,
-      ObjectClassCard,
-      TreeView,
-    },
+    // Alerts
+    error = ref(null),       // status alert
+    
+    // LDAP schema
+    schema = ref(null),
+    oc = ref(null),          // objectClass info in side panel
+    attr = ref(null),        // attribute info in side panel
 
-    data: function() {
-      return {
+    // Helpers for components
+    provided = {
+      get schema() { return readonly(schema.value); },
+      showInfo: showInfo,
+      showWarning: showWarning,
+      xhr: xhr,
+    };
 
-        // authentication
-        user: undefined,        // logged in user
-        baseDn: undefined,
-        
-        // components
-        treeOpen: true,         // Is the tree visible?
-        activeDn: undefined,    // currently active DN in the editor
-        modal: null,            // modal popup
+  provide('app', provided);
 
-        // alerts
-        error: undefined,       // status alert
-        
-        // schema
-        schema: new LdapSchema({}),
+  onMounted(async () => { // Runs on page load
+    // Get the DN of the current user
+    user.value = await xhr({ url: 'api/whoami'});
 
-        // Flash cards
-        oc: undefined,          // objectClass info in side panel
-        attr: undefined,        // attribute info in side panel
-      };
-    },
+    // Load the schema
+    schema.value = new LdapSchema(await xhr({ url: 'api/schema' }));
+  });
 
-    provide: function () {
-      return {
-        app: this,
-      };
-    },
+  watch(attr, (a) => { if (a) oc.value = undefined; });
+  watch(oc, (o) => { if (o) attr.value = undefined; });
 
-    mounted: async function() { // Runs on page load
-      // Get the DN of the current user
-      this.user = await this.xhr({ url: 'api/whoami'});
+  function xhr(options) {
+    if (options.data && !options.binary) {
+      if (!options.headers) options.headers = {}
+      if (!options.headers['Content-Type']) {
+        options.headers['Content-Type'] = 'application/json; charset=utf-8';
+      }
+    }
+    return request(options)
+      .then(xhr => JSON.parse(xhr.response))
+      .catch(xhr => showException(xhr.response || "Unknown error"));
+  }
+  
+  // Display an info popup
+  function showInfo(msg) {
+    error.value = { counter: 5, cssClass: 'bg-emerald-300', msg: '' + msg };
+    setTimeout(() => { error.value = null; }, 5000);
+  }
+  
+  // Flash a warning popup
+  function showWarning(msg) {
+    error.value = { counter: 10, cssClass: 'bg-amber-200', msg: '⚠️ ' + msg };
+    setTimeout(() => { error.value = null; }, 10000);
+  }
+  
+  // Report an error
+  function showError(msg) {
+    error.value = { counter: 60, cssClass: 'bg-red-300', msg: '⛔ ' + msg };
+    setTimeout(() => { error.value = null; }, 60000);
+  }
 
-      // Load the schema
-      this.schema = new LdapSchema(await this.xhr({ url: 'api/schema' }));
-    },
-
-    watch: {
-      attr: function(a) { if (a) this.oc = undefined; },
-      oc: function(o) { if (o) this.attr = undefined; },
-    },
-
-    methods: {
-      xhr: function(options) {
-        return request(options)
-          .then(xhr => JSON.parse(xhr.response))
-          .catch(xhr => this.showException(xhr.response || "Unknown error"));
-      },
-      
-      // Display an info popup
-      showInfo: function(msg) {
-        this.error = { counter: 5, type: 'success', msg: '' + msg }
-        setTimeout(() => { this.error = undefined; }, 5000);
-      },
-      
-      // Flash a warning popup
-      showWarning: function(msg) {
-        this.error = { counter: 10, type: 'warning', msg: '⚠️ ' + msg }
-        setTimeout(() => { this.error = undefined; }, 10000);
-      },
-      
-      // Report an error
-      showError: function(msg) {
-        this.error = { counter: 60, type: 'danger', msg: '⛔ ' + msg }
-        setTimeout(() => { this.error = undefined; }, 60000);
-      },
-
-      showException: function(msg) {
-        const span = document.createElement('span');
-        span.innerHTML = msg.replace("\n", " ");
-        const titles = span.getElementsByTagName('title');
-        for (let i = 0; i < titles.length; ++i) {
-          span.removeChild(titles[i]);
-        }
-        let text = '';
-        const headlines = span.getElementsByTagName('h1');
-        for (let i = 0; i < headlines.length; ++i) {
-          text = text + headlines[i].textContent + ': ';
-          span.removeChild(headlines[i]);
-        }
-        this.showError(text + ' ' + span.textContent);
-      },
-    },
+  function showException(msg) {
+    const span = document.createElement('span');
+    span.innerHTML = msg.replace("\n", " ");
+    const titles = span.getElementsByTagName('title');
+    for (let i = 0; i < titles.length; ++i) {
+      span.removeChild(titles[i]);
+    }
+    let text = '';
+    const headlines = span.getElementsByTagName('h1');
+    for (let i = 0; i < headlines.length; ++i) {
+      text = text + headlines[i].textContent + ': ';
+      span.removeChild(headlines[i]);
+    }
+    showError(text + ' ' + span.textContent);
   }
 </script>
 
@@ -151,24 +139,17 @@
   }
 
   button, .btn, [type="button"] {
-    @apply border-none px-3 py-2 rounded text-back dark:text-front;
+    @apply border-none px-3 py-2 rounded text-back dark:text-front font-medium;
+  }
+
+  select {
+    background: url(data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2IDEwIj4KICA8cG9seWdvbiBmaWxsPSJncmF5IiBwb2ludHM9IjEuNDEgNC42NyAyLjQ4IDMuMTggMy41NCA0LjY3IDEuNDEgNC42NyIgLz4KICA8cG9seWdvbiBmaWxsPSJncmF5IiBwb2ludHM9IjMuNTQgNS4zMyAyLjQ4IDYuODIgMS40MSA1LjMzIDMuNTQgNS4zMyIgLz4KPC9zdmc+) no-repeat right;
+    appearance: none;
   }
 
   .glyph {
     font-family: sans-serif, FontAwesome;
     font-style: normal;
-  }
-
-  .success {
-    @apply bg-emerald-300;
-  }
-
-  .danger {
-    @apply bg-red-300;
-  }
-
-  .warning {
-    @apply bg-amber-200;
   }
 
   .fade-enter-active, .fade-leave-active {

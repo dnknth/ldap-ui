@@ -1,7 +1,7 @@
 <template>
-  <modal title="Change / verify password" :open="modal == 'change-password'"
+  <modal title="Change / verify password" :open="modal == 'change-password'" :return-to="returnTo"
     @show="init" @shown="focus" @ok="onOk"
-    @cancel="$emit('update:modal')" @hidden="$emit('update-form')">
+    @cancel="emit('update:modal')" @hidden="emit('update-form')">
     
     <div v-if="oldExists">
       <small >{{ currentUser ? 'Required' : 'Optional' }}</small>
@@ -19,85 +19,66 @@
   </modal>
 </template>
 
-<script>
+<script setup>
+  import { computed, inject, ref } from 'vue';
   import Modal from '../ui/Modal.vue';
 
-  export default {
-    name: 'PasswordChangeDialog',
-
-    components: {
-      Modal,
-    },
-
-    props: {
-      entry: Object,
+  const props = defineProps({
+      entry: { type: Object, required: true },
       modal: String,
-    },
+      returnTo: String,
+      user: String,
+    }),
 
-    inject: [ 'app' ],
+    app = inject('app'),
+    oldPassword = ref(''),
+    newPassword = ref(''),
+    repeated = ref(''),
+    passwordOk = ref(),
 
-    data: function() {
-      return {
-        oldPassword: '',
-        newPassword: '',
-        repeated: '',
-        passwordOk: undefined,
-      };
-    },
+    old = ref(null),
+    changed = ref(null),
 
-    methods: {
-      init: function() {
-        this.oldPassword = this.newPassword = this.repeated = '';
-        this.passwordOk = undefined;
-      },
+    currentUser = computed(() => props.user == props.entry.meta.dn),
+    passwordsMatch = computed(() => newPassword.value && newPassword.value == repeated.value),
+    oldExists = computed(() => props.entry.attrs.userPassword
+      && props.entry.attrs.userPassword[0] != ''),
 
-      focus: function() {
-        if (this.oldExists) this.$refs.old.focus();
-        else this.$refs.changed.focus();
-      },
+    emit = defineEmits(['ok', 'update-form', 'update:modal']);
 
-      // Verify an existing password
-      // This is optional for administrative changes
-      // but required to change the current user's password
-      check: async function() {
-        if (!this.oldPassword || this.oldPassword.length == 0) {
-          this.passwordOk = undefined;
-          return;
-        }
-        this.passwordOk = await this.app.xhr({
-          url: 'api/entry/password/' + this.entry.meta.dn,
-          method: 'POST',
-          data: JSON.stringify({ check: this.oldPassword }),
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        });
-      },
+  function init() {
+    oldPassword.value = newPassword.value = repeated.value = '';
+    passwordOk.value = undefined;
+  }
 
-      onOk: async function() {
-        // old and new passwords are required for current user
-        // new passwords must match
-        if ((this.currentUser && !this.newPassword)
-        || this.newPassword != this.repeated
-        || (this.currentUser && this.oldExists && !this.passwordOk)) return;
+  function focus() {
+    if (oldExists.value) old.value.focus();
+    else changed.value.focus();
+  }
 
-        this.$emit('update:modal');
-        this.$emit('ok', this.oldPassword, this.newPassword);
-      },
-    },
-
-    computed: {
-      currentUser: function() {
-        return this.app.user == this.entry.meta.dn;
-      },
-
-      // Verify that the new password is repeated correctly
-      passwordsMatch: function() {
-        return this.newPassword && this.newPassword == this.repeated;
-      },
-
-      oldExists: function() {
-        return this.entry.attrs.userPassword
-        && this.entry.attrs.userPassword[0] != '';
-      },
+  // Verify an existing password
+  // This is optional for administrative changes
+  // but required to change the current user's password
+  async function check() {
+    if (!oldPassword.value || oldPassword.value.length == 0) {
+      passwordOk.value = undefined;
+      return;
     }
+    passwordOk.value = await app.xhr({
+      url: 'api/entry/password/' + props.entry.meta.dn,
+      method: 'POST',
+      data: JSON.stringify({ check: oldPassword.value }),
+    });
+  }
+
+  async function onOk() {
+    // old and new passwords are required for current user
+    // new passwords must match
+    if ((currentUser.value && !newPassword.value)
+    || newPassword.value != repeated.value
+    || (currentUser.value && oldExists.value && !passwordOk.value)) return;
+
+    emit('update:modal');
+    emit('ok', oldPassword.value, newPassword.value);
   }
 </script>
