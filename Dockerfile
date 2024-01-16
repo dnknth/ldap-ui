@@ -6,8 +6,7 @@ RUN npm audit && npm i && npm run build
 FROM alpine:3
 COPY --from=builder /app/dist /app/dist
 RUN apk add --no-cache python3 py3-pip py3-pyldap py3-pytoml \
-    && pip3 install 'python-dotenv==0.19.*' \
-        'Hypercorn==0.13.*' 'Jinja2<3.1.0' 'Quart==0.16.*'
+    && pip3 install python-dotenv Quart
 COPY app.py settings.py /app/
 
 WORKDIR /app

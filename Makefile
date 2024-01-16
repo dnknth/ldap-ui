@@ -1,6 +1,5 @@
 .PHONY: debug run clean tidy image push manifest
 
-DOCKER = podman
 TAG = latest-$(subst aarch64,arm64,$(shell uname -m))
 
 debug: app.py settings.py .env .venv3 dist
@@ -34,14 +33,14 @@ tidy: clean
 	rm -rf .venv3 node_modules
 
 image: clean
-	$(DOCKER) build -t dnknth/ldap-ui:$(TAG) .
+	docker build -t dnknth/ldap-ui:$(TAG) .
 
 push: image
-	$(DOCKER) push dnknth/ldap-ui:$(TAG)
+	docker push dnknth/ldap-ui:$(TAG)
 
 manifest: push
-	$(DOCKER) manifest create \
+	docker manifest create \
 		dnknth/ldap-ui \
 		--amend dnknth/ldap-ui:latest-x86_64 \
 		--amend dnknth/ldap-ui:latest-arm64
-	$(DOCKER) manifest push --purge dnknth/ldap-ui
+	docker manifest push --purge dnknth/ldap-ui
