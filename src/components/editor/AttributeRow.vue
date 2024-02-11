@@ -156,7 +156,7 @@
 
   function update(evt) {
     const value = evt.target.value,
-      index = +evt.target.id.split('-')[1];
+      index = +evt.target.id.split('-').slice(-1).pop();
     let values = props.values.slice();
     values[index] = value;
     emit('update', props.attr.name, values);
@@ -220,7 +220,7 @@
 
   // use an auto-completion choice
   function complete(dn) {
-    const index = +elementId.value.split('-')[1];
+    const index = +elementId.value.split('-').slice(-1).pop();
     let values = props.values.slice();
     values[index] = dn;
     query.value = '';
