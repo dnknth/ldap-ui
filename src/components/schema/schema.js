@@ -164,4 +164,6 @@ export function LdapSchema(json) {
 
   this.attr = (name) => ObjectClass.prototype.$attributes.$get(name);
   this.oc = (name) => ObjectClass.values.$get(name);
+  this.search = (q) => ObjectClass.prototype.$attributes.$values
+    .filter(attr => attr.name.toLowerCase().startsWith(q.toLowerCase()));
 }

@@ -31,16 +31,15 @@
         <input v-else :value="values[index]" :id="attr + '-' + index" :type="type"
           class="w-[90%] glyph outline-none bg-back border-x-0 border-t-0 border-b border-solid border-front/20 focus:border-primary px-1"
           :class="{ structural: isStructural(val), auto: defaultValue, illegal: (illegal && !empty) || duplicate(index) }"
-          :placeholder="placeholder" :disabled="disabled"
-          :title="attr.equality == 'generalizedTimeMatch' ? dateString(val) : ''"
-          @input="update" @focusin="query = ''"
-          @keyup="search" @keyup.esc="query = ''" />
+          :placeholder="placeholder" :disabled="disabled" :title="time ? dateString(val) : ''"
+          @input="update" @focusin="query = ''" @keyup="search" @keyup.esc="query = ''" />
 
         <i v-if="attr == 'objectClass'" class="cursor-pointer fa fa-info-circle"
           @click="emit('show-oc', val)"></i>
       </div>
       <search-results silent v-if="completable && elementId" @select-dn="complete"
         :for="elementId" :query="query" label="dn" :shorten="baseDn" />
+      <attribute-search v-if="oid && elementId" @done="complete" :for="elementId" :query="query" />
       <div v-if="hint" class="text-xs ml-6 opacity-70">{{ hint }}</div>
     </div>
   </div>
@@ -48,6 +47,7 @@
 
 <script setup>
   import { computed, inject, onMounted, onUpdated, ref, watch } from 'vue';
+  import AttributeSearch from './AttributeSearch.vue';
   import SearchResults from '../SearchResults.vue';
 
   function unique(element, index, array) {
@@ -62,6 +62,15 @@
       hour: 'numeric',
       minute: 'numeric',
       second: 'numeric'
+    },
+
+    syntaxes = {
+      boolean: '1.3.6.1.4.1.1466.115.121.1.7',
+      distinguishedName: '1.3.6.1.4.1.1466.115.121.1.12',
+      generalizedTime: '1.3.6.1.4.1.1466.115.121.1.24',
+      integer: '1.3.6.1.4.1.1466.115.121.1.27',
+      oid: '1.3.6.1.4.1.1466.115.121.1.38',
+      telephoneNumber: '1.3.6.1.4.1.1466.115.121.1.50',
     },
     
     idRanges = ['uidNumber', 'gidNumber'], // Numeric ID ranges
@@ -88,13 +97,15 @@
     query = ref(''),
     elementId = ref(null),
 
-    completable = computed(() => props.attr.equality == 'distinguishedNameMatch'),
+    completable = computed(() => props.attr.syntax == syntaxes.distinguishedName),
     defaultValue = computed(() => props.values.length == 1 && props.values[0] == autoFilled.value),
     empty = computed(() => props.values.every(value => !value.trim())),
     illegal = computed(() => !props.must && !props.may),
     isRdn = computed(() => props.attr.name == props.meta.dn.split('=')[0]),
+    oid = computed(() => props.attr.syntax == syntaxes.oid),
     missing = computed(() => empty.value && props.must),
     password = computed(() => props.attr.name == 'userPassword'),
+    time = computed(() => props.attr.syntax == syntaxes.generalizedTime),
 
     binary = computed(() =>
       password.value ? false // Corner case with octetStringMatch
@@ -121,7 +132,8 @@
     type = computed(() => {
       // Guess the <input> type for an attribute
       if (password.value) return 'password';
-      return props.attr.equality == 'integerMatch' ? 'number' : 'text';
+      if (props.attr.syntax == syntaxes.telephoneNumber) return 'tel';
+      return props.attr.syntax == syntaxes.integer ? 'number' : 'text';
     }),
 
     emit = defineEmits(['reload-form', 'show-attr', 'show-modal', 'show-oc', 'update', 'valid']);
