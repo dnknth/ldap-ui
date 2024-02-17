@@ -1,5 +1,5 @@
 <template>
-  <card v-if="modelValue" :title="oc.name" @close="emit('update:modelValue')">
+  <card v-if="modelValue" :title="oc.name" class="ml-4" @close="emit('update:modelValue')">
     <div class="header">{{ oc.desc }}</div>
     
     <div v-if="oc.sup.length" class="mt-2"><i>Superclasses:</i>

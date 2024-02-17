@@ -28,6 +28,14 @@
           <span v-if="val" class="control remove-btn align-top ml-1"
             @click="deleteBlob(index)" title="Remove photo">⊖</span>
         </span>
+        <span v-else-if="boolean">
+          <span v-if="index == 0 && !values[0]" class="control text-lg" @click="updateValue(index, 'FALSE')">⊕</span>
+          <span v-else class="pb-1 border-primary focus-within:border-b border-solid">
+            <toggle-button :id="attr + '-' + index" :value="values[index]" class="mt-2"
+              @update:value="updateValue(index, $event)" />
+            <i class="fa fa-trash ml-2 relative -top-0.5 control" @click="updateValue(index, '')"></i>
+          </span>
+        </span>
         <input v-else :value="values[index]" :id="attr + '-' + index" :type="type"
           class="w-[90%] glyph outline-none bg-back border-x-0 border-t-0 border-b border-solid border-front/20 focus:border-primary px-1"
           :class="{ structural: isStructural(val), auto: defaultValue, illegal: (illegal && !empty) || duplicate(index) }"
@@ -49,6 +57,7 @@
   import { computed, inject, onMounted, onUpdated, ref, watch } from 'vue';
   import AttributeSearch from './AttributeSearch.vue';
   import SearchResults from '../SearchResults.vue';
+  import ToggleButton from './ToggleButton.vue';
 
   function unique(element, index, array) {
     return element == '' || array.indexOf(element) == index;
@@ -97,6 +106,7 @@
     query = ref(''),
     elementId = ref(null),
 
+    boolean = computed(() => props.attr.syntax == syntaxes.boolean),
     completable = computed(() => props.attr.syntax == syntaxes.distinguishedName),
     defaultValue = computed(() => props.values.length == 1 && props.values[0] == autoFilled.value),
     empty = computed(() => props.values.every(value => !value.trim())),
@@ -156,7 +166,7 @@
     autoFilled.value = new String(range.next);
     emit('update', props.attr.name, [autoFilled.value], 0);
     validate();
-  })
+  });
 
   onUpdated(validate);
 
@@ -169,6 +179,10 @@
   function update(evt) {
     const value = evt.target.value,
       index = +evt.target.id.split('-').slice(-1).pop();
+      updateValue(index, value);
+  }
+
+  function updateValue(index, value) {
     let values = props.values.slice();
     values[index] = value;
     emit('update', props.attr.name, values);

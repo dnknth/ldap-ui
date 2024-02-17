@@ -144,7 +144,7 @@
   function focus(focused) {
     nextTick(() => {
       const input = focused ? document.getElementById(focused)
-      : document.querySelector('form#entry input:not([disabled])');
+      : document.querySelector('form#entry input:not([disabled]), form#entry button[type="button"]');
     
       if (input) {
         // work around annoying focus jump in OS X Safari

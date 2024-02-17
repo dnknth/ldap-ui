@@ -1,5 +1,5 @@
 <template>
-  <card v-if="modelValue" :title="attr.names.join(', ')" @close="emit('update:modelValue')">
+  <card v-if="modelValue" :title="attr.names.join(', ')" class="ml-4" @close="emit('update:modelValue')">
 
     <div class="header">{{ attr.desc }}</div>
     
