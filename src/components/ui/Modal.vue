@@ -28,10 +28,10 @@
 
               <div v-show="!hideFooter" class="ui-modal-footer flex justify-end w-full p-4 space-x-3">
                 <slot name="footer">
-                  <button id="ui-modal-cancel" @click="onCancel" type="button" :class="cancelClasses">
+                  <button id="ui-modal-cancel" @click="onCancel" type="button" class="btn" :class="cancelClasses" tabindex="0">
                     <slot name="modal-cancel">{{ cancelTitle }}</slot>
                   </button>
-                  <button id="ui-modal-ok" @click.stop="onOk" type="button" :class="okClasses">
+                  <button id="ui-modal-ok" @click.stop="onOk" type="button" class="btn" :class="okClasses" tabindex="0">
                     <slot name="modal-ok">{{ okTitle }}</slot>
                   </button>
                 </slot>

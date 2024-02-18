@@ -36,7 +36,7 @@
             <i class="fa fa-trash ml-2 relative -top-0.5 control" @click="updateValue(index, '')"></i>
           </span>
         </span>
-        <input v-else :value="values[index]" :id="attr + '-' + index" :type="type"
+        <input v-else :value="values[index]" :id="attr + '-' + index" :type="type" autocomplete="off"
           class="w-[90%] glyph outline-none bg-back border-x-0 border-t-0 border-b border-solid border-front/20 focus:border-primary px-1"
           :class="{ structural: isStructural(val), auto: defaultValue, illegal: (illegal && !empty) || duplicate(index) }"
           :placeholder="placeholder" :disabled="disabled" :title="time ? dateString(val) : ''"

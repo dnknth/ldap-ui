@@ -139,7 +139,11 @@
   }
 
   button, .btn, [type="button"] {
-    @apply border-none px-3 py-2 rounded text-back dark:text-front font-medium;
+    @apply px-3 py-2 rounded text-back dark:text-front font-medium outline-none;
+  }
+
+  button.btn {
+    @apply border-solid border-back border-2 focus:border-primary dark:focus:border-front;
   }
 
   select {

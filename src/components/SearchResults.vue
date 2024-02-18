@@ -1,5 +1,5 @@
 <template>
-  <popover :open="show" @update:open="results = []">
+  <popover :open="show" @update:open="results = []" @select="done(results[$event].dn)">
     <li v-for="item in results" :key="item.dn" @click="done(item.dn)"
       :title="label == 'dn' ? '' : trim(item.dn)" role="menuitem">
         {{ item[label] }}

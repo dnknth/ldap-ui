@@ -67,11 +67,11 @@
         <div class="w-1/4"></div>
         <div class="w-3/4 pl-4">
           <div class="w-[90%] space-x-3">
-            <button type="submit" class="btn bg-primary/70"
+            <button type="submit" class="btn bg-primary/70" tabindex="0"
               accesskey="s" :disabled="invalid.length != 0">Submit</button>
             <button type="reset" v-if="!entry.meta.isNew" accesskey="r"
-              class="btn bg-secondary">Reset</button>
-            <button class="btn float-right bg-secondary" accesskey="a"
+            tabindex="0" class="btn bg-secondary">Reset</button>
+            <button class="btn float-right bg-secondary" accesskey="a" tabindex="0"
               v-if="!entry.meta.isNew" @click.prevent="modal = 'add-attribute';">
               Add attribute…
             </button>
