@@ -1,72 +1,83 @@
 <template>
-  <popover :open="show" @update:open="results = []" @select="done(results[$event].dn)">
+  <popover :open="show" @update:open="results = []">
     <li v-for="item in results" :key="item.dn" @click="done(item.dn)"
       :title="label == 'dn' ? '' : trim(item.dn)" role="menuitem">
-        {{ item[label] }}
+        {{ item[label as keyof Result] }}
     </li>
   </popover>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { computed, inject, nextTick, ref, watch } from 'vue';
   import Popover from './ui/Popover.vue';
+  import type { Provided } from './Provided';
+
+  interface Result {
+    dn: string;
+    name: string;
+  }
 
   const props = defineProps({
-      query: String,
-      for: String,
-      label: {
-        type: String,
-        default: 'name',
-        validator: value => ['name', 'dn' ].includes(value)
-      },
-      shorten: String,
-      silent: {
-        type: Boolean,
-        default: false,
-      },
-    }),
-    app = inject('app'),
-    results = ref([]),
-    show = computed(() => props.query.trim() != ''
-          && results.value && results.value.length > 1),
-    emit = defineEmits(['select-dn']);
+    query: {
+      type: String,
+      default: '',
+    },
+    for: String,
+    label: {
+      type: String,
+      default: 'name',
+      validator: (value: string) => ['name', 'dn' ].includes(value)
+    },
+    shorten: String,
+    silent: {
+      type: Boolean,
+      default: false,
+    },
+  }),
 
-  watch(() => props.query,
-    async (q) => {
-      if (!q) return;
+  app = inject<Provided>('app'),
+  results = ref<Result[]>([]),
+  show = computed(() => props.query.trim() != ''
+        && results.value && results.value.length > 1),
+  emit = defineEmits(['select-dn']);
 
-      results.value = await app.xhr({ url: 'api/search/' + q });
-      if (!results.value) return; // app.xhr failed
+  watch(() => props.query, async (q) => {
+    if (!q) return;
 
-      if (results.value.length == 0 && !props.silent) {
-        app.showWarning('No search results');
-        return;
-      }
+    results.value = await app?.xhr({ url: 'api/search/' + q }) as Result[];
+    if (!results.value) return; // app.xhr failed
 
-      if (results.value.length == 1) {
-        done(results.value[0].dn);
-        return;
-      }
+    if (results.value.length == 0 && !props.silent) {
+      app?.showWarning('No search results');
+      return;
+    }
 
-      results.value.sort((a, b) =>
-        a[props.label].toLowerCase().localeCompare(
-          b[props.label].toLowerCase()));
+    if (results.value.length == 1) {
+      done(results.value[0].dn);
+      return;
+    }
+
+    results.value.sort((a: Result, b: Result) =>
+      a[props.label as keyof Result].toLowerCase().localeCompare(
+        b[props.label as keyof Result].toLowerCase()));
   });
 
-  function trim(dn) {
+  function trim(dn: string) {
     return props.shorten && props.shorten != dn
       ? dn.replace(props.shorten, '…') : dn;
   }
 
   // use an auto-completion choice
-  function done(dn) {
+  function done(dn: string) {
     emit('select-dn', dn);
     results.value = [];
 
     nextTick(()=> {
       // Return focus to search input
-      const el = document.getElementById(props.for);
-      if (el) el.focus();
+      if (props.for) {
+        const el = document.getElementById(props.for);
+        if (el) el.focus();
+      }
     });
   }
 </script>

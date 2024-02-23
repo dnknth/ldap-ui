@@ -15,15 +15,15 @@
           class="remove-btn control" :title="'Remove ' + val">⊖</span>
         <span v-else-if="password" class="fa fa-question-circle control"
           @click="emit('show-modal', 'change-password')" tabindex="-1" title="change password"></span>
-        <span v-else-if="attr == 'jpegPhoto' || attr == 'thumbnailPhoto'"
+        <span v-else-if="attr.name == 'jpegPhoto' || attr.name == 'thumbnailPhoto'"
           @click="emit('show-modal', 'add-jpegPhoto')" tabindex="-1"
           class="add-btn control align-top" title="Add photo…">⊕</span>
         <span v-else-if="multiple(index) && !illegal" @click="addRow"
           class="add-btn control" title="Add row">⊕</span>
         <span v-else class="mr-5"></span>
 
-        <span v-if="attr == 'jpegPhoto' || attr == 'thumbnailPhoto'">
-          <img v-if="val" :src="'data:image/' + ((attr == 'jpegPhoto') ? 'jpeg' : '*') +';base64,' + val"
+        <span v-if="attr.name == 'jpegPhoto' || attr.name == 'thumbnailPhoto'">
+          <img v-if="val" :src="'data:image/' + ((attr.name == 'jpegPhoto') ? 'jpeg' : '*') +';base64,' + val"
             class="max-w-[120px] max-h-[120px] border p-[1px] inline mx-1"/>
           <span v-if="val" class="control remove-btn align-top ml-1"
             @click="deleteBlob(index)" title="Remove photo">⊖</span>
@@ -42,7 +42,7 @@
           :placeholder="placeholder" :disabled="disabled" :title="time ? dateString(val) : ''"
           @input="update" @focusin="query = ''" @keyup="search" @keyup.esc="query = ''" />
 
-        <i v-if="attr == 'objectClass'" class="cursor-pointer fa fa-info-circle"
+        <i v-if="attr.name == 'objectClass'" class="cursor-pointer fa fa-info-circle"
           @click="emit('show-oc', val)"></i>
       </div>
       <search-results silent v-if="completable && elementId" @select-dn="complete"
@@ -53,117 +53,123 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+  import { Attribute, generalizedTime } from '../schema/schema';
   import { computed, inject, onMounted, onUpdated, ref, watch } from 'vue';
   import AttributeSearch from './AttributeSearch.vue';
+  import type { Provided } from '../Provided';
   import SearchResults from '../SearchResults.vue';
-  import ToggleButton from './ToggleButton.vue';
+  import ToggleButton from '../ui/ToggleButton.vue';
 
-  function unique(element, index, array) {
+  function unique(element: unknown, index: number, array: Array<unknown>): boolean {
     return element == '' || array.indexOf(element) == index;
   }
 
-  const dateFormat = {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric'
-    },
+  const dateFormat: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric'
+  },
 
-    syntaxes = {
-      boolean: '1.3.6.1.4.1.1466.115.121.1.7',
-      distinguishedName: '1.3.6.1.4.1.1466.115.121.1.12',
-      generalizedTime: '1.3.6.1.4.1.1466.115.121.1.24',
-      integer: '1.3.6.1.4.1.1466.115.121.1.27',
-      oid: '1.3.6.1.4.1.1466.115.121.1.38',
-      telephoneNumber: '1.3.6.1.4.1.1466.115.121.1.50',
-    },
-    
-    idRanges = ['uidNumber', 'gidNumber'], // Numeric ID ranges
+  syntaxes = {
+    boolean: '1.3.6.1.4.1.1466.115.121.1.7',
+    distinguishedName: '1.3.6.1.4.1.1466.115.121.1.12',
+    generalizedTime: '1.3.6.1.4.1.1466.115.121.1.24',
+    integer: '1.3.6.1.4.1.1466.115.121.1.27',
+    oid: '1.3.6.1.4.1.1466.115.121.1.38',
+    telephoneNumber: '1.3.6.1.4.1.1466.115.121.1.50',
+  },
+  
+  idRanges = ['uidNumber', 'gidNumber'], // Numeric ID ranges
 
-    props = defineProps({
-      attr: { type: Object, required: true },
-      baseDn: String,
-      values: { type: Array, required: true },
-      meta: { type: Object, required: true },
-      must: { type: Boolean, required: true },
-      may: { type: Boolean, required: true },
-      changed: { type: Boolean, required: true },
-    }),
+  props = defineProps({
+    attr: { type: Attribute, required: true },
+    baseDn: String,
+    values: { type: Array<string>, required: true },
+    meta: { type: Object, required: true },
+    must: { type: Boolean, required: true },
+    may: { type: Boolean, required: true },
+    changed: { type: Boolean, required: true },
+  }),
 
-    app = inject('app'),
+  app = inject<Provided>('app'),
 
-    valid = ref(true),
+  valid = ref(true),
 
-    // Range auto-completion
-    autoFilled = ref(null),
-    hint = ref(''),
+  // Range auto-completion
+  autoFilled = ref<string>(),
+  hint = ref(''),
 
-    // DN search
-    query = ref(''),
-    elementId = ref(null),
+  // DN search
+  query = ref(''),
+  elementId = ref<string>(),
 
-    boolean = computed(() => props.attr.syntax == syntaxes.boolean),
-    completable = computed(() => props.attr.syntax == syntaxes.distinguishedName),
-    defaultValue = computed(() => props.values.length == 1 && props.values[0] == autoFilled.value),
-    empty = computed(() => props.values.every(value => !value.trim())),
-    illegal = computed(() => !props.must && !props.may),
-    isRdn = computed(() => props.attr.name == props.meta.dn.split('=')[0]),
-    oid = computed(() => props.attr.syntax == syntaxes.oid),
-    missing = computed(() => empty.value && props.must),
-    password = computed(() => props.attr.name == 'userPassword'),
-    time = computed(() => props.attr.syntax == syntaxes.generalizedTime),
+  boolean = computed(() => props.attr.syntax == syntaxes.boolean),
+  completable = computed(() => props.attr.syntax == syntaxes.distinguishedName),
+  defaultValue = computed(() => props.values.length == 1 && props.values[0] == autoFilled.value),
+  empty = computed(() => props.values.every(value => !value.trim())),
+  illegal = computed(() => !props.must && !props.may),
+  isRdn = computed(() => props.attr.name == props.meta.dn.split('=')[0]),
+  oid = computed(() => props.attr.syntax == syntaxes.oid),
+  missing = computed(() => empty.value && props.must),
+  password = computed(() => props.attr.name == 'userPassword'),
+  time = computed(() => props.attr.syntax == syntaxes.generalizedTime),
 
-    binary = computed(() =>
-      password.value ? false // Corner case with octetStringMatch
-        : props.meta.binary.includes(props.attr.name)),
-    
-    disabled = computed(() => isRdn.value
-        || props.attr.name == 'objectClass'
-        || (illegal.value && empty.value)
-        || (!props.meta.isNew && (password.value || binary.value))),
+  binary = computed<boolean>(() =>
+    password.value ? false // Corner case with octetStringMatch
+      : props.meta.binary.includes(props.attr.name)),
+  
+  disabled = computed(() => isRdn.value
+      || props.attr.name == 'objectClass'
+      || (illegal.value && empty.value)
+      || (!props.meta.isNew && (password.value || binary.value))),
 
-    placeholder = computed(() => {
-      let symbol = '';
-      if (completable.value) symbol = ' \uf002 '; // fa-search
-      if (missing.value) symbol = ' \uf071 ';     // fa-warning
-      if (empty.value) symbol = ' \uf1f8 ';       // fa-trash
-      return symbol;
-    }),
+  placeholder = computed(() => {
+    let symbol = '';
+    if (completable.value) symbol = ' \uf002 '; // fa-search
+    if (missing.value) symbol = ' \uf071 ';     // fa-warning
+    if (empty.value) symbol = ' \uf1f8 ';       // fa-trash
+    return symbol;
+  }),
 
-    shown = computed(() =>
-        props.attr.name == 'jpegPhoto'
-          || props.attr.name == 'thumbnailPhoto'
-          || (!props.attr.no_user_mod && !binary.value)),
+  shown = computed(() =>
+      props.attr.name == 'jpegPhoto'
+        || props.attr.name == 'thumbnailPhoto'
+        || (!props.attr.no_user_mod && !binary.value)),
 
-    type = computed(() => {
-      // Guess the <input> type for an attribute
-      if (password.value) return 'password';
-      if (props.attr.syntax == syntaxes.telephoneNumber) return 'tel';
-      return props.attr.syntax == syntaxes.integer ? 'number' : 'text';
-    }),
+  type = computed(() => {
+    // Guess the <input> type for an attribute
+    if (password.value) return 'password';
+    if (props.attr.syntax == syntaxes.telephoneNumber) return 'tel';
+    return props.attr.syntax == syntaxes.integer ? 'number' : 'text';
+  }),
 
-    emit = defineEmits(['reload-form', 'show-attr', 'show-modal', 'show-oc', 'update', 'valid']);
+  emit = defineEmits(['reload-form', 'show-attr', 'show-modal', 'show-oc', 'update', 'valid']);
 
   watch(valid, (ok) => emit('valid', ok));
   
   onMounted(async () => {
     // Auto-fill ranges
     if (disabled.value
-      || !idRanges.includes(props.attr.name)
+      || !idRanges.includes(props.attr.name!)
       || props.values.length != 1
       || props.values[0]) return;
 
-    const range = await app.xhr({ url: 'api/range/' + props.attr.name });
+    const range = await app?.xhr({ url: 'api/range/' + props.attr.name }) as {
+      min: number;
+      max: number;
+      next: number;
+    };
     if (!range) return;
     
     hint.value = range.min == range.max
       ? '> ' + range.min
       : '\u2209 (' + range.min + " - " + range.max + ')';
-    autoFilled.value = new String(range.next);
+    autoFilled.value = '' + range.next;
     emit('update', props.attr.name, [autoFilled.value], 0);
     validate();
   });
@@ -176,61 +182,53 @@
       && props.values.every(unique);
   }
 
-  function update(evt) {
-    const value = evt.target.value,
-      index = +evt.target.id.split('-').slice(-1).pop();
+  function update(evt: Event) {
+    const target = evt.target as HTMLInputElement;
+    const value = target.value,
+      index = +target.id.split('-').slice(-1).pop()!;
       updateValue(index, value);
   }
 
-  function updateValue(index, value) {
-    let values = props.values.slice();
+  function updateValue(index: number, value: string) {
+    const values = props.values.slice();
     values[index] = value;
     emit('update', props.attr.name, values);
   }
 
   // Add an empty row in the entry form
   function addRow() {
-    let values = props.values.slice();
+    const values = props.values.slice();
     if (!values.includes('')) values.push('');
     emit('update', props.attr.name, values, values.length - 1);
   }
 
   // Remove a row from the entry form
-  function removeObjectClass(index) {
-    let values = props.values.slice(0, index).concat(props.values.slice(index + 1));
+  function removeObjectClass(index: number) {
+    const values = props.values.slice(0, index).concat(props.values.slice(index + 1));
     emit('update', 'objectClass', values);
   }
 
   // human-readable dates
-  function dateString(dt) {
-    let tz = dt.substr(14);
-    if (tz != 'Z') {
-      tz = tz.substr(0, 3) + ':'
-        + (tz.length > 3 ? tz.substring(3, 2) : '00');
-    }
-    return new Date(dt.substr(0, 4) + '-'
-      + dt.substr(4, 2) + '-'
-      + dt.substr(6, 2) + 'T'
-      + dt.substr(8, 2) + ':'
-      + dt.substr(10, 2) + ':'
-      + dt.substr(12, 2) + tz).toLocaleString(undefined, dateFormat);
+  function dateString(dt: string) {
+    return generalizedTime(dt).toLocaleString(undefined, dateFormat);
   }
 
   // Is the given value a structural object class?
-  function isStructural(val) {
-    return props.attr.name == 'objectClass' && app.schema.oc(val).structural;
+  function isStructural(val: string) {
+    return props.attr.name == 'objectClass' && app?.schema?.oc(val)?.structural;
   }
 
   // Is the given value an auxillary object class?
-  function isAux(val) {
-    return props.attr.name == 'objectClass' && !app.schema.oc(val).structural;
+  function isAux(val: string) {
+    const oc = app?.schema?.oc(val);
+    return props.attr.name == 'objectClass' && oc && !oc.structural;
   }
 
-  function duplicate(index) {
+  function duplicate(index: number) {
     return !unique(props.values[index], index, props.values);
   }
 
-  function multiple(index) {
+  function multiple(index: number) {
     return index == 0
       && !props.attr.single_value
       && !disabled.value
@@ -238,27 +236,28 @@
   }
 
   // auto-complete form values
-  function search(evt) {
-    elementId.value = evt.target.id;
-    const q = evt.target.value;
+  function search(evt: Event) {
+    const target = evt.target as HTMLInputElement;
+    elementId.value = target.id;
+    const q = target.value;
     query.value = q.length >= 2 && !q.includes(',') ? q : '';
   }
 
   // use an auto-completion choice
-  function complete(dn) {
-    const index = +elementId.value.split('-').slice(-1).pop();
-    let values = props.values.slice();
+  function complete(dn: string) {
+    const index = +elementId.value!.split('-').slice(-1).pop()!;
+    const values = props.values.slice();
     values[index] = dn;
     query.value = '';
     emit('update', props.attr.name, values);
   }
   
   // remove an image
-  async function deleteBlob(index) {
-    const data = await app.xhr({
+  async function deleteBlob(index: number) {
+    const data = await app?.xhr({
       method: 'DELETE',
       url:  'api/blob/' + props.attr.name + '/' + index + '/' + props.meta.dn,
-    });
+    }) as { changed: string[] };
     
     if (data) emit('reload-form', props.meta.dn, data.changed);
   }

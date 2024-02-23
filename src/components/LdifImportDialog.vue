@@ -6,31 +6,32 @@
   </modal>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { inject, ref } from 'vue';
   import Modal from './ui/Modal.vue';
+  import type { Provided } from './Provided';
 
   const
-    app = inject('app'),
+    app = inject<Provided>('app'),
     ldifData = ref(''),
-    ldifFile = ref(null),
     emit = defineEmits(['ok', 'update:modal']);
 
   defineProps({ modal: String });
   
   function init() {
     ldifData.value = '';
-    ldifFile.value = null;
   }
   
   // Load LDIF from file
-  function upload(evt) {
-    const file = evt.target.files[0],
+  function upload(evt: Event) {
+    const target = evt.target as HTMLInputElement,
+      files = target.files as FileList,
+      file = files[0],
       reader = new FileReader();
 
     reader.onload = function() {
-      ldifData.value = reader.result;
-      evt.target.value = null;
+      ldifData.value = reader.result as string;
+      target.value = '';
     }
     reader.readAsText(file);
   }
@@ -40,7 +41,7 @@
     if (!ldifData.value) return;
 
     emit('update:modal');
-    const data = await app.xhr({
+    const data = await app?.xhr({
       url: 'api/ldif',
       method: 'POST',
       data: ldifData.value,

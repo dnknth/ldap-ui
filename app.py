@@ -243,7 +243,7 @@ def _entry(res: Tuple[str, Any]) -> Dict[str, Any]:
                           for a in must_attrs],
             'aux': sorted(aux - ocs),
             'binary': sorted(binary),
-            'hints': {},
+            'hints': {}, # FIXME obsolete?
             'autoFilled': [],
         }
     }

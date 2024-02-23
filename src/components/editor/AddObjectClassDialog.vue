@@ -1,6 +1,6 @@
 <template>
   <modal title="Add objectClass" :open="modal == 'add-object-class'"
-    @show="oc = null;" @shown="select.focus()"
+    @show="oc = undefined;" @shown="select?.focus()"
     @ok="onOk" @cancel="emit('update:modal')">
     
     <select v-model="oc" ref="select" @keyup.enter="onOk">
@@ -9,7 +9,7 @@
   </modal>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { computed, ref } from 'vue';
   import Modal from '../ui/Modal.vue';
 
@@ -17,11 +17,11 @@
       entry: { type: Object, required: true },
       modal: String,
     }),
-    oc = ref(null),
-    select = ref(null),
-    available = computed(() => {
+    oc = ref<string>(),
+    select = ref<HTMLSelectElement | null>(),
+    available = computed<string[]>(() => {
       const classes = props.entry.attrs.objectClass;
-      return props.entry.meta.aux.filter(cls => !classes.includes(cls));
+      return props.entry.meta.aux.filter((cls: string) => !classes.includes(cls));
     }),
     emit = defineEmits(['ok', 'update:modal']);
 

@@ -50,10 +50,10 @@
     </nav>
     
     <form id="entry" class="space-y-4 my-4" @submit.prevent="save"
-        @reset="load(entry.meta.dn)" @focusin="onFocus">
+        @reset="load(entry.meta.dn, undefined, undefined)" @focusin="onFocus">
       <attribute-row v-for="key in keys" :key="key" :base-dn="props.baseDn"
-        :attr="app.schema.attr(key)" :meta="entry.meta" :values="entry.attrs[key]"
-        :changed="entry.changed.includes(key)"
+        :attr="app?.schema?.attr(key)!" :meta="entry.meta" :values="entry.attrs[key]"
+        :changed="entry.changed?.includes(key) || false"
         :may="attributes('may').includes(key)" :must="attributes('must').includes(key)"
         @update="updateRow"
         @reload-form="load"
@@ -82,7 +82,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { computed, inject, nextTick, ref, watch } from 'vue';
   import AddAttributeDialog from './AddAttributeDialog.vue';
   import AddObjectClassDialog from './AddObjectClassDialog.vue';
@@ -92,13 +92,15 @@
   import DeleteEntryDialog from './DeleteEntryDialog.vue';
   import DiscardEntryDialog from './DiscardEntryDialog.vue';
   import DropdownMenu from '../ui/DropdownMenu.vue';
+  import type { Entry } from './Entry';
   import NewEntryDialog from './NewEntryDialog.vue';
   import NodeLabel from '../NodeLabel.vue';
   import PasswordChangeDialog from './PasswordChangeDialog.vue';
+  import type { Provided } from '../Provided';
   import RenameEntryDialog from './RenameEntryDialog.vue';
-  import { request } from '../../request.js';
+  import { request } from '../../request';
 
-  function unique(element, index, array) {
+  function unique(element: unknown, index: number, array: Array<unknown>): boolean {
     return array.indexOf(element) == index;
   }
 
@@ -110,21 +112,21 @@
       user: String,
     }),
 
-    app = inject('app'),
-    entry = ref(null),   // entry in editor
-    focused = ref(null), // currently focused input
-    invalid = ref([]),   // field IDs with validation errors
-    modal = ref(null),   // pop-up dialog
+    app = inject<Provided>('app'),
+    entry = ref<Entry>(),   // entry in editor
+    focused = ref<string>(), // currently focused input
+    invalid = ref<string[]>([]),   // field IDs with validation errors
+    modal = ref<string>(),   // pop-up dialog
 
     keys = computed(() => {
-      let keys = Object.keys(entry.value.attrs);
+      const keys = Object.keys(entry.value?.attrs || {});
       keys.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
       return keys;
     }),
 
     structural = computed(() => {
-      const oc = entry.value.attrs.objectClass
-        .map(oc => app.schema.oc(oc))
+      const oc = entry.value?.attrs.objectClass
+        .map(oc => app?.schema?.oc(oc as string))
         .filter(oc => oc && oc.structural)[0];
       return oc ? oc.name : '';
     }),
@@ -132,19 +134,19 @@
     emit = defineEmits(['update:activeDn', 'show-attr', 'show-oc']);
 
   watch(() => props.activeDn, (dn) => {
-    if (!entry.value || dn != entry.value.meta.dn) focused.value = undefined;
+    if (!entry.value || dn != entry.value!.meta.dn) focused.value = undefined;
     
-    if (dn && entry.value && entry.value.meta.isNew) {
+    if (dn && entry.value && entry.value!.meta.isNew) {
       modal.value = 'discard-entry';
     }
-    else if (dn) load(dn);
-    else if (entry.value && !entry.value.meta.isNew) entry.value = null;
+    else if (dn) load(dn, undefined, undefined);
+    else if (entry.value && !entry.value!.meta.isNew) entry.value = undefined;
   });
 
-  function focus(focused) {
+  function focus(focused: string | undefined) {
     nextTick(() => {
       const input = focused ? document.getElementById(focused)
-      : document.querySelector('form#entry input:not([disabled]), form#entry button[type="button"]');
+      : document.querySelector('form#entry input:not([disabled]), form#entry button[type="button"]') as HTMLElement;
     
       if (input) {
         // work around annoying focus jump in OS X Safari
@@ -154,46 +156,46 @@
   }
 
     // Track focus changes
-  function onFocus(evt) {
-    const el = evt.target;
+  function onFocus(evt: FocusEvent) {
+    const el = evt.target as HTMLElement;
     if (el.id && inputTags.includes(el.tagName)) focused.value = el.id;
   }
 
-  function newEntry(newEntry) {
+  function newEntry(newEntry: Entry) {
     entry.value = newEntry;
     emit('update:activeDn');
     focus(addMandatoryRows());
   }
 
-  function discardEntry(dn) {
-    entry.value = null;
+  function discardEntry(dn: string) {
+    entry.value = undefined;
     emit('update:activeDn', dn);
   }
 
-  function addAttribute(attr) {
-    entry.value.attrs[attr] = [''];
+  function addAttribute(attr: string) {
+    entry.value!.attrs[attr] = [''];
     focus(attr + '-0');
   }
 
-  function addObjectClass(oc) {
-    entry.value.attrs.objectClass.push(oc);
-    const aux = entry.value.meta.aux.filter(oc => oc < oc);
-    entry.value.meta.aux.splice(aux.length, 1);
+  function addObjectClass(oc: string) {
+    entry.value!.attrs.objectClass.push(oc);
+    const aux = entry.value!.meta.aux.filter(oc => oc < oc);
+    entry.value!.meta.aux.splice(aux.length, 1);
     focus(addMandatoryRows() || focused.value);
   }
 
   // Remove a row from the entry form
-  function removeObjectClass(newOcs) {
-    const removedOc = entry.value.attrs.objectClass.filter(
+  function removeObjectClass(newOcs: string[]) {
+    const removedOc = entry.value!.attrs.objectClass.filter(
         oc => !newOcs.includes(oc))[0];
     if (removedOc) {
-      const aux = entry.value.meta.aux.filter(oc => oc < removedOc);
-      entry.value.meta.aux.splice(aux.length, 0, removedOc);
+      const aux = entry.value!.meta.aux.filter(oc => oc < removedOc);
+      entry.value!.meta.aux.splice(aux.length, 0, removedOc);
     }
   }
 
-  function updateRow(attr, values, index) {
-    entry.value.attrs[attr] = values;
+  function updateRow(attr: string, values: string[], index: number) {
+    entry.value!.attrs[attr] = values;
     if (attr == 'objectClass') {
       removeObjectClass(values);
       focus(focused.value);
@@ -201,27 +203,27 @@
     if (index !== undefined) focus(attr + '-' + index);
   }
 
-  function addMandatoryRows() {
+  function addMandatoryRows() : string | undefined {
     const must = attributes('must')
-      .filter(attr => !entry.value.attrs[attr]);
-    must.forEach(attr => entry.value.attrs[attr] = ['']);
+      .filter(attr => !entry.value!.attrs[attr]);
+    must.forEach(attr => entry.value!.attrs[attr] = ['']);
     return must.length ? must[0] + '-0' : undefined;
   }
 
   // Load an entry into the editing form
-  async function load(dn, changed, focused) {
+  async function load(dn: string, changed: string[] | undefined, focused: string | undefined) {
     invalid.value = [];
 
     if (!dn || dn.startsWith('-')) {
-      entry.value = null;
+      entry.value = undefined;
       return;
     }
 
-    entry.value = await app.xhr({ url: 'api/entry/' + dn });
+    entry.value = await app?.xhr({ url: 'api/entry/' + dn }) as Entry;
     if (!entry.value) return;
 
-    entry.value.changed = changed || [];
-    entry.value.meta.isNew = false;
+    entry.value!.changed = changed || [];
+    entry.value!.meta.isNew = false;
 
     document.title = dn.split(',')[0];
     focus(focused);
@@ -234,86 +236,86 @@
       return;
     }
 
-    entry.value.changed = [];
-    const data = await app.xhr({
-      url:  'api/entry/' + entry.value.meta.dn,
-      method: entry.value.meta.isNew ? 'PUT' : 'POST',
-      data: JSON.stringify(entry.value.attrs),
-    });
+    entry.value!.changed = [];
+    const data = await app?.xhr({
+      url:  'api/entry/' + entry.value!.meta.dn,
+      method: entry.value!.meta.isNew ? 'PUT' : 'POST',
+      data: JSON.stringify(entry.value!.attrs),
+    }) as { changed: string[] };
 
     if (!data) return;
     
     if (data.changed && data.changed.length) {
-      app.showInfo('👍 Saved changes');
+      app?.showInfo('👍 Saved changes');
     }
-    if (entry.value.meta.isNew) {
-      entry.value.meta.isNew = false;
-      emit('update:activeDn', entry.value.meta.dn);
+    if (entry.value!.meta.isNew) {
+      entry.value!.meta.isNew = false;
+      emit('update:activeDn', entry.value!.meta.dn);
     }
-    else load(entry.value.meta.dn, data.changed, focused.value);
+    else load(entry.value!.meta.dn, data.changed, focused.value);
   }
 
-  async function renameEntry(rdn) {
-    await app.xhr({
+  async function renameEntry(rdn: string) {
+    await app?.xhr({
       url: 'api/rename',
       method: 'POST',
       data: JSON.stringify({
-        dn:  entry.value.meta.dn,
+        dn:  entry.value!.meta.dn,
         rdn: rdn
       }),
     });
 
-    const dnparts = entry.value.meta.dn.split(',');
+    const dnparts = entry.value!.meta.dn.split(',');
     dnparts.splice(0, 1, rdn);
     emit('update:activeDn', dnparts.join(','));
   }
 
-  async function deleteEntry(dn) {
-    if (await app.xhr({ url: 'api/entry/' + dn, method: 'DELETE' }) !== undefined) {
-      app.showInfo('Deleted: ' + dn);
+  async function deleteEntry(dn: string) {
+    if (await app?.xhr({ url: 'api/entry/' + dn, method: 'DELETE' }) !== undefined) {
+      app?.showInfo('Deleted: ' + dn);
       emit('update:activeDn', '-' + dn);
     }
   }
 
-  async function changePassword(oldPass, newPass) {
-    const data = await app.xhr({
-      url: 'api/entry/password/' + entry.value.meta.dn,
+  async function changePassword(oldPass: string, newPass: string) {
+    const data = await app?.xhr({
+      url: 'api/entry/password/' + entry.value!.meta.dn,
       method: 'POST',
       data: JSON.stringify({ old: oldPass, new1: newPass }),
-    });
+    }) as string;
 
     if (data !== undefined) {
-      entry.value.attrs.userPassword = [ data ];
-      entry.value.changed.push('userPassword');
+      entry.value!.attrs.userPassword = [ data ];
+      entry.value!.changed?.push('userPassword');
     }
   }
 
   // Download LDIF
   async function ldif() {
     const data = await request({
-      url: 'api/ldif/' + entry.value.meta.dn,
+      url: 'api/ldif/' + entry.value!.meta.dn,
       responseType: 'blob' });
     if (!data) return;
 
     const a = document.createElement("a"),
         url = URL.createObjectURL(data.response);
     a.href = url;
-    a.download = entry.value.meta.dn.split(',')[0].split('=')[1] + '.ldif';
+    a.download = entry.value!.meta.dn.split(',')[0].split('=')[1] + '.ldif';
     document.body.appendChild(a);
     a.click();
   }
   
-  function attributes(kind) {
-    let attrs = entry.value.attrs.objectClass
+  function attributes(kind : 'must' | 'may') {
+    const attrs = entry.value!.attrs.objectClass
       .filter(oc => oc && oc != 'top')
-      .map(oc => app.schema.oc(oc))
+      .map(oc => app?.schema?.oc(oc))
       .flatMap(oc => oc ? oc.$collect(kind): [])
       .filter(unique);
     attrs.sort();
     return attrs;
   }
 
-  function valid(key, valid) {
+  function valid(key: string, valid: boolean) {
     if (valid) {
       const pos = invalid.value.indexOf(key);
       if (pos >= 0) invalid.value.splice(pos, 1);

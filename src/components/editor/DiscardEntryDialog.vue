@@ -11,7 +11,7 @@
   </modal>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { ref } from 'vue';
   import Modal from '../ui/Modal.vue';
 
@@ -22,11 +22,11 @@
   });
 
   const
-    next = ref(null),
+    next = ref<string>(),
     emit = defineEmits(['ok', 'shown', 'update:modal']);
 
   function onShown() {
-    document.getElementById('ui-modal-ok').focus();
+    document.getElementById('ui-modal-ok')?.focus();
     emit('shown');
   }
 

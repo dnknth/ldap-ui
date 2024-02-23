@@ -1,6 +1,6 @@
 <template>
   <modal title="Add attribute" :open="modal == 'add-attribute'" :return-to="props.returnTo"
-    @show="attr = null;" @shown="select.focus()"
+    @show="attr = undefined;" @shown="select?.focus()"
     @ok="onOk" @cancel="emit('update:modal')">
 
     <select v-model="attr" ref="select" @keyup.enter="onOk">
@@ -9,18 +9,18 @@
   </modal>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { computed, ref } from 'vue';
   import Modal from '../ui/Modal.vue';
 
   const props = defineProps({
       entry: { type: Object, required: true },
-      attributes: { type: Array, required: true },
+      attributes: { type: Array<string>, required: true },
       modal: String,
       returnTo: String,
     }),
-    attr = ref(null),
-    select = ref(null),
+    attr = ref<string>(),
+    select = ref<HTMLSelectElement | null>(null),
     available = computed(() => {
       // Choice list for new attribute selection popup
       const attrs = Object.keys(props.entry.attrs);

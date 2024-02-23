@@ -13,15 +13,15 @@
       <span class="cursor-pointer" @click="emit('show-modal', 'ldif-import')">Import…</span>
       
       <dropdown-menu title="Schema">
-        <li role="menuitem" v-for="obj in app.schema.ObjectClass.values"
-          :key="obj.name" @click="emit('show-oc', obj.name)">
-            {{ obj.name }}
+        <li role="menuitem" v-for="key in app?.schema?.objectClasses.keys()"
+          :key="key" @click="emit('show-oc', key)">
+            {{ key }}
         </li>
       </dropdown-menu>
 
       <form @submit.prevent="search">
-        <input class="glyph px-2 py-1 rounded border border-front/80 outline-none text-front dark:bg-gray-800/80"
-          autofocus :placeholder="' \uf002'" name="q" @focusin="input.select();" accesskey="k"
+        <input class="glyph px-2 py-1 rounded focus:border focus:border-front/80 outline-none text-front dark:bg-gray-800/80"
+          autofocus :placeholder="' \uf002'" name="q" @focusin="input?.select();" accesskey="k"
           @keyup.esc="query = '';" id="nav-search" ref="input" />
         <search-results for="nav-search" @select-dn="query = ''; emit('select-dn', $event);"
           :shorten="baseDn" :query="query" />
@@ -31,18 +31,19 @@
   </nav>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { inject, nextTick, ref } from 'vue';
   import DropdownMenu from './ui/DropdownMenu.vue';
+  import type { Provided } from './Provided';
   import NodeLabel from './NodeLabel.vue';
   import SearchResults from './SearchResults.vue';
-
+  
   const
-    app = inject('app'),
-    input = ref(null),
+    app = inject<Provided>('app'),
+    input = ref<HTMLInputElement | null>(null),
     query = ref(''),
     collapsed = ref(false),
-    emit = defineEmits(['select-dn', 'show-modal', 'show-oc']);
+    emit = defineEmits(['select-dn', 'show-modal', 'show-oc', 'update:treeOpen']);
 
   defineProps({
     baseDn: String,
@@ -52,6 +53,6 @@
 
   function search() {
     query.value = '';
-    nextTick(() => { query.value = input.value.value; });
+    nextTick(() => { query.value = input?.value?.value || ''; });
   }
 </script>

@@ -1,7 +1,7 @@
 <template>
   <modal title="Rename entry" :open="modal == 'rename-entry'" :return-to="returnTo"
     @ok="onOk" @cancel="emit('update:modal')"
-    @show="init" @shown="select.focus()">
+    @show="init" @shown="select?.focus()">
     
     <label>New RDN attribute:
       <select ref="select" v-model="rdn" @keyup.enter="onOk">
@@ -11,7 +11,7 @@
   </modal>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { computed, ref } from 'vue';
   import Modal from '../ui/Modal.vue';
 
@@ -21,8 +21,8 @@
       returnTo: String,
     }),
 
-    rdn = ref(),
-    select = ref(null),
+    rdn = ref<string>(),
+    select = ref<HTMLInputElement | null>(null),
     rdns = computed(() => Object.keys(props.entry.attrs).filter(ok)),
     emit = defineEmits(['ok', 'update:modal']);
 
@@ -31,15 +31,15 @@
   }
 
   function onOk() {
-    const rdnAttr = props.entry.attrs[rdn.value];
+    const rdnAttr = props.entry.attrs[rdn.value || ''];
     if (rdnAttr && rdnAttr[0]) {    
       emit('update:modal');
       emit('ok', rdn.value + '=' + rdnAttr[0]);
     }
   }
 
-  function ok(key) {
+  function ok(key: string) {
     const rdn = props.entry.meta.dn.split('=')[0];
-    return key != rdn && !props.entry.attrs[key].every(val => !val);
+    return key != rdn && !props.entry.attrs[key].every((val: unknown) => !val);
   }
 </script>

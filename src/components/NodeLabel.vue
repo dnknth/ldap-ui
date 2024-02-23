@@ -6,14 +6,14 @@
   </span>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { computed } from 'vue';
   const props = defineProps({
       dn: String,
       oc: String,
     }),
 
-    icons = {             // OC -> icon mapping
+    icons : {[key: string]: string} = { // OC -> icon mapping
       account:            'user',
       groupOfNames:       'users',
       groupOfURLs:        'users',
@@ -30,7 +30,8 @@
     },
 
     icon = computed(() => // Get the icon for an OC
-      ' fa-' + icons[props.oc] || 'question'),
+      props.oc ? ' fa-' + (icons[props.oc] || 'question')
+        : 'fa-question'),
 
     // Shorten a DN for readability
     label = computed(() => (props.dn || '').split(',')[0]

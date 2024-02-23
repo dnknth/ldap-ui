@@ -19,9 +19,10 @@
   </modal>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { computed, inject, ref } from 'vue';
   import Modal from '../ui/Modal.vue';
+  import type { Provided } from '../Provided';
 
   const props = defineProps({
       entry: { type: Object, required: true },
@@ -30,18 +31,18 @@
       user: String,
     }),
 
-    app = inject('app'),
+    app = inject<Provided>('app'),
     oldPassword = ref(''),
     newPassword = ref(''),
     repeated = ref(''),
-    passwordOk = ref(),
+    passwordOk = ref<boolean>(),
 
-    old = ref(null),
-    changed = ref(null),
+    old = ref<HTMLInputElement | null>(null),
+    changed = ref<HTMLInputElement | null>(null),
 
     currentUser = computed(() => props.user == props.entry.meta.dn),
     passwordsMatch = computed(() => newPassword.value && newPassword.value == repeated.value),
-    oldExists = computed(() => props.entry.attrs.userPassword
+    oldExists = computed(() => !!props.entry.attrs.userPassword
       && props.entry.attrs.userPassword[0] != ''),
 
     emit = defineEmits(['ok', 'update-form', 'update:modal']);
@@ -52,8 +53,8 @@
   }
 
   function focus() {
-    if (oldExists.value) old.value.focus();
-    else changed.value.focus();
+    if (oldExists.value) old.value?.focus();
+    else changed.value?.focus();
   }
 
   // Verify an existing password
@@ -64,11 +65,11 @@
       passwordOk.value = undefined;
       return;
     }
-    passwordOk.value = await app.xhr({
+    passwordOk.value = await app?.xhr({
       url: 'api/entry/password/' + props.entry.meta.dn,
       method: 'POST',
       data: JSON.stringify({ check: oldPassword.value }),
-    });
+    }) as boolean;
   }
 
   async function onOk() {

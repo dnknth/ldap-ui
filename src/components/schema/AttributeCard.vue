@@ -1,5 +1,5 @@
 <template>
-  <card v-if="modelValue" :title="attr.names.join(', ')" class="ml-4" @close="emit('update:modelValue')">
+  <card v-if="modelValue && attr" :title="attr.names?.join(', ') || ''" class="ml-4" @close="emit('update:modelValue')">
 
     <div class="header">{{ attr.desc }}</div>
     
@@ -16,12 +16,13 @@
   </card>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { computed, inject } from 'vue';
   import Card from '../ui/Card.vue';
+  import type { Provided } from '../Provided';
 
   const props = defineProps({ modelValue: String }),
-    app = inject('app'),
-    attr = computed(() => app.schema.attr(props.modelValue)),
+    app = inject<Provided>('app'),
+    attr = computed(() => app?.schema?.attr(props.modelValue)),
     emit = defineEmits(['show-attr', 'update:modelValue']);
 </script>

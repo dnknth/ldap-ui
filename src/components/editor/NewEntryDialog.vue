@@ -1,11 +1,11 @@
 <template>
   <modal title="New entry" :open="modal == 'new-entry'" :return-to="returnTo"
     @ok="onOk" @cancel="emit('update:modal')"
-    @show="init" @shown="select.focus()">
+    @show="init" @shown="select?.focus()">
     
     <label>Object class:
       <select ref="select" v-model="objectClass">
-        <template v-for="cls in app.schema.ObjectClass.values" :key="cls.name">
+        <template v-for="cls in app?.schema?.objectClasses.values()" :key="cls.name">
           <option v-if="cls.structural">{{ cls }}</option>
         </template>
       </select>
@@ -24,25 +24,27 @@
   </modal>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { computed, inject, ref } from 'vue';
   import Modal from '../ui/Modal.vue';
+  import type { Provided } from '../Provided';
+  import type { Entry } from './Entry';
 
   const props = defineProps({
       dn: { type: String, required: true },
       modal: String,
       returnTo: String,
     }),
-    app = inject('app'),
-    objectClass = ref(null),
-    rdn = ref(null),
-    name = ref(null),
-    select = ref(null),
-    oc = computed(() => app.schema.oc(objectClass.value)),
+    app = inject<Provided>('app'),
+    objectClass = ref(''),
+    rdn = ref(''),
+    name = ref(''),
+    select = ref<HTMLSelectElement | null>(null),
+    oc = computed(() => app?.schema?.oc(objectClass.value)),
     emit = defineEmits(['ok', 'update:modal']);
 
   function init() {
-    objectClass.value = rdn.value = name.value = null;
+    objectClass.value = rdn.value = name.value = '';
   }
 
       // Create a new entry in the main editor
@@ -52,19 +54,19 @@
     emit('update:modal');
 
     const objectClasses = [objectClass.value];
-    for (let o = oc.value.$super; o; o = o.$super) {
+    for (let o = oc.value?.$super; o; o = o.$super) {
       if (!o.structural && o.kind != 'abstract') {
-          objectClasses.push(o.name);
+          objectClasses.push(o.name!);
       }
     }
     
-    const entry = {
+    const entry: Entry = {
       meta: {
         dn: rdn.value + '=' + name.value + ',' + props.dn,
         aux: [],
         required: [],
         binary: [],
-        hints: {},
+        // hints: {},
         autoFilled: [],
         isNew: true,
       },
@@ -80,7 +82,7 @@
   // Choice list of RDN attributes for a new entry
   function rdns() {
     if (!objectClass.value) return [];
-    const ocs = oc.value.$collect('must');
+    const ocs = oc.value?.$collect('must') || [];
     if (ocs.length == 1) rdn.value = ocs[0];
     return ocs;
   }

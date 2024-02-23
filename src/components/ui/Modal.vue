@@ -44,7 +44,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
   const props = defineProps({
       title: { type: String, required: true },
       open: { type: Boolean, required: true },
@@ -63,7 +63,7 @@
 
   function onCancel() {
     if (props.open) {
-      if (props.returnTo) document.getElementById(props.returnTo).focus();
+      if (props.returnTo) document.getElementById(props.returnTo)?.focus();
       emit('cancel');
     }
   }

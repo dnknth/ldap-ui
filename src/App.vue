@@ -36,38 +36,46 @@
   </div>
 </template>
 
-<script setup>
-  import { onMounted, provide, readonly, ref, watch } from 'vue';
+<script setup lang="ts">
+  import { onMounted, provide, ref, watch } from 'vue';
   import AttributeCard from './components/schema/AttributeCard.vue';
   import EntryEditor from './components/editor/EntryEditor.vue';
-  import { LdapSchema } from './components/schema/schema.js';
+  import { LdapSchema } from './components/schema/schema';
   import LdifImportDialog from './components/LdifImportDialog.vue';
   import NavBar from './components/NavBar.vue';
   import ObjectClassCard from './components/schema/ObjectClassCard.vue';
-  import { request } from './request.js';
+  import type { Provided } from './components/Provided';
+  import { request } from './request';
+  import type { Options } from './request';
   import TreeView from './components/TreeView.vue';
+
+  interface Error {
+    counter: number;
+    cssClass: string;
+    msg: string
+  }
 
   const
     // Authentication
-    user = ref(null),        // logged in user
-    baseDn = ref(null),
+    user = ref<string>(),      // logged in user
+    baseDn = ref<string>(),
     
     // Components
-    treeOpen = ref(true),    // Is the tree visible?
-    activeDn = ref(null),    // currently active DN in the editor
-    modal = ref(null),       // modal popup
+    treeOpen = ref(true),      // Is the tree visible?
+    activeDn = ref<string>(),  // currently active DN in the editor
+    modal = ref<string>(),     // modal popup
 
     // Alerts
-    error = ref(null),       // status alert
+    error = ref<Error>(),      // status alert
     
     // LDAP schema
-    schema = ref(null),
-    oc = ref(null),          // objectClass info in side panel
-    attr = ref(null),        // attribute info in side panel
+    schema = ref<LdapSchema>(),
+    oc = ref<string>(),        // objectClass info in side panel
+    attr = ref<string>(),      // attribute info in side panel
 
     // Helpers for components
-    provided = {
-      get schema() { return readonly(schema.value); },
+    provided: Provided = {
+      get schema() { return schema.value; },
       showInfo: showInfo,
       showWarning: showWarning,
       xhr: xhr,
@@ -86,7 +94,7 @@
   watch(attr, (a) => { if (a) oc.value = undefined; });
   watch(oc, (o) => { if (o) attr.value = undefined; });
 
-  function xhr(options) {
+  function xhr(options: Options) {
     if (options.data && !options.binary) {
       if (!options.headers) options.headers = {}
       if (!options.headers['Content-Type']) {
@@ -99,24 +107,24 @@
   }
   
   // Display an info popup
-  function showInfo(msg) {
+  function showInfo(msg: string) {
     error.value = { counter: 5, cssClass: 'bg-emerald-300', msg: '' + msg };
-    setTimeout(() => { error.value = null; }, 5000);
+    setTimeout(() => { error.value = undefined; }, 5000);
   }
   
   // Flash a warning popup
-  function showWarning(msg) {
+  function showWarning(msg: string) {
     error.value = { counter: 10, cssClass: 'bg-amber-200', msg: '⚠️ ' + msg };
-    setTimeout(() => { error.value = null; }, 10000);
+    setTimeout(() => { error.value = undefined; }, 10000);
   }
   
   // Report an error
-  function showError(msg) {
+  function showError(msg: string) {
     error.value = { counter: 60, cssClass: 'bg-red-300', msg: '⛔ ' + msg };
-    setTimeout(() => { error.value = null; }, 60000);
+    setTimeout(() => { error.value = undefined; }, 60000);
   }
 
-  function showException(msg) {
+  function showException(msg: string) {
     const span = document.createElement('span');
     span.innerHTML = msg.replace("\n", " ");
     const titles = span.getElementsByTagName('title');

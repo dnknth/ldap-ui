@@ -9,14 +9,14 @@
   </transition>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { onMounted, ref, watch } from 'vue';
   import { useEventListener, useMouseInElement } from '@vueuse/core';
 
   const props = defineProps({ open: Boolean }),
-    emit = defineEmits(['opened', 'closed', 'update:open', 'select']),
-    items = ref(null),
-    selected = ref(null),
+    emit = defineEmits(['opened', 'closed', 'update:open']),
+    items = ref<HTMLElement | null>(null),
+    selected = ref<number>(),
     { isOutside } = useMouseInElement(items);
 
   function close() {
@@ -24,9 +24,9 @@
     if (props.open) emit('update:open');
   }
 
-  function move(offset) {
-    const maxpos = items.value.children.length - 1;
-    if (selected.value == null) {
+  function move(offset: number) {
+    const maxpos = items.value!.children.length - 1;
+    if (selected.value === undefined) {
       selected.value = offset > 0 ? 0 : maxpos;
     }
     else {
@@ -36,7 +36,7 @@
     }
   }
 
-  function scroll(e) {
+  function scroll(e: KeyboardEvent) {
     if (!props.open || !items.value) return;
     switch (e.key) {
       case 'Esc':
@@ -51,10 +51,12 @@
         move(-1);
         e.preventDefault();
         break;
-      case 'Enter':
-        emit('select', selected.value);
+      case 'Enter': {
+        const target = items.value.children[selected.value!] as HTMLElement;
+        target.click();
         e.preventDefault();
         break;
+      }
     }
   }
 
@@ -65,19 +67,19 @@
 
   watch(selected, (pos) => {
     if (!props.open || !items.value) return;
-    for (let child of items.value.children) {
+    for (const child of items.value.children) {
       child.classList.remove('selected');
     }
-    if (pos != null) items.value.children[pos].classList.add('selected');
+    if (pos != undefined) items.value.children[pos].classList.add('selected');
   });
 
   watch(isOutside, (outside) => {
-    for (let child of items.value.children) {
+    for (const child of items.value!.children) {
       if (outside) {
         child.classList.remove('hover:bg-primary/40');
       }
       else {
-        selected.value = null;
+        selected.value = undefined;
         child.classList.add('hover:bg-primary/40');
       }
     }

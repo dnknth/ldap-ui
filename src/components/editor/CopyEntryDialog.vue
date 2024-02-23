@@ -1,6 +1,6 @@
 <template>
   <modal title="Copy entry" :open="modal == 'copy-entry'" :return-to="returnTo"
-    @show="init" @shown="newdn.focus()"
+    @show="init" @shown="newdn?.focus()"
     @ok="onOk" @cancel="emit('update:modal')">
     
     <div>
@@ -10,7 +10,7 @@
   </modal>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { ref } from 'vue';
   import Modal from '../ui/Modal.vue';
 
@@ -19,9 +19,9 @@
       modal: String,
       returnTo: String,
     }),
-    dn = ref(null),
+    dn = ref(''),
     error = ref(''),
-    newdn = ref(null),
+    newdn = ref<HTMLInputElement | null>(null),
     emit = defineEmits(['ok', 'update:modal']);
 
   function init() {
