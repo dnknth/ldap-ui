@@ -17,7 +17,7 @@ assert BASE_DN, "BASE_DN environment variable must be set"
 USE_TLS = bool(os.environ.get('USE_TLS', LDAP_URL.startswith('ldaps://')))
 INSECURE_TLS = bool(os.environ.get('INSECURE_TLS', False))
 
-SCHEMA_DN = 'cn=subschema'
+SCHEMA_DN = os.environ.get('SCHEMA_DN', 'cn=subschema')
 
 #
 # Binding
