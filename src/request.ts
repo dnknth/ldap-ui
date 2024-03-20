@@ -1,5 +1,3 @@
-"use strict";
-
 // See: https://stackoverflow.com/questions/30008114/how-do-i-promisify-native-xhr#30008115
 
 export type BagOfStrings = {
