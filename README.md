@@ -48,11 +48,11 @@ For finer-grained control, adjust [settings.py](settings.py).
 
 ### Standalone
 
-Copy [env.example](env.example) to `.env` and run the app with
+Copy [env.example](env.example) to `.env`, adjust it and run the app with
 
     make run
 
-and head over to [http://localhost:5000/](http://localhost:5000/).
+then head over to [http://localhost:5000/](http://localhost:5000/).
 
 ## Manual installation and configuration
 
@@ -66,8 +66,21 @@ Prerequisites:
   * Debian / Ubuntu: `apt-get install libsasl2-dev python-dev libldap2-dev libssl-dev`
   * RedHat / CentOS: `yum install python-devel openldap-devel`
 
-Check the configuration in [settings.py](settings.py). It is very short and mostly self-explaining.
+`ldap-ui` consists of a Vue UI and a Python backend that roughly translates parts of the LDAP protocol as a stateless ReST API.
+
+For the frontend, `npm run build` assembles everything in the `dist` directory.
+The result can then be served either via the backend (during development) or statically by any web server (remotely).
+
+The backend runs locally, always as a separate process. There is an example `systemd` unit in [etc/ldap-ui.service](etc/ldap-ui.service). Check the [Makefile](Makefile) on how to set up a virtual Python environment for it.
+
+Review the configuration in [settings.py](settings.py). It is very short and mostly self-explaining.
 Most settings can (and should) be overridden by environment variables or settings in a `.env` file; see [env.demo](env.demo) or [env.example](env.example).
+
+The backend exposes port 5000 on localhost which is not reachable remotely. Therefore, for remote access, some web server configuration is needed.
+Let's assume that everything should show up under the HTP path `/ldap`:
+
+* The contents of `dist` should be statically served under `/ldap` by the web server.
+* The path `/ldap/api` should be proxied to http://localhost:5000/api
 
 ## Notes
 
@@ -87,8 +100,7 @@ Additionally, arbitrary attributes can be searched with an LDAP filter specifica
 
 ### Caveats
 
-* The software is fairly new. I use it on production directories, but advise caution.
-* It works with [OpenLdap](http://www.openldap.org) using simple bind. Other directories have not been tested, and SASL authentication schemes are presently not supported.
+* The software works with [OpenLdap](http://www.openldap.org) using simple bind. Other directories have not been tested, and SASL authentication schemes are presently not supported.
 * Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLdap 2.4 does). I strongly recommend to expose the app through a TLS-enabled web server.
 * HTTP *Basic Authentication* is triggered unless the `AUTHORIZATION` request variable is already set by some upstream HTTP server.
 
