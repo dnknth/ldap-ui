@@ -41,12 +41,7 @@
     if (!ldifData.value) return;
 
     emit('update:modal');
-    const data = await app?.xhr({
-      url: 'api/ldif',
-      method: 'POST',
-      data: ldifData.value,
-    });
-
-    if (data) emit('ok');
+    const response = await fetch( 'api/ldif', { method: 'POST', body: ldifData.value });
+    if (response.ok) emit('ok');
   }
 </script>

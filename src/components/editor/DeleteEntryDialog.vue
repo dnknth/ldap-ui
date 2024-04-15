@@ -22,10 +22,9 @@
 </template>
 
 <script setup lang="ts">
-  import { inject, ref } from 'vue';
+  import { ref } from 'vue';
   import Modal from '../ui/Modal.vue';
   import NodeLabel from '../NodeLabel.vue';
-  import type { Provided } from '../Provided';
   import type { TreeNode } from '../TreeNode';
 
   const props = defineProps({
@@ -33,13 +32,13 @@
       modal: String,
       returnTo: String,
     }),
-    app = inject<Provided>('app'),
     subtree = ref<TreeNode[]>([]),
     emit = defineEmits(['ok', 'update:modal']);
 
   // List subordinate elements to be deleted
   async function init() {
-    subtree.value = await app?.xhr({ url: 'api/subtree/' + props.dn}) as TreeNode[] || [];
+    const response = await fetch('api/subtree/' + props.dn)
+    subtree.value = await response.json() as TreeNode[];
   }
 
   function onShown() {

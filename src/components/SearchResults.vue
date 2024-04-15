@@ -44,8 +44,9 @@
   watch(() => props.query, async (q) => {
     if (!q) return;
 
-    results.value = await app?.xhr({ url: 'api/search/' + q }) as Result[];
-    if (!results.value) return; // app.xhr failed
+    const response = await fetch('api/search/' + q);
+    if (!response.ok) return;
+    results.value = await response.json() as Result[]
 
     if (results.value.length == 0 && !props.silent) {
       app?.showWarning('No search results');

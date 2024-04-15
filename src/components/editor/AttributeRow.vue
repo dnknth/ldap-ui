@@ -159,13 +159,14 @@
       || props.values.length != 1
       || props.values[0]) return;
 
-    const range = await app?.xhr({ url: 'api/range/' + props.attr.name }) as {
+    const response = await fetch('api/range/' + props.attr.name);
+    if (!response.ok) return;
+    
+    const range = await response.json() as {
       min: number;
       max: number;
       next: number;
     };
-    if (!range) return;
-    
     hint.value = range.min == range.max
       ? '> ' + range.min
       : '\u2209 (' + range.min + " - " + range.max + ')';
@@ -254,12 +255,10 @@
   
   // remove an image
   async function deleteBlob(index: number) {
-    const data = await app?.xhr({
+    const response = await fetch('api/blob/' + props.attr.name + '/' + index + '/' + props.meta.dn, {
       method: 'DELETE',
-      url:  'api/blob/' + props.attr.name + '/' + index + '/' + props.meta.dn,
-    }) as { changed: string[] };
-    
-    if (data) emit('reload-form', props.meta.dn, data.changed);
+    });
+    if (response.ok) emit('reload-form', props.meta.dn, [props.attr.name]);
   }
 </script>
 

@@ -9,9 +9,8 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, inject } from 'vue';
+  import { ref } from 'vue';
   import Modal from '../ui/Modal.vue';
-  import type { Provided } from "../Provided";
 
   const props = defineProps({
       dn: { type: String, required: true },
@@ -22,7 +21,6 @@
       modal: String,
       returnTo: String,
     }),
-    app = inject<Provided>('app'),
     upload = ref<HTMLInputElement | null>(null),
     emit = defineEmits(['ok', 'update:modal']);
 
@@ -33,16 +31,14 @@
     
     const fd = new FormData();
     fd.append('blob', target.files[0])
-    const data = await app?.xhr({
-      url:  'api/blob/' + props.attr + '/0/' + props.dn,
+    const response = await fetch('api/blob/' + props.attr + '/0/' + props.dn, {
       method: 'PUT',
-      data: fd,
-      binary: true,
-    }) as { changed: string[] };
-
-    if (data) {
+      body: fd,
+    });
+    
+    if (response.ok) {
       emit('update:modal');
-      emit('ok', props.dn, data.changed);
+      emit('ok', props.dn, [props.attr]);
     }
   }
 </script>

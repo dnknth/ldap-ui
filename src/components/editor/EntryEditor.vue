@@ -50,10 +50,10 @@
     </nav>
     
     <form id="entry" class="space-y-4 my-4" @submit.prevent="save"
-        @reset="load(entry.meta.dn, undefined, undefined)" @focusin="onFocus">
+        @reset="load(entry!.meta.dn, undefined, undefined)" @focusin="onFocus">
       <attribute-row v-for="key in keys" :key="key" :base-dn="props.baseDn"
         :attr="app?.schema?.attr(key)!" :meta="entry.meta" :values="entry.attrs[key]"
-        :changed="entry.changed?.includes(key) || false"
+        :changed="hasChanged(key)"
         :may="attributes('may').includes(key)" :must="attributes('must').includes(key)"
         @update="updateRow"
         @reload-form="load"
@@ -98,7 +98,6 @@
   import PasswordChangeDialog from './PasswordChangeDialog.vue';
   import type { Provided } from '../Provided';
   import RenameEntryDialog from './RenameEntryDialog.vue';
-  import { request } from '../../request';
 
   function unique(element: unknown, index: number, array: Array<unknown>): boolean {
     return array.indexOf(element) == index;
@@ -219,14 +218,20 @@
       return;
     }
 
-    entry.value = await app?.xhr({ url: 'api/entry/' + dn }) as Entry;
-    if (!entry.value) return;
+    const response = await fetch('api/entry/' + dn)
+    if (!response.ok) return;
+    entry.value = await response.json() as Entry;
 
-    entry.value!.changed = changed || [];
-    entry.value!.meta.isNew = false;
+    entry.value.changed = changed || [];
+    entry.value.meta.isNew = false;
 
     document.title = dn.split(',')[0];
     focus(focused);
+  }
+
+  function hasChanged(key: string) {
+    console.log(entry.value?.changed);
+    return entry.value?.changed && entry.value.changed.includes(key) || false
   }
 
   // Submit the entry form via AJAX
@@ -237,14 +242,17 @@
     }
 
     entry.value!.changed = [];
-    const data = await app?.xhr({
-      url:  'api/entry/' + entry.value!.meta.dn,
+    const response = await fetch('api/entry/' + entry.value!.meta.dn, {
       method: entry.value!.meta.isNew ? 'PUT' : 'POST',
-      data: JSON.stringify(entry.value!.attrs),
-    }) as { changed: string[] };
-
-    if (!data) return;
+      body: JSON.stringify(entry.value!.attrs),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
     
+    if (!response.ok) return;
+    
+    const data = await response.json() as { changed: string[] };
     if (data.changed && data.changed.length) {
       app?.showInfo('👍 Saved changes');
     }
@@ -256,13 +264,15 @@
   }
 
   async function renameEntry(rdn: string) {
-    await app?.xhr({
-      url: 'api/rename',
+    await fetch('api/rename', {
       method: 'POST',
-      data: JSON.stringify({
+      body: JSON.stringify({
         dn:  entry.value!.meta.dn,
         rdn: rdn
       }),
+      headers: {
+        "Content-Type": "application/json",
+      },
     });
 
     const dnparts = entry.value!.meta.dn.split(',');
@@ -271,18 +281,23 @@
   }
 
   async function deleteEntry(dn: string) {
-    if (await app?.xhr({ url: 'api/entry/' + dn, method: 'DELETE' }) !== undefined) {
+    const response = await fetch('api/entry/' + dn, { method: 'DELETE' });
+    if (response.ok && await response.json() !== undefined) {
       app?.showInfo('Deleted: ' + dn);
       emit('update:activeDn', '-' + dn);
     }
   }
 
   async function changePassword(oldPass: string, newPass: string) {
-    const data = await app?.xhr({
-      url: 'api/entry/password/' + entry.value!.meta.dn,
+    const response = await fetch('api/entry/password/' + entry.value!.meta.dn, {
       method: 'POST',
-      data: JSON.stringify({ old: oldPass, new1: newPass }),
-    }) as string;
+      body: JSON.stringify({ old: oldPass, new1: newPass }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    
+    const data = await response.json() as string;
 
     if (data !== undefined) {
       entry.value!.attrs.userPassword = [ data ];
@@ -292,13 +307,11 @@
 
   // Download LDIF
   async function ldif() {
-    const data = await request({
-      url: 'api/ldif/' + entry.value!.meta.dn,
-      responseType: 'blob' });
-    if (!data) return;
+    const response = await fetch('api/ldif/' + entry.value!.meta.dn);
+    if (!response.ok) return;
 
     const a = document.createElement("a"),
-        url = URL.createObjectURL(data.response);
+        url = URL.createObjectURL(await response.blob());
     a.href = url;
     a.download = entry.value!.meta.dn.split(',')[0].split('=')[1] + '.ldif';
     document.body.appendChild(a);

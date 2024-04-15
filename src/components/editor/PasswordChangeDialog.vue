@@ -20,9 +20,8 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, inject, ref } from 'vue';
+  import { computed, ref } from 'vue';
   import Modal from '../ui/Modal.vue';
-  import type { Provided } from '../Provided';
 
   const props = defineProps({
       entry: { type: Object, required: true },
@@ -31,7 +30,6 @@
       user: String,
     }),
 
-    app = inject<Provided>('app'),
     oldPassword = ref(''),
     newPassword = ref(''),
     repeated = ref(''),
@@ -65,11 +63,15 @@
       passwordOk.value = undefined;
       return;
     }
-    passwordOk.value = await app?.xhr({
-      url: 'api/entry/password/' + props.entry.meta.dn,
+    const response = await fetch('api/entry/password/' + props.entry.meta.dn, {
       method: 'POST',
-      data: JSON.stringify({ check: oldPassword.value }),
-    }) as boolean;
+      body: JSON.stringify({ check: oldPassword.value }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    
+    passwordOk.value = await response.json() as boolean;
   }
 
   async function onOk() {

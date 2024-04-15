@@ -45,8 +45,6 @@
   import NavBar from './components/NavBar.vue';
   import ObjectClassCard from './components/schema/ObjectClassCard.vue';
   import type { Provided } from './components/Provided';
-  import { request } from './request';
-  import type { Options } from './request';
   import TreeView from './components/TreeView.vue';
 
   interface Error {
@@ -76,36 +74,30 @@
     // Helpers for components
     provided: Provided = {
       get schema() { return schema.value; },
-      showInfo: showInfo,
-      showWarning: showWarning,
-      xhr: xhr,
+      showInfo,
+      showException,
+      showWarning,
     };
 
   provide('app', provided);
 
   onMounted(async () => { // Runs on page load
     // Get the DN of the current user
-    user.value = await xhr({ url: 'api/whoami'});
+    const whoamiResponse = await fetch('api/whoami');
+    if (whoamiResponse.ok) {
+      user.value = await whoamiResponse.json();
+    }
 
     // Load the schema
-    schema.value = new LdapSchema(await xhr({ url: 'api/schema' }));
+    const schemaResponse = await fetch('api/schema');
+    if (schemaResponse.ok) {
+      schema.value = new LdapSchema(await schemaResponse.json());
+    }
   });
 
   watch(attr, (a) => { if (a) oc.value = undefined; });
   watch(oc, (o) => { if (o) attr.value = undefined; });
 
-  function xhr(options: Options) {
-    if (options.data && !options.binary) {
-      if (!options.headers) options.headers = {}
-      if (!options.headers['Content-Type']) {
-        options.headers['Content-Type'] = 'application/json; charset=utf-8';
-      }
-    }
-    return request(options)
-      .then(xhr => JSON.parse(xhr.response))
-      .catch(xhr => showException(xhr.response || "Unknown error"));
-  }
-  
   // Display an info popup
   function showInfo(msg: string) {
     error.value = { counter: 5, cssClass: 'bg-emerald-300', msg: '' + msg };

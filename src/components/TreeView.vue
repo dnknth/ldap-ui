@@ -21,9 +21,8 @@
 
 <script setup lang="ts">
   import { DN } from './schema/schema';
-  import { inject, onMounted, ref, watch } from 'vue';
+  import { onMounted, ref, watch } from 'vue';
   import NodeLabel from './NodeLabel.vue';
-  import type { Provided } from './Provided';
   import type { TreeNode } from './TreeNode';
 
   class Node implements TreeNode {
@@ -85,7 +84,6 @@
   const props = defineProps({
       activeDn: String,
     }),
-    app = inject<Provided>('app'),
     tree = ref<Node>(),
     emit = defineEmits(['base-dn', 'update:activeDn']);
 
@@ -134,23 +132,25 @@
     emit('update:activeDn', dn);
   }
 
-      // Reload the subtree at entry with given DN
+  // Reload the subtree at entry with given DN
   async function reload(dn: string) {
-    const response = await app?.xhr({ url: 'api/tree/' + dn }) as Node[] || [];
-    response.sort((a: Node, b: Node) => a.dn.toLowerCase().localeCompare(b.dn.toLowerCase()));
+    const response = await fetch('api/tree/' + dn);
+    if (!response.ok) return;
+
+    const data = await response.json() as Node[];
+    data.sort((a: Node, b: Node) => a.dn.toLowerCase().localeCompare(b.dn.toLowerCase()));
 
     if (dn == 'base') {
-      tree.value = new Node(response[0]);
+      tree.value = new Node(data[0]);
       await toggle(tree.value);
       return;
     }
 
     const item = tree.value?.find(dn);
     if (item) {
-      item.subordinates = response.map(node => new Node(node));
+      item.subordinates = data.map(node => new Node(node));
       item.hasSubordinates = item.subordinates.length > 0;
     }
-    return response;
   }
 
   // Hide / show tree elements
