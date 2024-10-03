@@ -219,7 +219,10 @@
     }
 
     const response = await fetch('api/entry/' + dn)
-    if (!response.ok) return;
+    if (!response.ok) {
+      app?.showError(await response.text())
+      return;
+    }
     entry.value = await response.json() as Entry;
 
     entry.value.changed = changed || [];
@@ -230,7 +233,6 @@
   }
 
   function hasChanged(key: string) {
-    console.log(entry.value?.changed);
     return entry.value?.changed && entry.value.changed.includes(key) || false
   }
 
@@ -250,7 +252,10 @@
       },
     });
     
-    if (!response.ok) return;
+    if (!response.ok) {
+      app?.showError(await response.text())
+      return;
+    }
     
     const data = await response.json() as { changed: string[] };
     if (data.changed && data.changed.length) {
@@ -264,16 +269,17 @@
   }
 
   async function renameEntry(rdn: string) {
-    await fetch('api/rename', {
+    const response = await fetch('api/rename/' + entry.value!.meta.dn, {
       method: 'POST',
-      body: JSON.stringify({
-        dn:  entry.value!.meta.dn,
-        rdn: rdn
-      }),
+      body: JSON.stringify(rdn),
       headers: {
         "Content-Type": "application/json",
       },
     });
+    if (!response.ok) {
+      app?.showError(await response.text())
+      return;
+    }
 
     const dnparts = entry.value!.meta.dn.split(',');
     dnparts.splice(0, 1, rdn);
@@ -282,8 +288,12 @@
 
   async function deleteEntry(dn: string) {
     const response = await fetch('api/entry/' + dn, { method: 'DELETE' });
-    if (response.ok && await response.json() !== undefined) {
-      app?.showInfo('Deleted: ' + dn);
+    if (!response.ok) {
+      app?.showError(await response.text())
+      return;
+    }
+    else if (response.status == 204) {
+      app?.showInfo('👍 Deleted: ' + dn);
       emit('update:activeDn', '-' + dn);
     }
   }
@@ -296,6 +306,10 @@
         "Content-Type": "application/json",
       },
     });
+    if (!response.ok) {
+      app?.showError(await response.text())
+      return;
+    }
     
     const data = await response.json() as string;
 
@@ -308,7 +322,10 @@
   // Download LDIF
   async function ldif() {
     const response = await fetch('api/ldif/' + entry.value!.meta.dn);
-    if (!response.ok) return;
+    if (!response.ok) {
+      app?.showError(await response.text())
+      return;
+    }
 
     const a = document.createElement("a"),
         url = URL.createObjectURL(await response.blob());

@@ -1,3 +1,5 @@
+httpx
 python-ldap
-python-dotenv
-Quart
+python-multipart
+starlette
+uvicorn

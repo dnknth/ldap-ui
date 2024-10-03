@@ -7,12 +7,10 @@
 </template>
 
 <script setup lang="ts">
-  import { inject, ref } from 'vue';
+  import { ref } from 'vue';
   import Modal from './ui/Modal.vue';
-  import type { Provided } from './Provided';
-
+  
   const
-    app = inject<Provided>('app'),
     ldifData = ref(''),
     emit = defineEmits(['ok', 'update:modal']);
 

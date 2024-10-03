@@ -75,6 +75,7 @@
     provided: Provided = {
       get schema() { return schema.value; },
       showInfo,
+      showError,
       showException,
       showWarning,
     };

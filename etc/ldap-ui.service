@@ -1,17 +1,25 @@
 [Unit]
 Description=ldapui
-After=network.target auditd.service
+After=network.target auditd.service slapd.service
+# https://stackoverflow.com/a/47216959
+BindsTo=slapd.service
 
 [Service]
 WorkingDirectory=/opt/ldap-ui
 Environment="BASE_DN=dc=example,dc=com"
-ExecStart=/opt/ldap-ui/.venv3/bin/hypercorn -b 127.0.0.1:5000 app:app
+ExecStart=/opt/ldap-ui/.venv3/bin/uvicorn --port 5000 app:app
 Type=simple
 User=www-data
 Group=www-data
 Restart=always
 StandardOutput=null
 StandardError=null
+
+# Sandbox
+ProtectHome=true
+ProtectSystem=strict
+SystemCallFilter=@system-service
+NoNewPrivileges=true
 
 [Install]
 WantedBy=multi-user.target

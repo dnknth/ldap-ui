@@ -3,11 +3,10 @@
 TAG = latest-$(subst aarch64,arm64,$(shell uname -m))
 
 debug: app.py settings.py .env .venv3 dist
-	QUART_APP=$< QUART_ENV=development \
-		.venv3/bin/python3 .venv3/bin/quart run
+	.venv3/bin/python3 .venv3/bin/uvicorn --reload --port 5000 app:app
 
 run: app.py settings.py .env .venv3 dist
-	.venv3/bin/hypercorn -b 0.0.0.0:5000 --access-logfile - app:app
+	.venv3/bin/uvicorn --host 0.0.0.0 --port 5000 app:app
 
 .env: env.example
 	cp $< $@
