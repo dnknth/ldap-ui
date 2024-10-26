@@ -7,7 +7,7 @@ BindsTo=slapd.service
 [Service]
 WorkingDirectory=/opt/ldap-ui
 Environment="BASE_DN=dc=example,dc=com"
-ExecStart=/opt/ldap-ui/.venv3/bin/uvicorn --port 5000 app:app
+ExecStart=/opt/ldap-ui/.venv3/bin/ldap-ui
 Type=simple
 User=www-data
 Group=www-data

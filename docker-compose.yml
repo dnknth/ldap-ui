@@ -1,33 +1,33 @@
 services:
+  ldap:
+    image: dnknth/ldap-demo
+    ports:
+      - 127.0.0.1:389:389
+      - 127.0.0.1:636:636
+    restart: unless-stopped
+    healthcheck:
+      test: "ldapsearch -x -b dc=flintstones,dc=com cn > /dev/null"
+      interval: 30s
+      retries: 2
+      timeout: 2s
 
-    ldap:
-        image: dnknth/ldap-demo
-        ports:
-            - 127.0.0.1:389:389
-            - 127.0.0.1:636:636
-        restart: unless-stopped
-        healthcheck:
-            test: "ldapsearch -x -b dc=flintstones,dc=com cn > /dev/null"
-            interval: 30s
-            retries: 2
-            timeout: 2s
-
-    ldap-ui:
-        image: dnknth/ldap-ui
-        ports:
-            - 127.0.0.1:5000:5000
-        links:
-          - ldap
-        environment:
-            LDAP_URL: "${LDAP_URL:-ldap://ldap/}"
-            USE_TLS: ${USE_TLS:-}
-            INSECURE_TLS: ${INSECURE_TLS:-}
-            BASE_DN: "${BASE_DN:-dc=flintstones,dc=com}"
-            BIND_DN: "${BIND_DN:-cn=Fred Flintstone,ou=People,dc=flintstones,dc=com}"
-            BIND_PASSWORD: "${BIND_PASSWORD:-yabbadabbado}"
-        restart: unless-stopped
-        healthcheck:
-            test: "wget -q -O /dev/null http://127.0.0.1:5000"
-            interval: 30s
-            retries: 2
-            timeout: 2s
+  ldap-ui:
+    image: dnknth/ldap-ui
+    build: .
+    ports:
+      - 127.0.0.1:5000:5000
+    links:
+      - ldap
+    environment:
+      LDAP_URL: "${LDAP_URL:-ldap://ldap/}"
+      USE_TLS: ${USE_TLS:-}
+      INSECURE_TLS: ${INSECURE_TLS:-}
+      BASE_DN: "${BASE_DN:-dc=flintstones,dc=com}"
+      BIND_DN: "${BIND_DN:-cn=Fred Flintstone,ou=People,dc=flintstones,dc=com}"
+      BIND_PASSWORD: "${BIND_PASSWORD:-yabbadabbado}"
+    restart: unless-stopped
+    healthcheck:
+      test: "wget -q -O /dev/null http://127.0.0.1:5000"
+      interval: 30s
+      retries: 2
+      timeout: 2s

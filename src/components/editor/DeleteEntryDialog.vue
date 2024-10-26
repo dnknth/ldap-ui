@@ -1,7 +1,6 @@
 <template>
-  <modal title="Are you sure?" :open="modal == 'delete-entry'" :return-to="returnTo"
-    cancel-classes="bg-primary/80" ok-classes="bg-danger/80"
-    @show="init" @shown="onShown" @ok="onOk" @cancel="emit('update:modal')">
+  <modal title="Are you sure?" :open="modal == 'delete-entry'" :return-to="returnTo" cancel-classes="bg-primary/80"
+    ok-classes="bg-danger/80" @show="init" @shown="onShown" @ok="onOk" @cancel="emit('update:modal')">
 
     <p class="strong">This action is irreversible.</p>
 
@@ -22,31 +21,31 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue';
-  import Modal from '../ui/Modal.vue';
-  import NodeLabel from '../NodeLabel.vue';
-  import type { TreeNode } from '../TreeNode';
+import { ref } from 'vue';
+import Modal from '../ui/Modal.vue';
+import NodeLabel from '../NodeLabel.vue';
+import type { TreeNode } from '../TreeNode';
 
-  const props = defineProps({
-      dn: { type: String, required: true },
-      modal: String,
-      returnTo: String,
-    }),
-    subtree = ref<TreeNode[]>([]),
-    emit = defineEmits(['ok', 'update:modal']);
+const props = defineProps({
+  dn: { type: String, required: true },
+  modal: String,
+  returnTo: String,
+}),
+  subtree = ref<TreeNode[]>([]),
+  emit = defineEmits(['ok', 'update:modal']);
 
-  // List subordinate elements to be deleted
-  async function init() {
-    const response = await fetch('api/subtree/' + props.dn)
-    subtree.value = await response.json() as TreeNode[];
-  }
+// List subordinate elements to be deleted
+async function init() {
+  const response = await fetch('api/subtree/' + props.dn)
+  subtree.value = await response.json() as TreeNode[];
+}
 
-  function onShown() {
-    document.getElementById('ui-modal-ok')?.focus();
-  }
+function onShown() {
+  document.getElementById('ui-modal-ok')?.focus();
+}
 
-  function onOk() {
-    emit('update:modal');
-    emit('ok', props.dn);
-  }
+function onOk() {
+  emit('update:modal');
+  emit('ok', props.dn);
+}
 </script>

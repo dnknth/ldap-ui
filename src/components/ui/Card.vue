@@ -3,8 +3,7 @@
     <slot name="header">
       <div class="py-2 border-b border-front/20">
         <strong class="pl-6">{{ title }}</strong>
-        <span class="control text-l float-right mr-2 pl-2" title="close"
-          @click="emit('close')">⊗
+        <span class="control text-l float-right mr-2 pl-2" title="close" @click="emit('close')">⊗
         </span>
       </div>
     </slot>
@@ -15,9 +14,9 @@
 </template>
 
 <script setup lang="ts">
-  defineProps({
-    title: { type: String, required: true },
-  });
+defineProps({
+  title: { type: String, required: true },
+});
 
-  const emit = defineEmits(['close']);
+const emit = defineEmits(['close']);
 </script>

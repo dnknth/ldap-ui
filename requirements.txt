@@ -1,5 +1,0 @@
-httpx
-python-ldap
-python-multipart
-starlette
-uvicorn

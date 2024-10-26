@@ -9,7 +9,7 @@ Asynchronous LDAP operations are used as much as possible.
 
 import base64
 import io
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, Union
 
 import ldap
 import ldif
@@ -17,21 +17,22 @@ from ldap.ldapobject import LDAPObject
 from ldap.modlist import addModlist, modifyModlist
 from ldap.schema import SubSchema
 from ldap.schema.models import AttributeType, LDAPSyntax, ObjectClass
+from pydantic import BaseModel, Field, TypeAdapter
 from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
 from starlette.routing import Router
 
-import settings
-from ldap_helpers import (
+from . import settings
+from .ldap_helpers import (
     WITH_OPERATIONAL_ATTRS,
     empty,
     get_entry_by_dn,
     ldap_connect,
     result,
 )
-from schema import frontend_schema
+from .schema import frontend_schema
 
 __all__ = ("api",)
 
@@ -144,6 +145,9 @@ def _entry(schema: SubSchema, res: Tuple[str, Any]) -> dict[str, Any]:
     }
 
 
+Entry = TypeAdapter(dict[str, list[bytes]])
+
+
 @api.route("/entry/{dn}", methods=("GET", "POST", "DELETE", "PUT"))
 async def entry(request: Request) -> Response:
     "Edit directory entries"
@@ -164,9 +168,9 @@ async def entry(request: Request) -> Response:
         return NO_CONTENT
 
     # Copy JSON payload into a dictionary of non-empty byte strings
-    json = await request.json()
+    json = Entry.validate_json(await request.body())
     req = {
-        k: [s.encode() for s in filter(None, v)]
+        k: [s for s in filter(None, v)]
         for k, v in json.items()
         if k not in PHOTOS and (k not in PASSWORDS or request.method == "PUT")
     }
@@ -277,8 +281,14 @@ async def ldifUpload(
     "Import LDIF"
 
     reader = LDIFReader(await request.body(), request.state.ldap)
-    reader.parse()
-    return NO_CONTENT
+    try:
+        reader.parse()
+        return NO_CONTENT
+    except ValueError as e:
+        return Response(e.args[0], status_code=422)
+
+
+Rdn = TypeAdapter(str)
 
 
 @api.route("/rename/{dn}", methods=("POST",))
@@ -286,16 +296,22 @@ async def rename(request: Request) -> JSONResponse:
     "Rename an entry"
 
     dn = request.path_params["dn"]
-    rdn = await request.json()
+    rdn = Rdn.validate_json(await request.body())
     connection = request.state.ldap
     await empty(connection, connection.rename(dn, rdn, delold=0))
     return NO_CONTENT
 
 
-def _cn(entry: dict) -> Optional[str]:
-    "Try to extract a CN"
-    if "cn" in entry and entry["cn"]:
-        return entry["cn"][0].decode()
+class ChangePasswordRequest(BaseModel):
+    old: str
+    new1: str
+
+
+class CheckPasswordRequest(BaseModel):
+    check: str = Field(min_length=1)
+
+
+PasswordRequest = TypeAdapter(Union[ChangePasswordRequest, CheckPasswordRequest])
 
 
 @api.route("/entry/password/{dn}", methods=("POST",))
@@ -303,22 +319,22 @@ async def passwd(request: Request) -> JSONResponse:
     "Update passwords"
 
     dn = request.path_params["dn"]
-    args = await request.json()
+    args = PasswordRequest.validate_json(await request.body())
 
-    if "check" in args:
+    if type(args) is CheckPasswordRequest:
         with ldap_connect() as con:
             try:
-                con.simple_bind_s(dn, args["check"])
+                con.simple_bind_s(dn, args.check)
                 return JSONResponse(True)
             except ldap.INVALID_CREDENTIALS:
                 return JSONResponse(False)
 
-    if "old" in args and "new1" in args:
+    else:
         connection = request.state.ldap
-        if args["new1"]:
+        if args.new1:
             await empty(
                 connection,
-                connection.passwd(dn, args.get("old") or None, args["new1"]),
+                connection.passwd(dn, args.old or None, args.new1),
             )
             _dn, attrs = await get_entry_by_dn(connection, dn)
             return JSONResponse(attrs["userPassword"][0].decode())
@@ -326,6 +342,12 @@ async def passwd(request: Request) -> JSONResponse:
         else:
             await empty(connection, connection.modify(dn, [(1, "userPassword", None)]))
             return JSONResponse(None)
+
+
+def _cn(entry: dict) -> Optional[str]:
+    "Try to extract a CN"
+    if "cn" in entry and entry["cn"]:
+        return entry["cn"][0].decode()
 
 
 @api.route("/search/{query:path}")

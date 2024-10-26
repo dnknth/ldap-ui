@@ -18,7 +18,7 @@ from anyio import sleep
 from ldap.ldapobject import LDAPObject
 from starlette.exceptions import HTTPException
 
-import settings
+from . import settings
 
 __all__ = (
     "empty",

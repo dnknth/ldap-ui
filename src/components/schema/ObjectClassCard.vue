@@ -1,7 +1,7 @@
 <template>
   <card v-if="modelValue && oc" :title="oc.name || ''" class="ml-4" @close="emit('update:modelValue')">
     <div class="header">{{ oc.desc }}</div>
-    
+
     <div v-if="oc.sup?.length" class="mt-2"><i>Superclasses:</i>
       <ul class="list-disc">
         <li v-for="name in oc.sup" :key="name">
@@ -30,12 +30,12 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, inject } from 'vue';
-  import Card from '../ui/Card.vue';
-  import type { Provided } from '../Provided';
+import { computed, inject } from 'vue';
+import Card from '../ui/Card.vue';
+import type { Provided } from '../Provided';
 
-  const props = defineProps({ modelValue: String }),
-    app = inject<Provided>('app'),
-    oc = computed(() => app?.schema?.oc(props.modelValue)),
-    emit = defineEmits(['show-attr', 'show-oc', 'update:modelValue']);
+const props = defineProps({ modelValue: String }),
+  app = inject<Provided>('app'),
+  oc = computed(() => app?.schema?.oc(props.modelValue)),
+  emit = defineEmits(['show-attr', 'show-oc', 'update:modelValue']);
 </script>

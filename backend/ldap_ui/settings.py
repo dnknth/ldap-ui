@@ -14,7 +14,7 @@ SECRET_KEY = os.urandom(16)
 # LDAP settings
 #
 LDAP_URL = config("LDAP_URL", default="ldap:///")
-BASE_DN = config("BASE_DN")  # Always required
+BASE_DN = config("BASE_DN", default=None)
 
 USE_TLS = config(
     "USE_TLS",

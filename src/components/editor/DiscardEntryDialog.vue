@@ -1,7 +1,6 @@
 <template>
-  <modal title="Are you sure?" :open="modal == 'discard-entry'" :return-to="returnTo"
-    cancel-classes="bg-primary/80" ok-classes="bg-danger/80"
-    @show="next = dn;" @shown="onShown" @ok="onOk" @cancel="emit('update:modal')">
+  <modal title="Are you sure?" :open="modal == 'discard-entry'" :return-to="returnTo" cancel-classes="bg-primary/80"
+    ok-classes="bg-danger/80" @show="next = dn;" @shown="onShown" @ok="onOk" @cancel="emit('update:modal')">
 
     <p class="strong">All changes will be irreversibly lost.</p>
 
@@ -12,26 +11,26 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue';
-  import Modal from '../ui/Modal.vue';
+import { ref } from 'vue';
+import Modal from '../ui/Modal.vue';
 
-  defineProps({
-      dn: String,
-      modal: String,
-      returnTo: String,
-  });
+defineProps({
+  dn: String,
+  modal: String,
+  returnTo: String,
+});
 
-  const
-    next = ref<string>(),
-    emit = defineEmits(['ok', 'shown', 'update:modal']);
+const
+  next = ref<string>(),
+  emit = defineEmits(['ok', 'shown', 'update:modal']);
 
-  function onShown() {
-    document.getElementById('ui-modal-ok')?.focus();
-    emit('shown');
-  }
+function onShown() {
+  document.getElementById('ui-modal-ok')?.focus();
+  emit('shown');
+}
 
-  function onOk() {
-    emit('update:modal');
-    emit('ok', next.value);
-  }
+function onOk() {
+  emit('update:modal');
+  emit('ok', next.value);
+}
 </script>

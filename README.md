@@ -1,8 +1,8 @@
-# Simple LDAP editor
+# Fast and versatile LDAP editor
 
 This is a *minimal* web interface for LDAP directories. Docker images for `linux/amd64` and `linux/arm64/v8` are [available](https://hub.docker.com/r/dnknth/ldap-ui).
 
-![Screenshot](screenshot.png?raw=true)
+![Screenshot](https://github.com/dnknth/ldap-ui/blob/main/screenshot.png?raw=true)
 
 Features:
 
@@ -19,68 +19,88 @@ The app always requires authentication, even if the directory permits anonymous 
 
 ## Usage
 
-### Docker
-
-For the impatient: Run it with
-
-    docker run -p 127.0.0.1:5000:5000 \
-      -e LDAP_URL=ldap://your.ldap.server/ \
-      -e BASE_DN=dc=example,dc=org dnknth/ldap-ui
-
-For the even more impatient with `X86_64` machines: Start a demo with
-
-    docker compose up -d
-
-and go to [http://localhost:5000/](http://localhost:5000/). You are automatically logged in as `Fred Flintstone`.
-
-#### Environment variables
+### Environment variables
 
 LDAP access is controlled by these environment variables, possibly from a `.env` file:
 
-* `LDAP_URL` (optional): Connection URL, defaults to `ldap:///`).
+* `LDAP_URL` (optional): Connection URL, defaults to `ldap:///`.
 * `BASE_DN` (required): Search base, e.g. `dc=example,dc=org`.
 * `LOGIN_ATTR` (optional): User name attribute, defaults to `uid`.
 
 * `USE_TLS` (optional): Enable TLS, defaults to true for `ldaps` connections. Set it to a non-empty string to force `STARTTLS` on `ldap` connections.
 * `INSECURE_TLS` (optional): Do not require a valid server TLS certificate, defaults to false, implies `USE_TLS`.
- 
-For finer-grained control, adjust [settings.py](settings.py).
 
-### Standalone
+For finer-grained control, see [settings.py](settings.py).
 
-Copy [env.example](env.example) to `.env`, adjust it and run the app with
+### Docker
 
-    make run
+For the impatient: Run it with
 
-then head over to [http://localhost:5000/](http://localhost:5000/).
+```shell
+docker run -p 127.0.0.1:5000:5000 \
+    -e LDAP_URL=ldap://your.ldap.server/ \
+    -e BASE_DN=dc=example,dc=org dnknth/ldap-ui
+```
 
-## Manual installation and configuration
+For the even more impatient: Start a demo with
+
+```shell
+docker compose up -d
+```
+
+and go to <http://localhost:5000/>. You are automatically logged in as `Fred Flintstone`.
+
+### Pip
+
+Install the `python-ldap` dependency with your system's package manager.
+Otherwise, Pip will try to compile it from source and this will likely fail because it lacks a development environment.
+
+Then install `ldap-ui` in a virtual environment:
+
+```shell
+python3 -m venv --system-site-packages venv
+. venv/bin/activate
+pip3 install ldap-ui
+```
+
+Possibly after a shell `rehash`, it is available as `ldap-ui`:
+
+```text
+Usage: ldap-ui [OPTIONS]
+
+Options:
+  -b, --base-dn TEXT              LDAP base DN. Required unless the BASE_DN
+                                  environment variable is set.
+  -h, --host TEXT                 Bind socket to this host.  [default:
+                                  127.0.0.1]
+  -p, --port INTEGER              Bind socket to this port. If 0, an available
+                                  port will be picked.  [default: 5000]
+  -l, --log-level [critical|error|warning|info|debug|trace]
+                                  Log level. [default: info]
+  --version                       Display the current version and exit.
+  --help                          Show this message and exit.
+```
+
+## Development
 
 Prerequisites:
 
 * [GNU make](https://www.gnu.org/software/make/)
-* [node.js](https://nodejs.dev) with NPM
+* [node.js](https://nodejs.dev) LTS version with NPM
 * [Python3](https://www.python.org) ≥ 3.7
 * [pip3](https://packaging.python.org/tutorials/installing-packages/)
 * [python-ldap](https://pypi.org/project/python-ldap/); To compile the Python module:
   * Debian / Ubuntu: `apt-get install libsasl2-dev python-dev libldap2-dev libssl-dev`
   * RedHat / CentOS: `yum install python-devel openldap-devel`
 
-`ldap-ui` consists of a Vue UI and a Python backend that roughly translates parts of the LDAP protocol as a stateless ReST API.
+`ldap-ui` consists of a Vue frontend and a Python backend that roughly translates a subset of the LDAP protocol to a stateless ReST API.
 
-For the frontend, `npm run build` assembles everything in the `dist` directory.
-The result can then be served either via the backend (during development) or statically by any web server (remotely).
+For the frontend, `npm run build` assembles everything in `backend/ldap_ui/statics`.
 
-The backend runs locally, always as a separate process. There is an example `systemd` unit in [etc/ldap-ui.service](etc/ldap-ui.service). Check the [Makefile](Makefile) on how to set up a virtual Python environment for it.
-
-Review the configuration in [settings.py](settings.py). It is very short and mostly self-explaining.
+Review the configuration in [settings.py](settings.py). It is short and mostly self-explaining.
 Most settings can (and should) be overridden by environment variables or settings in a `.env` file; see [env.demo](env.demo) or [env.example](env.example).
 
-The backend exposes port 5000 on localhost which is not reachable remotely. Therefore, for remote access, some web server configuration is needed.
-Let's assume that everything should show up under the HTP path `/ldap`:
-
-* The contents of `dist` should be statically served under `/ldap` by the web server.
-* The path `/ldap/api` should be proxied to http://localhost:5000/api
+The backend can be run locally with `make`, which will also install dependencies and build the frontend if needed.
 
 ## Notes
 
@@ -113,4 +133,4 @@ Additionally, arbitrary attributes can be searched with an LDAP filter specifica
 
 ## Acknowledgements
 
-The Python backend uses [Starlette](https://starlette.io). The UI is built with [Vue.js](https://vuejs.org) and [Tailwind](https://tailwindcss.com/) for CSS. Kudos for the authors of these elegant frameworks!
+The Python backend uses [Starlette](https://starlette.io). The UI is built with [Vue.js](https://vuejs.org) and [Tailwind CSS](https://tailwindcss.com/). Kudos to the authors of these elegant frameworks!

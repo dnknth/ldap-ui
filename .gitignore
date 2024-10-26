@@ -2,10 +2,13 @@
 .venv*
 .activate
 __pycache__
+*.egg-info
 
 .DS_Store
 node_modules
-/dist
+build
+dist
+statics
 
 # local env files
 .env*

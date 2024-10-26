@@ -11,10 +11,13 @@ No sessions, no cookies, nothing else.
 import base64
 import binascii
 import contextlib
+import logging
+import sys
 from typing import AsyncGenerator
 
 import ldap
 from ldap.schema import SubSchema
+from pydantic import ValidationError
 from starlette.applications import Starlette
 from starlette.authentication import (
     AuthCredentials,
@@ -32,9 +35,17 @@ from starlette.responses import PlainTextResponse, Response
 from starlette.routing import Mount
 from starlette.staticfiles import StaticFiles
 
-import settings
-from ldap_api import api
-from ldap_helpers import WITH_OPERATIONAL_ATTRS, empty, ldap_connect, unique
+from . import settings
+from .ldap_api import api
+from .ldap_helpers import WITH_OPERATIONAL_ATTRS, empty, ldap_connect, unique
+
+LOG = logging.getLogger("ldap-ui")
+
+if not settings.BASE_DN:
+    LOG.critical("An LDAP base DN is required!")
+    sys.exit(1)
+
+LOG.debug("Base DN: %s", settings.BASE_DN)
 
 # Force authentication
 UNAUTHORIZED = Response(
@@ -87,8 +98,10 @@ class LdapConnectionMiddleware(BaseHTTPMiddleware):
             return UNAUTHORIZED
 
         except ldap.LDAPError as err:
+            msg = ldap_exception_message(err)
+            LOG.error(msg)
             return PlainTextResponse(
-                ldap_exception_message(err),
+                msg,
                 status_code=500,
             )
 
@@ -103,7 +116,7 @@ def ldap_exception_message(exc: ldap.LDAPError) -> str:
 class LdapUser(SimpleUser):
     "LDAP credentials"
 
-    def __init__(self, username: str, password: str) -> None:
+    def __init__(self, username: str, password: str):
         super().__init__(username)
         self.password = password
 
@@ -143,9 +156,13 @@ class CacheBustingMiddleware(BaseHTTPMiddleware):
         return response
 
 
-async def http_exception(request: Request, exc: HTTPException):
+async def http_exception(_request: Request, exc: HTTPException) -> Response:
     "Send error responses"
     assert exc.status_code >= 400
+    if exc.status_code < 500:
+        LOG.warning(exc.detail)
+    else:
+        LOG.error(exc.detail)
     return PlainTextResponse(
         exc.detail,
         status_code=exc.status_code,
@@ -153,9 +170,15 @@ async def http_exception(request: Request, exc: HTTPException):
     )
 
 
-async def forbidden(request: Request, exc: ldap.LDAPError):
+async def forbidden(_request: Request, exc: ldap.LDAPError) -> Response:
     "HTTP 403 Forbidden"
     return PlainTextResponse(ldap_exception_message(exc), status_code=403)
+
+
+async def http_422(_request: Request, e: ValidationError) -> Response:
+    "HTTP 422 Unprocessable Entity"
+    LOG.warn("Invalid request body", exc_info=e)
+    return Response(repr(e), status_code=422)
 
 
 @contextlib.asynccontextmanager
@@ -180,6 +203,7 @@ app = Starlette(
     exception_handlers={
         HTTPException: http_exception,
         ldap.INSUFFICIENT_ACCESS: forbidden,
+        ValidationError: http_422,
     },
     lifespan=lifespan,
     middleware=(
@@ -190,6 +214,6 @@ app = Starlette(
     ),
     routes=[
         Mount("/api", routes=api.routes),
-        Mount("/", StaticFiles(directory="dist", html=True)),
+        Mount("/", StaticFiles(packages=["ldap_ui"], html=True)),
     ],
 )

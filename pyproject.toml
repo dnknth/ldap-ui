@@ -1,0 +1,46 @@
+[project]
+name = "ldap-ui"
+authors = [{ name = "dnknth" }]
+description = "A fast and versatile LDAP editor"
+readme = "README.md"
+license = {text = "MIT License"}
+requires-python = ">=3.7"
+keywords = ["ldap", "web-ui", "python3"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Libraries",
+]
+dependencies = [
+    "pydantic",
+    "python-ldap",
+    "python-multipart",
+    "starlette",
+    "uvicorn",
+]
+dynamic = [ "version" ]
+
+[project.scripts]
+ldap-ui = "ldap_ui.__main__:main"
+
+[project.urls]
+Repository = "https://github.com/dnknth/ldap-ui"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "backend"}
+
+[tool.setuptools.dynamic]
+version = {attr = "ldap_ui.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["backend"]
+
+[tool.setuptools.package-data]
+ldap_ui = ["statics/*", "statics/assets/*"]
