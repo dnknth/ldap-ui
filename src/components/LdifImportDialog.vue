@@ -1,45 +1,45 @@
 <template>
-  <modal title="Import" :open="modal == 'ldif-import'" ok-title="Import"
-    @show="init" @ok="onOk" @cancel="emit('update:modal')">
-      <textarea v-model="ldifData" id="ldif-data" placeholder="Paste or upload LDIF"></textarea>
-      <input type="file" @change="upload" accept=".ldif" />
+  <modal title="Import" :open="modal == 'ldif-import'" ok-title="Import" @show="init" @ok="onOk"
+    @cancel="emit('update:modal')">
+    <textarea v-model="ldifData" id="ldif-data" placeholder="Paste or upload LDIF"></textarea>
+    <input type="file" @change="upload" accept=".ldif" />
   </modal>
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue';
-  import Modal from './ui/Modal.vue';
-  
-  const
-    ldifData = ref(''),
-    emit = defineEmits(['ok', 'update:modal']);
+import { ref } from 'vue';
+import Modal from './ui/Modal.vue';
 
-  defineProps({ modal: String });
-  
-  function init() {
-    ldifData.value = '';
-  }
-  
-  // Load LDIF from file
-  function upload(evt: Event) {
-    const target = evt.target as HTMLInputElement,
-      files = target.files as FileList,
-      file = files[0],
-      reader = new FileReader();
+const
+  ldifData = ref(''),
+  emit = defineEmits(['ok', 'update:modal']);
 
-    reader.onload = function() {
-      ldifData.value = reader.result as string;
-      target.value = '';
-    }
-    reader.readAsText(file);
-  }
-  
-  // Import LDIF
-  async function onOk() {
-    if (!ldifData.value) return;
+defineProps({ modal: String });
 
-    emit('update:modal');
-    const response = await fetch( 'api/ldif', { method: 'POST', body: ldifData.value });
-    if (response.ok) emit('ok');
+function init() {
+  ldifData.value = '';
+}
+
+// Load LDIF from file
+function upload(evt: Event) {
+  const target = evt.target as HTMLInputElement,
+    files = target.files as FileList,
+    file = files[0],
+    reader = new FileReader();
+
+  reader.onload = function () {
+    ldifData.value = reader.result as string;
+    target.value = '';
   }
+  reader.readAsText(file);
+}
+
+// Import LDIF
+async function onOk() {
+  if (!ldifData.value) return;
+
+  emit('update:modal');
+  const response = await fetch('api/ldif', { method: 'POST', body: ldifData.value });
+  if (response.ok) emit('ok');
+}
 </script>

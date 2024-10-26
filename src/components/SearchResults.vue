@@ -1,84 +1,84 @@
 <template>
   <popover :open="show" @update:open="results = []">
-    <li v-for="item in results" :key="item.dn" @click="done(item.dn)"
-      :title="label == 'dn' ? '' : trim(item.dn)" role="menuitem">
-        {{ item[label as keyof Result] }}
+    <li v-for="item in results" :key="item.dn" @click="done(item.dn)" :title="label == 'dn' ? '' : trim(item.dn)"
+      role="menuitem">
+      {{ item[label as keyof Result] }}
     </li>
   </popover>
 </template>
 
 <script setup lang="ts">
-  import { computed, inject, nextTick, ref, watch } from 'vue';
-  import Popover from './ui/Popover.vue';
-  import type { Provided } from './Provided';
+import { computed, inject, nextTick, ref, watch } from 'vue';
+import Popover from './ui/Popover.vue';
+import type { Provided } from './Provided';
 
-  interface Result {
-    dn: string;
-    name: string;
-  }
+interface Result {
+  dn: string;
+  name: string;
+}
 
-  const props = defineProps({
-    query: {
-      type: String,
-      default: '',
-    },
-    for: String,
-    label: {
-      type: String,
-      default: 'name',
-      validator: (value: string) => ['name', 'dn' ].includes(value)
-    },
-    shorten: String,
-    silent: {
-      type: Boolean,
-      default: false,
-    },
-  }),
+const props = defineProps({
+  query: {
+    type: String,
+    default: '',
+  },
+  for: String,
+  label: {
+    type: String,
+    default: 'name',
+    validator: (value: string) => ['name', 'dn'].includes(value)
+  },
+  shorten: String,
+  silent: {
+    type: Boolean,
+    default: false,
+  },
+}),
 
   app = inject<Provided>('app'),
   results = ref<Result[]>([]),
   show = computed(() => props.query.trim() != ''
-        && results.value && results.value.length > 1),
+    && results.value && results.value.length > 1),
   emit = defineEmits(['select-dn']);
 
-  watch(() => props.query, async (q) => {
-    if (!q) return;
+watch(() => props.query, async (q) => {
+  if (!q) return;
 
-    const response = await fetch('api/search/' + q);
-    if (!response.ok) return;
-    results.value = await response.json() as Result[]
+  const response = await fetch('api/search/' + q);
+  if (!response.ok) return;
+  results.value = await response.json() as Result[]
 
-    if (results.value.length == 0 && !props.silent) {
-      app?.showWarning('No search results');
-      return;
+  if (results.value.length == 0 && !props.silent) {
+    app?.showWarning('No search results');
+    return;
+  }
+
+  if (results.value.length == 1) {
+    done(results.value[0].dn);
+    return;
+  }
+
+  results.value.sort((a: Result, b: Result) =>
+    a[props.label as keyof Result].toLowerCase().localeCompare(
+      b[props.label as keyof Result].toLowerCase()));
+});
+
+function trim(dn: string) {
+  return props.shorten && props.shorten != dn
+    ? dn.replace(props.shorten, '…') : dn;
+}
+
+// use an auto-completion choice
+function done(dn: string) {
+  emit('select-dn', dn);
+  results.value = [];
+
+  nextTick(() => {
+    // Return focus to search input
+    if (props.for) {
+      const el = document.getElementById(props.for);
+      if (el) el.focus();
     }
-
-    if (results.value.length == 1) {
-      done(results.value[0].dn);
-      return;
-    }
-
-    results.value.sort((a: Result, b: Result) =>
-      a[props.label as keyof Result].toLowerCase().localeCompare(
-        b[props.label as keyof Result].toLowerCase()));
   });
-
-  function trim(dn: string) {
-    return props.shorten && props.shorten != dn
-      ? dn.replace(props.shorten, '…') : dn;
-  }
-
-  // use an auto-completion choice
-  function done(dn: string) {
-    emit('select-dn', dn);
-    results.value = [];
-
-    nextTick(()=> {
-      // Return focus to search input
-      if (props.for) {
-        const el = document.getElementById(props.for);
-        if (el) el.focus();
-      }
-    });
-  }
+}
 </script>

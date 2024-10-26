@@ -14,9 +14,11 @@ export default defineConfig({
   base: './',
 
   build: {
-    manifest: true,
-    chunkSizeWarningLimit: 600
+    chunkSizeWarningLimit: 600,
+    outDir: 'backend/ldap_ui/statics'
   },
+
+  
 
   resolve: {
     alias: {

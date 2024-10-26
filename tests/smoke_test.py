@@ -1,9 +1,8 @@
 import unittest
 import warnings
 
+from ldap_ui.app import app
 from starlette.testclient import TestClient
-
-from app import app
 
 AUTH = ("admin", "bedrock")
 
