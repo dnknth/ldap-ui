@@ -71,14 +71,16 @@ class LdapConnectionMiddleware(BaseHTTPMiddleware):
 
                 # Search for basic auth user
                 if type(request.user) is LdapUser:
-                    dn, _attrs = await unique(
-                        connection,
-                        connection.search(
-                            settings.BASE_DN,
-                            ldap.SCOPE_SUBTREE,
-                            settings.GET_BIND_DN_FILTER(request.user.username),
-                        ),
-                    )
+                    dn = settings.GET_BIND_PATTERN(request.user.username)
+                    if dn is None:
+                        dn, _attrs = await unique(
+                            connection,
+                            connection.search(
+                                settings.BASE_DN,
+                                ldap.SCOPE_SUBTREE,
+                                settings.GET_BIND_DN_FILTER(request.user.username),
+                            ),
+                        )
                     password = request.user.password
 
                 # Hard-wired credentials
