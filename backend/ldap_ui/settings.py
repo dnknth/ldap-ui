@@ -39,11 +39,16 @@ def GET_BIND_DN(username) -> Optional[str]:
     if config("BIND_DN", default=None):
         return config("BIND_DN")
 
+    return GET_BIND_PATTERN(username)
+
+
+def GET_BIND_PATTERN(username) -> Optional[str]:
+    "Determine the bind pattern from the environment and request"
     # Optional user DN pattern string for authentication,
     # e.g. "uid=%s,ou=people,dc=example,dc=com".
     # This can be used to authenticate with directories
     # that do not allow anonymous users to search.
-    elif config("BIND_PATTERN", default=None) and username:
+    if config("BIND_PATTERN", default=None) and username:
         return config("BIND_PATTERN") % username
 
 
