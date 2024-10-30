@@ -13,6 +13,7 @@ import binascii
 import contextlib
 import logging
 import sys
+from http import HTTPStatus
 from typing import AsyncGenerator
 
 import ldap
@@ -49,8 +50,8 @@ LOG.debug("Base DN: %s", settings.BASE_DN)
 
 # Force authentication
 UNAUTHORIZED = Response(
-    "Invalid credentials",
-    status_code=401,
+    HTTPStatus.UNAUTHORIZED.phrase,
+    status_code=HTTPStatus.UNAUTHORIZED.value,
     headers={"WWW-Authenticate": 'Basic realm="Please log in", charset="UTF-8"'},
 )
 
@@ -71,17 +72,20 @@ class LdapConnectionMiddleware(BaseHTTPMiddleware):
 
                 # Search for basic auth user
                 if type(request.user) is LdapUser:
+                    password = request.user.password
                     dn = settings.GET_BIND_PATTERN(request.user.username)
                     if dn is None:
-                        dn, _attrs = await unique(
-                            connection,
-                            connection.search(
-                                settings.BASE_DN,
-                                ldap.SCOPE_SUBTREE,
-                                settings.GET_BIND_DN_FILTER(request.user.username),
-                            ),
-                        )
-                    password = request.user.password
+                        try:
+                            dn, _attrs = await unique(
+                                connection,
+                                connection.search(
+                                    settings.BASE_DN,
+                                    ldap.SCOPE_SUBTREE,
+                                    settings.GET_BIND_DN_FILTER(request.user.username),
+                                ),
+                            )
+                        except HTTPException:
+                            pass
 
                 # Hard-wired credentials
                 if dn is None:
@@ -104,7 +108,7 @@ class LdapConnectionMiddleware(BaseHTTPMiddleware):
             LOG.error(msg)
             return PlainTextResponse(
                 msg,
-                status_code=500,
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR.value,
             )
 
 
@@ -174,13 +178,16 @@ async def http_exception(_request: Request, exc: HTTPException) -> Response:
 
 async def forbidden(_request: Request, exc: ldap.LDAPError) -> Response:
     "HTTP 403 Forbidden"
-    return PlainTextResponse(ldap_exception_message(exc), status_code=403)
+    return PlainTextResponse(
+        ldap_exception_message(exc),
+        status_code=HTTPStatus.FORBIDDEN.value,
+    )
 
 
 async def http_422(_request: Request, e: ValidationError) -> Response:
     "HTTP 422 Unprocessable Entity"
     LOG.warn("Invalid request body", exc_info=e)
-    return Response(repr(e), status_code=422)
+    return Response(repr(e), status_code=HTTPStatus.UNPROCESSABLE_ENTITY.value)
 
 
 @contextlib.asynccontextmanager
@@ -215,7 +222,7 @@ app = Starlette(
         Middleware(GZipMiddleware, minimum_size=512, compresslevel=6),
     ),
     routes=[
-        Mount("/api", routes=api.routes),
+        Mount("/api", app=api),
         Mount("/", StaticFiles(packages=["ldap_ui"], html=True)),
     ],
 )

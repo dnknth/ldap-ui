@@ -9,6 +9,7 @@ Asynchronous LDAP operations are used as much as possible.
 
 import base64
 import io
+from http import HTTPStatus
 from typing import Any, Optional, Tuple, Union
 
 import ldap
@@ -37,7 +38,7 @@ from .schema import frontend_schema
 __all__ = ("api",)
 
 
-NO_CONTENT = Response(status_code=204)
+NO_CONTENT = Response(status_code=HTTPStatus.NO_CONTENT.value)
 
 # Special fields
 PHOTOS = ("jpegPhoto", "thumbnailPhoto")
