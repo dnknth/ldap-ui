@@ -9,7 +9,7 @@
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
-      "args": ["app:app", "--port", "5000", "--reload"]
+      "args": ["ldap_ui.app:app", "--port", "5000", "--reload"]
     }
   ]
 }

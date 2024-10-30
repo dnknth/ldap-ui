@@ -6,125 +6,155 @@ to determine how individual attributes should be presented
 to the user.
 """
 
-from typing import Any, Generator
+from enum import IntEnum
+from typing import Generator, Optional, Type, TypeVar, Union
 
 from ldap.schema import SubSchema
-from ldap.schema.models import AttributeType, LDAPSyntax, ObjectClass
+from ldap.schema.models import AttributeType, SchemaElement
+from ldap.schema.models import LDAPSyntax as LDAPSyntaxType
+from ldap.schema.models import ObjectClass as ObjectClassType
+from pydantic import BaseModel, Field, field_serializer
 
-__all__ = ("frontend_schema",)
+__all__ = ("frontend_schema", "Attribute", "ObjectClass")
 
-
-# Object class constants
-SCHEMA_OC_KIND = {
-    0: "structural",
-    1: "abstract",
-    2: "auxiliary",
-}
-
-# Attribute usage constants
-SCHEMA_ATTR_USAGE = {
-    0: "userApplications",
-    1: "directoryOperation",
-    2: "distributedOperation",
-    3: "dSAOperation",
-}
+T = TypeVar("T", bound=SchemaElement)
 
 
-def element(obj) -> dict:
-    "Basic information about an schema element"
+class Element(BaseModel):
+    "Common attributes od schema elements"
+
+    oid: str
+    name: str
+    names: list[str] = Field(min_length=1)
+    desc: Optional[str]
+    obsolete: bool
+    sup: list[str]  # TODO check
+
+
+def element(obj: Union[AttributeType, ObjectClassType]) -> Element:
     name = obj.names[0]
-    return {
-        "oid": obj.oid,
-        "name": name[:1].lower() + name[1:],
-        "names": obj.names,
-        "desc": obj.desc,
-        "obsolete": bool(obj.obsolete),
-        "sup": sorted(obj.sup),
-    }
-
-
-def object_class_dict(obj) -> dict:
-    "Additional information about an object class"
-    r = element(obj)
-    r.update(
-        {
-            "may": sorted(obj.may),
-            "must": sorted(obj.must),
-            "kind": SCHEMA_OC_KIND[obj.kind],
-        }
+    return Element(
+        oid=obj.oid,
+        name=name[:1].lower() + name[1:],
+        names=obj.names,
+        desc=obj.desc,
+        obsolete=bool(obj.obsolete),
+        sup=sorted(obj.sup),
     )
-    return r
 
 
-def attribute_dict(obj) -> dict:
-    "Additional information about an attribute"
-    r = element(obj)
-    r.update(
-        {
-            "single_value": bool(obj.single_value),
-            "no_user_mod": bool(obj.no_user_mod),
-            "usage": SCHEMA_ATTR_USAGE[obj.usage],
-            # FIXME avoid null values below
-            "equality": obj.equality,
-            "syntax": obj.syntax,
-            "substr": obj.substr,
-            "ordering": obj.ordering,
-        }
-    )
-    return r
+class ObjectClass(Element):
+    class Kind(IntEnum):
+        structural = 0
+        abstract = 1
+        auxiliary = 2
+
+    may: list[str]
+    must: list[str]
+    kind: Kind
+
+    @field_serializer("kind")
+    def serialize_kind(self, kind: Kind, _info) -> str:
+        return kind.name
 
 
-def syntax_dict(obj) -> dict:
-    "Information about an attribute syntax"
-    return {
-        "oid": obj.oid,
-        "desc": obj.desc,
-        "not_human_readable": bool(obj.not_human_readable),
-    }
+class Attribute(Element):
+    class Usage(IntEnum):
+        userApplications = 0
+        directoryOperation = 1
+        distributedOperation = 2
+        dSAOperation = 3
+
+    single_value: bool
+    no_user_mod: bool
+    usage: Usage
+    equality: Optional[str]
+    syntax: Optional[str]
+    substr: Optional[str]
+    ordering: Optional[str]
+
+    @field_serializer("usage")
+    def serialize_kind(self, usage: Usage, _info) -> str:
+        return usage.name
 
 
-def lowercase_dict(attr: str, items) -> dict:
+class Syntax(BaseModel):
+    oid: str
+    desc: str
+    not_human_readable: bool
+
+
+def lowercase_dict(attr: str, items: list[T]) -> dict[str, T]:
     "Create an dictionary with lowercased keys extracted from a given attribute"
-    return {obj[attr].lower(): obj for obj in items}
+    return {getattr(obj, attr).lower(): obj for obj in items}
 
 
 def extract_type(
-    sub_schema: SubSchema, schema_class: Any
-) -> Generator[Any, None, None]:
+    sub_schema: SubSchema, schema_class: Type[T]
+) -> Generator[T, None, None]:
     "Get non-obsolete objects from the schema for a type"
 
     for oid in sub_schema.listall(schema_class):
         obj = sub_schema.get_obj(schema_class, oid)
-        if schema_class is LDAPSyntax or not obj.obsolete:
+        if schema_class is LDAPSyntaxType or not obj.obsolete:
             yield obj
 
 
+class Schema(BaseModel):
+    attributes: dict[str, Attribute]
+    objectClasses: dict[str, ObjectClass]
+    syntaxes: dict[str, Syntax]
+
+
 # See: https://www.python-ldap.org/en/latest/reference/ldap-schema.html
-def frontend_schema(sub_schema: SubSchema) -> dict[Any]:
+def frontend_schema(sub_schema: SubSchema) -> Schema:
     "Dump an LDAP SubSchema"
 
-    return dict(
+    return Schema(
         attributes=lowercase_dict(
             "name",
             sorted(
-                map(
-                    attribute_dict,
-                    extract_type(sub_schema, AttributeType),
+                (
+                    Attribute(
+                        single_value=bool(attr.single_value),
+                        no_user_mod=bool(attr.no_user_mod),
+                        usage=Attribute.Usage(attr.usage),
+                        # FIXME avoid null values below
+                        equality=attr.equality,
+                        syntax=attr.syntax,
+                        substr=attr.substr,
+                        ordering=attr.ordering,
+                        **element(attr).model_dump(),
+                    )
+                    for attr in extract_type(sub_schema, AttributeType)
                 ),
-                key=lambda x: x["name"],
+                key=lambda x: x.name,
             ),
         ),
         objectClasses=lowercase_dict(
             "name",
             sorted(
-                map(
-                    object_class_dict,
-                    extract_type(sub_schema, ObjectClass),
+                (
+                    ObjectClass(
+                        may=sorted(oc.may),
+                        must=sorted(oc.must),
+                        kind=ObjectClass.Kind(oc.kind),
+                        **element(oc).model_dump(),
+                    )
+                    for oc in extract_type(sub_schema, ObjectClassType)
                 ),
-                key=lambda x: x["name"],
+                key=lambda x: x.name,
             ),
         ),
         syntaxes=lowercase_dict(
-            "oid", map(syntax_dict, extract_type(sub_schema, LDAPSyntax))
+            "oid",
+            [
+                Syntax(
+                    oid=stx.oid,
+                    desc=stx.desc,
+                    not_human_readable=bool(stx.not_human_readable),
+                )
+                for stx in extract_type(sub_schema, LDAPSyntaxType)
+            ],
         ),
     )

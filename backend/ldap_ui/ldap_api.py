@@ -33,6 +33,7 @@ from .ldap_helpers import (
     ldap_connect,
     result,
 )
+from .schema import ObjectClass as OC
 from .schema import frontend_schema
 
 __all__ = ("api",)
@@ -97,7 +98,7 @@ def _entry(schema: SubSchema, res: Tuple[str, Any]) -> dict[str, Any]:
     soc = [
         oc.names[0]
         for oc in map(lambda o: schema.get_obj(ObjectClass, o), ocs)
-        if oc.kind == 0
+        if oc.kind == OC.Kind.structural.value
     ]
     aux = set(
         schema.get_obj(ObjectClass, a).names[0]
@@ -207,7 +208,9 @@ async def blob(request: Request) -> Response:
 
     if request.method == "GET":
         if attr not in attrs or len(attrs[attr]) <= index:
-            raise HTTPException(404, f"Attribute {attr} not found for DN {dn}")
+            raise HTTPException(
+                HTTPStatus.NOT_FOUND.value, f"Attribute {attr} not found for DN {dn}"
+            )
 
         return Response(
             attrs[attr][index],
@@ -235,7 +238,9 @@ async def blob(request: Request) -> Response:
 
     if request.method == "DELETE":
         if attr not in attrs or len(attrs[attr]) <= index:
-            raise HTTPException(404, f"Attribute {attr} not found for DN {dn}")
+            raise HTTPException(
+                HTTPStatus.NOT_FOUND.value, f"Attribute {attr} not found for DN {dn}"
+            )
         await empty(connection, connection.modify(dn, [(1, attr, None)]))
         data = attrs[attr][:index] + attrs[attr][index + 1 :]
         if data:
@@ -421,7 +426,9 @@ async def attribute_range(request: Request) -> JSONResponse:
     )
 
     if not values:
-        raise HTTPException(404, f"No values found for attribute {attribute}")
+        raise HTTPException(
+            HTTPStatus.NOT_FOUND.value, f"No values found for attribute {attribute}"
+        )
 
     minimum, maximum = min(values), max(values)
     return JSONResponse(
@@ -436,4 +443,5 @@ async def attribute_range(request: Request) -> JSONResponse:
 @api.route("/schema")
 async def json_schema(request: Request) -> JSONResponse:
     "Dump the LDAP schema as JSON"
-    return JSONResponse(frontend_schema(request.app.state.schema))
+    schema = frontend_schema(request.app.state.schema)
+    return JSONResponse(schema.model_dump())

@@ -11,6 +11,7 @@ operation to complete without results.
 """
 
 import contextlib
+from http import HTTPStatus
 from typing import AsyncGenerator, Generator, Tuple
 
 import ldap
@@ -83,9 +84,12 @@ async def unique(
             res = r
         else:
             connection.abandon(msgid)
-            raise HTTPException(500, "Non-unique result")
+            raise HTTPException(
+                HTTPStatus.INTERNAL_SERVER_ERROR.value,
+                "Non-unique result",
+            )
     if res is None:
-        raise HTTPException(404, "Empty search result")
+        raise HTTPException(HTTPStatus.NOT_FOUND.value, "Empty search result")
     return res
 
 
@@ -97,7 +101,7 @@ async def empty(
 
     async for r in result(connection, msgid):
         connection.abandon(msgid)
-        raise HTTPException(500, "Unexpected result")
+        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR.value, "Unexpected result")
 
 
 async def get_entry_by_dn(
@@ -109,4 +113,4 @@ async def get_entry_by_dn(
     try:
         return await unique(connection, connection.search(dn, ldap.SCOPE_BASE))
     except ldap.NO_SUCH_OBJECT:
-        raise HTTPException(404, f"DN not found: {dn}")
+        raise HTTPException(HTTPStatus.NOT_FOUND.value, f"DN not found: {dn}")
