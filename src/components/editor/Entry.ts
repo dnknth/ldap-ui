@@ -5,7 +5,6 @@ export interface Entry {
         aux: string[];
         binary: string[];
         dn: string;
-        // hints: object;
         isNew?: boolean;
         required: string[];
     }

@@ -2,7 +2,7 @@
 ReST endpoints for LDAP access.
 
 Directory operations are accessible to the frontend
-through a hand-knit API, responses are usually converted to JSON.
+through a hand-knit ReST API, responses are usually converted to JSON.
 
 Asynchronous LDAP operations are used as much as possible.
 """
@@ -32,6 +32,7 @@ from .ldap_helpers import (
     get_entry_by_dn,
     ldap_connect,
     result,
+    unique,
 )
 from .schema import ObjectClass as OC
 from .schema import frontend_schema
@@ -89,7 +90,20 @@ async def _tree(request: Request, basedn: str, scope: int) -> list[dict[str, Any
     ]
 
 
-def _entry(schema: SubSchema, res: Tuple[str, Any]) -> dict[str, Any]:
+class Meta(BaseModel):
+    dn: str
+    required: list[str]
+    aux: list[str]
+    binary: list[str]
+    autoFilled: list[str]
+
+
+class Entry(BaseModel):
+    attrs: dict[str, list[str]]
+    meta: Meta
+
+
+def _entry(schema: SubSchema, res: Tuple[str, Any]) -> Entry:
     "Prepare an LDAP entry for transmission"
 
     dn, attrs = res
@@ -128,26 +142,22 @@ def _entry(schema: SubSchema, res: Tuple[str, Any]) -> dict[str, Any]:
             if syntax.not_human_readable:
                 binary.add(attr)
 
-    return {
-        "attrs": {
-            k: [
-                base64.b64encode(val).decode() if k in binary else val.decode()
-                for val in values
-            ]
+    return Entry(
+        attrs={
+            k: [base64.b64encode(val) if k in binary else val for val in values]
             for k, values in attrs.items()
         },
-        "meta": {
-            "dn": dn,
-            "required": [schema.get_obj(AttributeType, a).names[0] for a in must_attrs],
-            "aux": sorted(aux - ocs),
-            "binary": sorted(binary),
-            "hints": {},  # FIXME obsolete?
-            "autoFilled": [],
-        },
-    }
+        meta=Meta(
+            dn=dn,
+            required=[schema.get_obj(AttributeType, a).names[0] for a in must_attrs],
+            aux=sorted(aux - ocs),
+            binary=sorted(binary),
+            autoFilled=[],
+        ),
+    )
 
 
-Entry = TypeAdapter(dict[str, list[bytes]])
+Attributes = TypeAdapter(dict[str, list[bytes]])
 
 
 @api.route("/entry/{dn}", methods=("GET", "POST", "DELETE", "PUT"))
@@ -159,7 +169,9 @@ async def entry(request: Request) -> Response:
 
     if request.method == "GET":
         return JSONResponse(
-            _entry(request.app.state.schema, await get_entry_by_dn(connection, dn))
+            _entry(
+                request.app.state.schema, await get_entry_by_dn(connection, dn)
+            ).model_dump()
         )
 
     if request.method == "DELETE":
@@ -170,7 +182,7 @@ async def entry(request: Request) -> Response:
         return NO_CONTENT
 
     # Copy JSON payload into a dictionary of non-empty byte strings
-    json = Entry.validate_json(await request.body())
+    json = Attributes.validate_json(await request.body())
     req = {
         k: [s for s in filter(None, v)]
         for k, v in json.items()
@@ -443,5 +455,18 @@ async def attribute_range(request: Request) -> JSONResponse:
 @api.route("/schema")
 async def json_schema(request: Request) -> JSONResponse:
     "Dump the LDAP schema as JSON"
+    if getattr(request.app.state, "schema", None) is None:
+        connection = request.state.ldap
+        # See: https://hub.packtpub.com/python-ldap-applications-part-4-ldap-schema/
+        _dn, sub_schema = await unique(
+            connection,
+            connection.search(
+                settings.SCHEMA_DN,
+                ldap.SCOPE_BASE,
+                attrlist=WITH_OPERATIONAL_ATTRS,
+            ),
+        )
+        request.app.state.schema = SubSchema(sub_schema, check_uniqueness=2)
+
     schema = frontend_schema(request.app.state.schema)
     return JSONResponse(schema.model_dump())

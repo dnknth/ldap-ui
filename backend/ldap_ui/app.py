@@ -10,14 +10,12 @@ No sessions, no cookies, nothing else.
 
 import base64
 import binascii
-import contextlib
 import logging
 import sys
 from http import HTTPStatus
 from typing import AsyncGenerator
 
 import ldap
-from ldap.schema import SubSchema
 from pydantic import ValidationError
 from starlette.applications import Starlette
 from starlette.authentication import (
@@ -38,7 +36,7 @@ from starlette.staticfiles import StaticFiles
 
 from . import settings
 from .ldap_api import api
-from .ldap_helpers import WITH_OPERATIONAL_ATTRS, empty, ldap_connect, unique
+from .ldap_helpers import empty, ldap_connect, unique
 
 LOG = logging.getLogger("ldap-ui")
 
@@ -105,7 +103,7 @@ class LdapConnectionMiddleware(BaseHTTPMiddleware):
 
         except ldap.LDAPError as err:
             msg = ldap_exception_message(err)
-            LOG.error(msg)
+            LOG.error(msg, exc_info=err)
             return PlainTextResponse(
                 msg,
                 status_code=HTTPStatus.INTERNAL_SERVER_ERROR.value,
@@ -190,22 +188,6 @@ async def http_422(_request: Request, e: ValidationError) -> Response:
     return Response(repr(e), status_code=HTTPStatus.UNPROCESSABLE_ENTITY.value)
 
 
-@contextlib.asynccontextmanager
-async def lifespan(app):
-    with ldap_connect() as connection:
-        # See: https://hub.packtpub.com/python-ldap-applications-part-4-ldap-schema/
-        _dn, sub_schema = await unique(
-            connection,
-            connection.search(
-                settings.SCHEMA_DN,
-                ldap.SCOPE_BASE,
-                attrlist=WITH_OPERATIONAL_ATTRS,
-            ),
-        )
-        app.state.schema = SubSchema(sub_schema, check_uniqueness=2)
-        yield
-
-
 # Main ASGI entry
 app = Starlette(
     debug=settings.DEBUG,
@@ -214,7 +196,6 @@ app = Starlette(
         ldap.INSUFFICIENT_ACCESS: forbidden,
         ValidationError: http_422,
     },
-    lifespan=lifespan,
     middleware=(
         Middleware(AuthenticationMiddleware, backend=BasicAuthBackend()),
         Middleware(LdapConnectionMiddleware),

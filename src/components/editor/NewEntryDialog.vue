@@ -64,7 +64,6 @@ function onOk() {
       aux: [],
       required: [],
       binary: [],
-      // hints: {},
       autoFilled: [],
       isNew: true,
     },
