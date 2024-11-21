@@ -86,12 +86,12 @@ onMounted(async () => { // Runs on page load
   const whoamiResponse = await fetch('api/whoami');
   if (whoamiResponse.ok) {
     user.value = await whoamiResponse.json();
-  }
 
-  // Load the schema
-  const schemaResponse = await fetch('api/schema');
-  if (schemaResponse.ok) {
-    schema.value = new LdapSchema(await schemaResponse.json());
+    // Load the schema
+    const schemaResponse = await fetch('api/schema');
+    if (schemaResponse.ok) {
+      schema.value = new LdapSchema(await schemaResponse.json());
+    }
   }
 });
 

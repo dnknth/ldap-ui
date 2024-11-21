@@ -1,7 +1,8 @@
 .PHONY: debug run clean tidy image push manifest
 
-TAG = latest-$(subst aarch64,arm64,$(shell uname -m))
 SITE = backend/ldap_ui/statics
+VERSION = $(shell fgrep __version__ backend/ldap_ui/__init__.py | cut -d'"' -f2)
+TAG = $(VERSION)-$(subst aarch64,arm64,$(shell uname -m))
 
 debug: .env .venv3 $(SITE)
 	.venv3/bin/uvicorn --reload --port 5000 ldap_ui.app:app
@@ -19,7 +20,7 @@ dist: .venv3 $(SITE)
 	.venv3/bin/python3 -m build --wheel
 
 pypi: clean dist
-	.venv3/bin/twine upload dist/*
+	- .venv3/bin/twine upload dist/*
 
 $(SITE): node_modules
 	npm audit
@@ -35,7 +36,7 @@ clean:
 tidy: clean
 	rm -rf .venv3 node_modules
 
-image:
+image: pypi
 	docker build --no-cache -t dnknth/ldap-ui:$(TAG) .
 
 push: image
@@ -44,7 +45,7 @@ push: image
 manifest:
 	docker manifest create \
 		dnknth/ldap-ui \
-		--amend dnknth/ldap-ui:latest-x86_64 \
-		--amend dnknth/ldap-ui:latest-arm64
+		--amend dnknth/ldap-ui:$(VERSION)-x86_64 \
+		--amend dnknth/ldap-ui:$(VERSION)-arm64
 	docker manifest push --purge dnknth/ldap-ui
 	docker compose pull

@@ -13,9 +13,10 @@ import binascii
 import logging
 import sys
 from http import HTTPStatus
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 import ldap
+from ldap.ldapobject import LDAPObject
 from pydantic import ValidationError
 from starlette.applications import Starlette
 from starlette.authentication import (
@@ -30,7 +31,7 @@ from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.requests import HTTPConnection, Request
-from starlette.responses import PlainTextResponse, Response
+from starlette.responses import Response
 from starlette.routing import Mount
 from starlette.staticfiles import StaticFiles
 
@@ -46,12 +47,22 @@ if not settings.BASE_DN:
 
 LOG.debug("Base DN: %s", settings.BASE_DN)
 
-# Force authentication
-UNAUTHORIZED = Response(
-    HTTPStatus.UNAUTHORIZED.phrase,
-    status_code=HTTPStatus.UNAUTHORIZED.value,
-    headers={"WWW-Authenticate": 'Basic realm="Please log in", charset="UTF-8"'},
-)
+
+async def anonymous_user_search(connection: LDAPObject, username: str) -> Optional[str]:
+    try:
+        # No BIND_PATTERN, try anonymous search
+        dn, _attrs = await unique(
+            connection,
+            connection.search(
+                settings.BASE_DN,
+                ldap.SCOPE_SUBTREE,
+                settings.GET_BIND_DN_FILTER(username),
+            ),
+        )
+        return dn
+
+    except HTTPException:
+        pass  # No unique result
 
 
 class LdapConnectionMiddleware(BaseHTTPMiddleware):
@@ -60,54 +71,59 @@ class LdapConnectionMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         "Add an authenticated LDAP connection to the request"
 
-        # Short-circuit static files
+        # No authentication required for static files
         if not request.url.path.startswith("/api"):
             return await call_next(request)
 
         try:
             with ldap_connect() as connection:
-                dn, password = None, None
+                # Hard-wired credentials
+                dn = settings.GET_BIND_DN()
+                password = settings.GET_BIND_PASSWORD()
 
                 # Search for basic auth user
-                if type(request.user) is LdapUser:
+                if not dn and type(request.user) is LdapUser:
                     password = request.user.password
-                    dn = settings.GET_BIND_PATTERN(request.user.username)
-                    if dn is None:
-                        try:
-                            dn, _attrs = await unique(
-                                connection,
-                                connection.search(
-                                    settings.BASE_DN,
-                                    ldap.SCOPE_SUBTREE,
-                                    settings.GET_BIND_DN_FILTER(request.user.username),
-                                ),
-                            )
-                        except HTTPException:
-                            pass
+                    dn = settings.GET_BIND_PATTERN(
+                        request.user.username
+                    ) or await anonymous_user_search(connection, request.user.username)
 
-                # Hard-wired credentials
-                if dn is None:
-                    dn = settings.GET_BIND_DN(request.user.display_name)
-                    password = settings.GET_BIND_PASSWORD()
-
-                if dn is None:
-                    return UNAUTHORIZED
-
-                # Log in
-                await empty(connection, connection.simple_bind(dn, password))
-                request.state.ldap = connection
-                return await call_next(request)
+                if dn:  # Log in
+                    await empty(connection, connection.simple_bind(dn, password))
+                    request.state.ldap = connection
+                    return await call_next(request)
 
         except ldap.INVALID_CREDENTIALS:
-            return UNAUTHORIZED
+            pass
+
+        except ldap.INSUFFICIENT_ACCESS as err:
+            return Response(
+                ldap_exception_message(err),
+                status_code=HTTPStatus.FORBIDDEN.value,
+            )
+
+        except ldap.UNWILLING_TO_PERFORM:
+            LOG.warning("Need BIND_DN or BIND_PATTERN to authenticate")
+            return Response(
+                HTTPStatus.FORBIDDEN.phrase,
+                status_code=HTTPStatus.FORBIDDEN.value,
+            )
 
         except ldap.LDAPError as err:
-            msg = ldap_exception_message(err)
-            LOG.error(msg, exc_info=err)
-            return PlainTextResponse(
-                msg,
+            LOG.error(ldap_exception_message(err), exc_info=err)
+            return Response(
+                ldap_exception_message(err),
                 status_code=HTTPStatus.INTERNAL_SERVER_ERROR.value,
             )
+
+        return Response(
+            HTTPStatus.UNAUTHORIZED.phrase,
+            status_code=HTTPStatus.UNAUTHORIZED.value,
+            headers={
+                # Trigger authentication
+                "WWW-Authenticate": 'Basic realm="Please log in", charset="UTF-8"'
+            },
+        )
 
 
 def ldap_exception_message(exc: ldap.LDAPError) -> str:
@@ -163,22 +179,10 @@ class CacheBustingMiddleware(BaseHTTPMiddleware):
 async def http_exception(_request: Request, exc: HTTPException) -> Response:
     "Send error responses"
     assert exc.status_code >= 400
-    if exc.status_code < 500:
-        LOG.warning(exc.detail)
-    else:
-        LOG.error(exc.detail)
-    return PlainTextResponse(
+    return Response(
         exc.detail,
         status_code=exc.status_code,
         headers=exc.headers,
-    )
-
-
-async def forbidden(_request: Request, exc: ldap.LDAPError) -> Response:
-    "HTTP 403 Forbidden"
-    return PlainTextResponse(
-        ldap_exception_message(exc),
-        status_code=HTTPStatus.FORBIDDEN.value,
     )
 
 
@@ -193,7 +197,6 @@ app = Starlette(
     debug=settings.DEBUG,
     exception_handlers={
         HTTPException: http_exception,
-        ldap.INSUFFICIENT_ACCESS: forbidden,
         ValidationError: http_422,
     },
     middleware=(
