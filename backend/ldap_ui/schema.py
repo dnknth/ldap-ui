@@ -7,17 +7,17 @@ to the user.
 """
 
 from enum import IntEnum
-from typing import Generator, Optional, Type, TypeVar, Union
+from typing import Generator, Optional, TypeVar, Union, cast
 
 from ldap.schema import SubSchema
-from ldap.schema.models import AttributeType, SchemaElement
+from ldap.schema.models import AttributeType
 from ldap.schema.models import LDAPSyntax as LDAPSyntaxType
 from ldap.schema.models import ObjectClass as ObjectClassType
 from pydantic import BaseModel, Field, field_serializer
 
 __all__ = ("frontend_schema", "Attribute", "ObjectClass")
 
-T = TypeVar("T", bound=SchemaElement)
+T = TypeVar("T")
 
 
 class Element(BaseModel):
@@ -90,14 +90,14 @@ def lowercase_dict(attr: str, items: list[T]) -> dict[str, T]:
 
 
 def extract_type(
-    sub_schema: SubSchema, schema_class: Type[T]
+    sub_schema: SubSchema, schema_class: type[T]
 ) -> Generator[T, None, None]:
     "Get non-obsolete objects from the schema for a type"
 
     for oid in sub_schema.listall(schema_class):
         obj = sub_schema.get_obj(schema_class, oid)
-        if schema_class is LDAPSyntaxType or not obj.obsolete:
-            yield obj
+        if schema_class is LDAPSyntaxType or not obj.obsolete:  # pyright: ignore[reportOptionalMemberAccess]
+            yield cast(T, obj)
 
 
 class Schema(BaseModel):

@@ -14,8 +14,16 @@ import contextlib
 from http import HTTPStatus
 from typing import AsyncGenerator, Generator, Tuple
 
-import ldap
 from anyio import sleep
+from ldap import (
+    NO_SUCH_OBJECT,  # pyright: ignore[reportAttributeAccessIssue]
+    OPT_X_TLS_DEMAND,  # pyright: ignore[reportAttributeAccessIssue]
+    OPT_X_TLS_NEVER,  # pyright: ignore[reportAttributeAccessIssue]
+    OPT_X_TLS_NEWCTX,  # pyright: ignore[reportAttributeAccessIssue]
+    OPT_X_TLS_REQUIRE_CERT,  # pyright: ignore[reportAttributeAccessIssue]
+    SCOPE_BASE,  # pyright: ignore[reportAttributeAccessIssue]
+    initialize,
+)
 from ldap.ldapobject import LDAPObject
 from starlette.exceptions import HTTPException
 
@@ -40,17 +48,15 @@ def ldap_connect() -> Generator[LDAPObject, None, None]:
     "Open an LDAP connection"
 
     url = settings.LDAP_URL
-    connection = ldap.initialize(url)
+    connection = initialize(url)
 
     # #43 TLS, see https://stackoverflow.com/a/8795694
     if settings.USE_TLS or settings.INSECURE_TLS:
-        cert_level = (
-            ldap.OPT_X_TLS_NEVER if settings.INSECURE_TLS else ldap.OPT_X_TLS_DEMAND
-        )
+        cert_level = OPT_X_TLS_NEVER if settings.INSECURE_TLS else OPT_X_TLS_DEMAND
 
-        connection.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, cert_level)
+        connection.set_option(OPT_X_TLS_REQUIRE_CERT, cert_level)
         # See https://stackoverflow.com/a/38136255
-        connection.set_option(ldap.OPT_X_TLS_NEWCTX, 0)
+        connection.set_option(OPT_X_TLS_NEWCTX, 0)
         if not url.startswith("ldaps://"):
             connection.start_tls_s()
     yield connection
@@ -59,7 +65,7 @@ def ldap_connect() -> Generator[LDAPObject, None, None]:
 
 async def result(
     connection: LDAPObject, msgid: int
-) -> AsyncGenerator[Tuple[str, dict[str, list[bytes]]], None]:
+) -> AsyncGenerator[tuple[str, dict[str, list[bytes]]], None]:
     "Stream LDAP result entries without blocking other tasks"
 
     while True:
@@ -69,7 +75,7 @@ async def result(
         elif r_data == []:  # Operation completed
             break
         else:
-            yield r_data[0]
+            yield r_data[0]  # pyright: ignore[reportOptionalSubscript, reportReturnType]
 
 
 async def unique(
@@ -111,6 +117,6 @@ async def get_entry_by_dn(
     "Asynchronously retrieve an LDAP entry by its DN"
 
     try:
-        return await unique(connection, connection.search(dn, ldap.SCOPE_BASE))
-    except ldap.NO_SUCH_OBJECT:
+        return await unique(connection, connection.search(dn, SCOPE_BASE))
+    except NO_SUCH_OBJECT:
         raise HTTPException(HTTPStatus.NOT_FOUND.value, f"DN not found: {dn}")

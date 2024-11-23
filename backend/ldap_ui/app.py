@@ -13,9 +13,15 @@ import binascii
 import logging
 import sys
 from http import HTTPStatus
-from typing import AsyncGenerator, Optional
+from typing import Optional
 
-import ldap
+from ldap import (
+    INSUFFICIENT_ACCESS,  # pyright: ignore[reportAttributeAccessIssue]
+    INVALID_CREDENTIALS,  # pyright: ignore[reportAttributeAccessIssue]
+    SCOPE_SUBTREE,  # pyright: ignore[reportAttributeAccessIssue]
+    UNWILLING_TO_PERFORM,  # pyright: ignore[reportAttributeAccessIssue]
+    LDAPError,  # pyright: ignore[reportAttributeAccessIssue]
+)
 from ldap.ldapobject import LDAPObject
 from pydantic import ValidationError
 from starlette.applications import Starlette
@@ -28,7 +34,7 @@ from starlette.authentication import (
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.requests import HTTPConnection, Request
 from starlette.responses import Response
@@ -55,7 +61,7 @@ async def anonymous_user_search(connection: LDAPObject, username: str) -> Option
             connection,
             connection.search(
                 settings.BASE_DN,
-                ldap.SCOPE_SUBTREE,
+                SCOPE_SUBTREE,
                 settings.GET_BIND_DN_FILTER(username),
             ),
         )
@@ -67,7 +73,7 @@ async def anonymous_user_search(connection: LDAPObject, username: str) -> Option
 
 class LdapConnectionMiddleware(BaseHTTPMiddleware):
     async def dispatch(
-        self, request: Request, call_next: AsyncGenerator[Request, Response]
+        self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         "Add an authenticated LDAP connection to the request"
 
@@ -93,23 +99,23 @@ class LdapConnectionMiddleware(BaseHTTPMiddleware):
                     request.state.ldap = connection
                     return await call_next(request)
 
-        except ldap.INVALID_CREDENTIALS:
+        except INVALID_CREDENTIALS:
             pass
 
-        except ldap.INSUFFICIENT_ACCESS as err:
+        except INSUFFICIENT_ACCESS as err:
             return Response(
                 ldap_exception_message(err),
                 status_code=HTTPStatus.FORBIDDEN.value,
             )
 
-        except ldap.UNWILLING_TO_PERFORM:
+        except UNWILLING_TO_PERFORM:
             LOG.warning("Need BIND_DN or BIND_PATTERN to authenticate")
             return Response(
                 HTTPStatus.FORBIDDEN.phrase,
                 status_code=HTTPStatus.FORBIDDEN.value,
             )
 
-        except ldap.LDAPError as err:
+        except LDAPError as err:
             LOG.error(ldap_exception_message(err), exc_info=err)
             return Response(
                 ldap_exception_message(err),
@@ -126,7 +132,7 @@ class LdapConnectionMiddleware(BaseHTTPMiddleware):
         )
 
 
-def ldap_exception_message(exc: ldap.LDAPError) -> str:
+def ldap_exception_message(exc: LDAPError) -> str:
     args = exc.args[0]
     if "info" in args:
         return args.get("info", "") + ": " + args.get("desc", "")
@@ -166,7 +172,7 @@ class CacheBustingMiddleware(BaseHTTPMiddleware):
     "Forbid caching of API responses"
 
     async def dispatch(
-        self, request: Request, call_next: AsyncGenerator[Request, Response]
+        self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         response = await call_next(request)
         if request.url.path.startswith("/api"):
@@ -195,7 +201,7 @@ async def http_422(_request: Request, e: ValidationError) -> Response:
 # Main ASGI entry
 app = Starlette(
     debug=settings.DEBUG,
-    exception_handlers={
+    exception_handlers={  # pyright: ignore[reportArgumentType]
         HTTPException: http_exception,
         ValidationError: http_422,
     },

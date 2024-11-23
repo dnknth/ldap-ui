@@ -7,8 +7,8 @@ from ldap.schema.models import AttributeType, LDAPSyntax, ObjectClass
 from ldap_ui.schema import frontend_schema
 from ldif import LDIFRecordList
 
-LDIF = Path(__file__).parent / "resources" / "bitnami-schema.ldif"
-JSON = Path(__file__).parent / "resources" / "bitnami-schema.json"
+LDIF = Path(__file__).parent / "resources" / "schema.ldif"
+JSON = Path(__file__).parent / "resources" / "schema.json"
 
 
 class SchemaTest(unittest.TestCase):

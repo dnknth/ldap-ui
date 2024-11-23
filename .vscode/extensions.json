@@ -1,10 +1,11 @@
 {
   "recommendations": [
-    "Vue.volar",
+    "bradlc.vscode-tailwindcss",
     "dbaeumer.vscode-eslint",
     "editorconfig.editorconfig",
     "esbenp.prettier-vscode",
-    "bradlc.vscode-tailwindcss",
-    "jtavin.ldif"
+    "jtavin.ldif",
+    "ms-pyright.pyright",
+    "Vue.volar"
   ]
 }
