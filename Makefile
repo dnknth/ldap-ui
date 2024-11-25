@@ -3,6 +3,7 @@
 SITE = backend/ldap_ui/statics
 VERSION = $(shell fgrep __version__ backend/ldap_ui/__init__.py | cut -d'"' -f2)
 TAG = $(VERSION)-$(subst aarch64,arm64,$(shell uname -m))
+IMAGE = dnknth/ldap-ui
 
 debug: .env .venv3 $(SITE)
 	.venv3/bin/uvicorn --reload --port 5000 ldap_ui.app:app
@@ -37,15 +38,16 @@ tidy: clean
 	rm -rf .venv3 node_modules
 
 image: pypi
-	docker build --no-cache -t dnknth/ldap-ui:$(TAG) .
+	docker build --no-cache -t $(IMAGE):$(TAG) .
 
 push: image
-	docker push dnknth/ldap-ui:$(TAG)
+	docker push $(IMAGE):$(TAG)
+	docker pushrm $(IMAGE)
 
 manifest:
 	docker manifest create \
-		dnknth/ldap-ui \
-		--amend dnknth/ldap-ui:$(VERSION)-x86_64 \
-		--amend dnknth/ldap-ui:$(VERSION)-arm64
-	docker manifest push --purge dnknth/ldap-ui
+		$(IMAGE) \
+		--amend $(IMAGE):$(VERSION)-x86_64 \
+		--amend $(IMAGE):$(VERSION)-arm64
+	docker manifest push --purge $(IMAGE)
 	docker compose pull

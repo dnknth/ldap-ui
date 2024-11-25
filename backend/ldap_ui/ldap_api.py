@@ -65,34 +65,59 @@ async def whoami(request: Request) -> JSONResponse:
     return JSONResponse(request.state.ldap.whoami_s().replace("dn:", ""))
 
 
+class TreeItem(BaseModel):
+    dn: str
+    structuralObjectClass: str
+    hasSubordinates: bool
+    level: int
+
+
 @api.route("/tree/{basedn}")
 async def tree(request: Request) -> JSONResponse:
     "List directory entries"
 
     basedn = request.path_params["basedn"]
+    base_level = len(basedn.split(","))
     scope = SCOPE_ONELEVEL
     if basedn == "base":
         scope = SCOPE_BASE
         basedn = settings.BASE_DN
 
-    return JSONResponse(await _tree(request, str(basedn), scope))
-
-
-async def _tree(request: Request, basedn: str, scope: int) -> list[dict[str, Any]]:
-    "Get all nodes below a DN (including the DN) within the given scope"
-
     connection = request.state.ldap
-    return [
-        {
-            "dn": dn,
-            "structuralObjectClass": attrs["structuralObjectClass"][0].decode(),
-            "hasSubordinates": b"TRUE" == attrs["hasSubordinates"][0],
-        }
-        async for dn, attrs in result(
-            connection,
-            connection.search(basedn, scope, attrlist=WITH_OPERATIONAL_ATTRS),
+    entries = result(
+        connection, connection.search(basedn, scope, attrlist=WITH_OPERATIONAL_ATTRS)
+    )
+    return JSONResponse(
+        [
+            _tree_item(dn, attrs, base_level, request.app.state.schema).model_dump()
+            async for dn, attrs in entries
+        ]
+    )
+
+
+def _tree_item(
+    dn: str, attrs: dict[str, Any], level: int, schema: SubSchema
+) -> TreeItem:
+    structuralObjectClass = next(
+        iter(
+            filter(
+                lambda oc: oc.kind == OC.Kind.structural.value,  # pyright: ignore[reportOptionalMemberAccess]
+                map(
+                    lambda o: schema.get_obj(ObjectClass, o.decode()),
+                    attrs["objectClass"],
+                ),
+            )
         )
-    ]
+    )
+
+    return TreeItem(
+        dn=dn,
+        structuralObjectClass=structuralObjectClass.names[0],
+        hasSubordinates=attrs["hasSubordinates"][0] == b"TRUE"
+        if "hasSubordinates" in attrs
+        else bool(attrs.get("numSubordinates")),
+        level=len(dn.split(",")) - level,
+    )
 
 
 class Meta(BaseModel):
@@ -182,10 +207,18 @@ async def entry(request: Request) -> Response:
         )
 
     if request.method == "DELETE":
-        for entry in reversed(
-            sorted(await _tree(request, dn, SCOPE_SUBTREE), key=_dn_order)
+        for entry_dn in sorted(
+            [
+                dn
+                async for dn, _attrs in result(
+                    connection,
+                    connection.search(dn, SCOPE_SUBTREE),
+                )
+            ],
+            key=len,
+            reverse=True,
         ):
-            await empty(connection, connection.delete(entry["dn"]))
+            await empty(connection, connection.delete(entry_dn))
         return NO_CONTENT
 
     # Copy JSON payload into a dictionary of non-empty byte strings
@@ -405,23 +438,26 @@ async def search(request: Request) -> JSONResponse:
     return JSONResponse(res)
 
 
-def _dn_order(node):
-    "Reverse DN parts for tree ordering"
-    return tuple(reversed(node["dn"].lower().split(",")))
-
-
 @api.route("/subtree/{dn}")
 async def subtree(request: Request) -> JSONResponse:
     "List the subtree below a DN"
 
-    dn = request.path_params["dn"]
-    result, start = [], len(dn.split(","))
-    for node in sorted(await _tree(request, dn, SCOPE_SUBTREE), key=_dn_order):
-        if node["dn"] == dn:
-            continue
-        node["level"] = len(node["dn"].split(",")) - start
-        result.append(node)
-    return JSONResponse(result)
+    root_dn = request.path_params["dn"]
+    start = len(root_dn.split(","))
+    connection = request.state.ldap
+    return JSONResponse(
+        sorted(
+            [
+                _tree_item(dn, attrs, start, request.app.state.schema).model_dump()
+                async for dn, attrs in result(
+                    connection,
+                    connection.search(root_dn, SCOPE_SUBTREE),
+                )
+                if root_dn != dn
+            ],
+            key=lambda item: tuple(reversed(item["dn"].lower().split(","))),
+        )
+    )
 
 
 @api.route("/range/{attribute}")

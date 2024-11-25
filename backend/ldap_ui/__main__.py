@@ -23,14 +23,14 @@ def print_version(ctx: click.Context, param: click.Parameter, value: bool) -> No
     "--base-dn",
     type=str,
     default=settings.BASE_DN,
-    help="LDAP base DN (required). [default: BASE_DN environment variable]",
+    help="LDAP base DN.  [default: Detect from root DSE]",
 )
 @click.option(
     "-h",
     "--host",
     type=str,
     default="127.0.0.1",
-    help="Bind socket to this host.",
+    help="Bind socket to this IP.",
     show_default=True,
 )
 @click.option(
@@ -38,21 +38,23 @@ def print_version(ctx: click.Context, param: click.Parameter, value: bool) -> No
     "--port",
     type=int,
     default=5000,
-    help="Bind socket to this port. If 0, an available port will be picked.",
+    help="Bind socket to this port (or 0 for any available port).",
     show_default=True,
 )
 @click.option(
     "-u",
     "--ldap-url",
     type=str,
-    help="LDAP directory connection URL. [default: LDAP_URL environment variable or 'ldap:///']",
+    default=settings.LDAP_URL,
+    help="LDAP directory connection URL.",
+    show_default=True,
 )
 @click.option(
     "-l",
     "--log-level",
     type=LEVEL_CHOICES,
     default="info",
-    help="Log level. [default: info]",
+    help="Log level.",
     show_default=True,
 )
 @click.option(

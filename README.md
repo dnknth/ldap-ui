@@ -21,14 +21,22 @@ The app always requires authentication, even if the directory permits anonymous 
 
 ### Environment variables
 
-LDAP access is controlled by these environment variables, possibly from a `.env` file:
+LDAP access is controlled by the following optional environment variables, possibly from a `.env` file:
 
-* `LDAP_URL` (optional): Connection URL, defaults to `ldap:///`.
-* `BASE_DN` (required): Search base, e.g. `dc=example,dc=org`.
-* `LOGIN_ATTR` (optional): User name attribute, defaults to `uid`.
+* `LDAP_URL`: Connection URL, defaults to `ldap:///`.
+* `BASE_DN`: Search base, e.g. `dc=example,dc=org`.
+* `SCHEMA_DN`: # DN to obtain the directory schema, e.g. `cn=subSchema`.
+* `LOGIN_ATTR`: User name attribute, defaults to `uid`.
 
-* `USE_TLS` (optional): Enable TLS, defaults to true for `ldaps` connections. Set it to a non-empty string to force `STARTTLS` on `ldap` connections.
-* `INSECURE_TLS` (optional): Do not require a valid server TLS certificate, defaults to false, implies `USE_TLS`.
+* `USE_TLS`: Enable TLS, defaults to true for `ldaps` connections. Set it to a non-empty string to force `STARTTLS` on `ldap` connections.
+* `INSECURE_TLS`: Do not require a valid server TLS certificate, defaults to false, implies `USE_TLS`.
+
+if `BASE_DN` or `SCHEMA_DN` are not provided explicitly, auto-detection from the root DSE is attempted.
+For this to work, the root DSE must be readable anonymously, e.g. with the following ACL line for OpenLDAP:
+
+```text
+access to dn.base="" by * read
+```
 
 For finer-grained control, see [settings.py](settings.py).
 
@@ -38,8 +46,7 @@ For the impatient: Run it with
 
 ```shell
 docker run -p 127.0.0.1:5000:5000 \
-    -e LDAP_URL=ldap://your.ldap.server/ \
-    -e BASE_DN=dc=example,dc=org dnknth/ldap-ui
+    -e LDAP_URL=ldap://your.openldap.server/
 ```
 
 For the even more impatient: Start a demo with
@@ -120,7 +127,8 @@ Additionally, arbitrary attributes can be searched with an LDAP filter specifica
 
 ### Caveats
 
-* The software works with [OpenLdap](http://www.openldap.org) using simple bind. Other directories have not been tested, and SASL authentication schemes are presently not supported.
+* The software works with [OpenLdap](http://www.openldap.org) using simple bind. Other directories have not been tested much, although [389 DS](https://www.port389.org) works to some extent.
+* SASL authentication schemes are presently not supported.
 * Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLdap 2.4 does). I strongly recommend to expose the app through a TLS-enabled web server.
 * HTTP *Basic Authentication* is triggered unless the `AUTHORIZATION` request variable is already set by some upstream HTTP server.
 

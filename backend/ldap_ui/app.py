@@ -18,6 +18,7 @@ from typing import Optional
 from ldap import (
     INSUFFICIENT_ACCESS,  # pyright: ignore[reportAttributeAccessIssue]
     INVALID_CREDENTIALS,  # pyright: ignore[reportAttributeAccessIssue]
+    SCOPE_BASE,  # pyright: ignore[reportAttributeAccessIssue]
     SCOPE_SUBTREE,  # pyright: ignore[reportAttributeAccessIssue]
     UNWILLING_TO_PERFORM,  # pyright: ignore[reportAttributeAccessIssue]
     LDAPError,  # pyright: ignore[reportAttributeAccessIssue]
@@ -43,15 +44,42 @@ from starlette.staticfiles import StaticFiles
 
 from . import settings
 from .ldap_api import api
-from .ldap_helpers import empty, ldap_connect, unique
+from .ldap_helpers import WITH_OPERATIONAL_ATTRS, empty, ldap_connect, unique
 
 LOG = logging.getLogger("ldap-ui")
+
+
+def ldap_exception_message(exc: LDAPError) -> str:
+    args = exc.args[0]
+    if "info" in args:
+        return args.get("info", "") + ": " + args.get("desc", "")
+    return args.get("desc", "")
+
+
+if not settings.BASE_DN or not settings.SCHEMA_DN:
+    # Try auto-detection from root DSE
+    try:
+        with ldap_connect() as connection:
+            _dn, attrs = connection.search_s(  # pyright: ignore[reportAssignmentType, reportOptionalSubscript]
+                "", SCOPE_BASE, attrlist=WITH_OPERATIONAL_ATTRS
+            )[0]
+            base_dns = attrs.get("namingContexts", [])
+            if len(base_dns) == 1:
+                settings.BASE_DN = settings.BASE_DN or base_dns[0].decode()
+            else:
+                LOG.warning("No unique base DN: %s", base_dns)
+            schema_dns = attrs.get("subschemaSubentry", [])
+            settings.SCHEMA_DN = settings.SCHEMA_DN or schema_dns[0].decode()
+    except LDAPError as err:
+        LOG.error(ldap_exception_message(err), exc_info=err)
 
 if not settings.BASE_DN:
     LOG.critical("An LDAP base DN is required!")
     sys.exit(1)
 
-LOG.debug("Base DN: %s", settings.BASE_DN)
+if not settings.SCHEMA_DN:
+    LOG.critical("An LDAP schema DN is required!")
+    sys.exit(1)
 
 
 async def anonymous_user_search(connection: LDAPObject, username: str) -> Optional[str]:
@@ -130,13 +158,6 @@ class LdapConnectionMiddleware(BaseHTTPMiddleware):
                 "WWW-Authenticate": 'Basic realm="Please log in", charset="UTF-8"'
             },
         )
-
-
-def ldap_exception_message(exc: LDAPError) -> str:
-    args = exc.args[0]
-    if "info" in args:
-        return args.get("info", "") + ": " + args.get("desc", "")
-    return args.get("desc", "")
 
 
 class LdapUser(SimpleUser):

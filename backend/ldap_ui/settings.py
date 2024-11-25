@@ -14,7 +14,20 @@ SECRET_KEY = os.urandom(16)
 # LDAP settings
 #
 LDAP_URL = config("LDAP_URL", default="ldap:///")
-BASE_DN = config("BASE_DN", default=None)  # Required
+
+# Directory base DN.
+# If unset, auto-detection from the root DSE is attempted.
+# This works under the following conditions:
+# - The root DSE is readable with anonymous binding
+# - `namingContexts` contains exactly one entry
+# Otherwise, manual configuration is required.
+BASE_DN = config("BASE_DN", default=None)
+
+# DN to obtain the directory schema.
+# If unset, auto-detection from the root DSE is attempted.
+# This works if root DSE is readable with anonymous binding.
+# Otherwise, manual configuration is required.
+SCHEMA_DN = config("SCHEMA_DN", default=None)
 
 USE_TLS = config(
     "USE_TLS",
@@ -28,11 +41,6 @@ INSECURE_TLS = config(
     cast=lambda x: bool(x),
     default=False,
 )
-
-# OpenLdap default DN to obtain the schema.
-# Change as needed for other directories.
-SCHEMA_DN = config("SCHEMA_DN", default="cn=subschema")
-
 
 #
 # Binding
