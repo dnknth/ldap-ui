@@ -5,8 +5,8 @@ VERSION = $(shell fgrep __version__ backend/ldap_ui/__init__.py | cut -d'"' -f2)
 TAG = $(VERSION)-$(subst aarch64,arm64,$(shell uname -m))
 IMAGE = dnknth/ldap-ui
 
-debug: .env .venv3 $(SITE)
-	.venv3/bin/uvicorn --reload --port 5000 ldap_ui.app:app
+debug: .venv3 $(SITE)
+	DEBUG=true .venv3/bin/uvicorn --reload --port 5000 ldap_ui.app:app
 
 .env: env.example
 	cp $< $@
