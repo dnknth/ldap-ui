@@ -37,7 +37,7 @@ clean:
 tidy: clean
 	rm -rf .venv3 node_modules
 
-image: pypi
+image:
 	docker build --no-cache -t $(IMAGE):$(TAG) .
 
 push: image

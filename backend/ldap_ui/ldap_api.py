@@ -72,7 +72,7 @@ class TreeItem(BaseModel):
     level: int
 
 
-@api.route("/tree/{basedn}")
+@api.route("/tree/{basedn:path}")
 async def tree(request: Request) -> JSONResponse:
     "List directory entries"
 
@@ -192,7 +192,7 @@ def _entry(schema: SubSchema, res: Tuple[str, Any]) -> Entry:
 Attributes = TypeAdapter(dict[str, list[bytes]])
 
 
-@api.route("/entry/{dn}", methods=["GET", "POST", "DELETE", "PUT"])
+@api.route("/entry/{dn:path}", methods=["GET", "POST", "DELETE", "PUT"])
 async def entry(request: Request) -> Response:
     "Edit directory entries"
 
@@ -249,7 +249,7 @@ async def entry(request: Request) -> Response:
     raise HTTPException(HTTPStatus.METHOD_NOT_ALLOWED)
 
 
-@api.route("/blob/{attr}/{index:int}/{dn}", methods=["GET", "DELETE", "PUT"])
+@api.route("/blob/{attr}/{index:int}/{dn:path}", methods=["GET", "DELETE", "PUT"])
 async def blob(request: Request) -> Response:
     "Handle binary attributes"
 
@@ -304,7 +304,7 @@ async def blob(request: Request) -> Response:
     raise HTTPException(HTTPStatus.METHOD_NOT_ALLOWED)
 
 
-@api.route("/ldif/{dn}")
+@api.route("/ldif/{dn:path}")
 async def ldifDump(request: Request) -> PlainTextResponse:
     "Dump an entry as LDIF"
 
@@ -351,7 +351,7 @@ async def ldifUpload(
 Rdn = TypeAdapter(str)
 
 
-@api.route("/rename/{dn}", methods=["POST"])
+@api.route("/rename/{dn:path}", methods=["POST"])
 async def rename(request: Request) -> Response:
     "Rename an entry"
 
@@ -374,7 +374,7 @@ class CheckPasswordRequest(BaseModel):
 PasswordRequest = TypeAdapter(Union[ChangePasswordRequest, CheckPasswordRequest])
 
 
-@api.route("/entry/password/{dn}", methods=["POST"])
+@api.route("/entry/password/{dn:path}", methods=["POST"])
 async def passwd(request: Request) -> Response:
     "Update passwords"
 
@@ -438,7 +438,7 @@ async def search(request: Request) -> JSONResponse:
     return JSONResponse(res)
 
 
-@api.route("/subtree/{dn}")
+@api.route("/subtree/{dn:path}")
 async def subtree(request: Request) -> JSONResponse:
     "List the subtree below a DN"
 
