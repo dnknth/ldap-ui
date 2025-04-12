@@ -163,7 +163,7 @@ class BackendSmokeTest(unittest.TestCase):
     def test_140_change_password(self):
         with TestClient(app) as client:
             result = client.post(
-                "/api/entry/password/cn=test,dc=flintstones,dc=com",
+                "/api/password/cn=test,dc=flintstones,dc=com",
                 auth=AUTH,
                 content='{"old":"test","new1":"abc"}',
             )
@@ -172,7 +172,7 @@ class BackendSmokeTest(unittest.TestCase):
     def test_150_verify_password(self):
         with TestClient(app) as client:
             result = client.post(
-                "/api/entry/password/cn=test,dc=flintstones,dc=com",
+                "/api/password/cn=test,dc=flintstones,dc=com",
                 auth=AUTH,
                 content='{"check":"abc"}',
             )

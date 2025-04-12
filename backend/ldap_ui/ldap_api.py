@@ -374,7 +374,7 @@ class CheckPasswordRequest(BaseModel):
 PasswordRequest = TypeAdapter(Union[ChangePasswordRequest, CheckPasswordRequest])
 
 
-@api.route("/entry/password/{dn:path}", methods=["POST"])
+@api.route("/password/{dn:path}", methods=["POST"])
 async def passwd(request: Request) -> Response:
     "Update passwords"
 
