@@ -3,11 +3,10 @@ name = "ldap-ui"
 authors = [{ name = "dnknth" }]
 description = "A fast and versatile LDAP editor"
 readme = "README.md"
-license = {text = "MIT License"}
+license = "MIT"
 requires-python = ">=3.7"
 keywords = ["ldap", "web-ui", "python3"]
 classifiers = [
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",

@@ -61,7 +61,7 @@ async function check() {
     passwordOk.value = undefined;
     return;
   }
-  const response = await fetch('api/entry/password/' + props.entry.meta.dn, {
+  const response = await fetch('api/password/' + props.entry.meta.dn, {
     method: 'POST',
     body: JSON.stringify({ check: oldPassword.value }),
     headers: {

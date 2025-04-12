@@ -285,7 +285,7 @@ async function deleteEntry(dn: string) {
 }
 
 async function changePassword(oldPass: string, newPass: string) {
-  const response = await fetch('api/entry/password/' + entry.value!.meta.dn, {
+  const response = await fetch('api/password/' + entry.value!.meta.dn, {
     method: 'POST',
     body: JSON.stringify({ old: oldPass, new1: newPass }),
     headers: {
