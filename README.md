@@ -46,7 +46,8 @@ For the impatient: Run it with
 
 ```shell
 docker run -p 127.0.0.1:5000:5000 \
-    -e LDAP_URL=ldap://your.openldap.server/
+    -e LDAP_URL=ldap://your.openldap.server/ \
+    dnknth/ldap-ui:latest
 ```
 
 For the even more impatient: Start a demo with
