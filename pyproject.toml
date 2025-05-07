@@ -43,3 +43,9 @@ where = ["backend"]
 
 [tool.setuptools.package-data]
 ldap_ui = ["statics/*", "statics/assets/*"]
+
+[dependency-groups]
+dev = [
+    "build>=1.1.1",
+    "twine>=4.0.2",
+]
