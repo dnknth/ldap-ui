@@ -26,7 +26,7 @@
 import { computed, inject, ref } from 'vue';
 import Modal from '../ui/Modal.vue';
 import type { Provided } from '../Provided';
-import type { Entry } from './Entry';
+import type { Entry } from '../../generated/types.gen';
 
 const props = defineProps({
   dn: { type: String, required: true },

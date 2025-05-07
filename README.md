@@ -142,4 +142,4 @@ Additionally, arbitrary attributes can be searched with an LDAP filter specifica
 
 ## Acknowledgements
 
-The Python backend uses [Starlette](https://starlette.io). The UI is built with [Vue.js](https://vuejs.org) and [Tailwind CSS](https://tailwindcss.com/). Kudos to the authors of these elegant frameworks!
+The Python backend uses [FastAPI](https://fastapi.tiangolo.com). The UI is built with [Vue.js](https://vuejs.org) and [Tailwind CSS](https://tailwindcss.com/). Kudos to the authors of these elegant frameworks!

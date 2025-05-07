@@ -17,20 +17,23 @@
 </template>
 
 <script setup lang="ts">
+import { inject } from 'vue';
 import { DN } from './schema/schema';
 import { onMounted, ref, watch } from 'vue';
 import NodeLabel from './NodeLabel.vue';
-import type { TreeNode } from './TreeNode';
+import type { TreeItem } from '../generated/types.gen'
+import { getTree } from '../generated/sdk.gen'
+import type { Provided } from './Provided'
 
-class Node implements TreeNode {
+class Node implements TreeItem {
   dn: string;
-  level: number | undefined;
+  level: number;
   hasSubordinates: boolean;
   structuralObjectClass: string;
   open: boolean = false;
   subordinates: Node[] = [];
 
-  constructor(json: TreeNode) {
+  constructor(json: TreeItem) {
     this.dn = json.dn;
     this.level = this.dn.split(',').length;
     this.hasSubordinates = json.hasSubordinates;
@@ -82,7 +85,8 @@ const props = defineProps({
   activeDn: String,
 }),
   tree = ref<Node>(),
-  emit = defineEmits(['base-dn', 'update:activeDn']);
+  emit = defineEmits(['base-dn', 'update:activeDn']),
+  app = inject<Provided>('app');
 
 onMounted(async () => {
   await reload('base');
@@ -131,11 +135,11 @@ async function clicked(dn: string) {
 
 // Reload the subtree at entry with given DN
 async function reload(dn: string) {
-  const response = await fetch('api/tree/' + dn);
-  if (!response.ok) return;
+  const response = await getTree({ path: { basedn: dn }, client: app?.client });
+  if (!response.data) return;
 
-  const data = await response.json() as Node[];
-  data.sort((a: Node, b: Node) => a.dn.toLowerCase().localeCompare(b.dn.toLowerCase()));
+  const data = response.data;
+  data.sort((a: TreeItem, b: TreeItem) => a.dn.toLowerCase().localeCompare(b.dn.toLowerCase()));
 
   if (dn == 'base') {
     tree.value = new Node(data[0]);

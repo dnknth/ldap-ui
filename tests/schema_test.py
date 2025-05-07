@@ -1,5 +1,5 @@
 import unittest
-from json import load
+from json import loads
 from pathlib import Path
 
 from ldap.schema import SubSchema
@@ -24,7 +24,7 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual("cn=subschema", dn.lower())
 
         # Count number of entries for each attribute
-        count = {k: len(attrs[k]) for k in attrs.keys()}
+        count = {k: len(v) for k, v in attrs.items()}
 
         # Convert to LDAP SubSchema
         sub_schema = SubSchema(attrs, check_uniqueness=2)
@@ -44,8 +44,7 @@ class SchemaTest(unittest.TestCase):
         self.assertIn("posixaccount", ui_schema.objectClasses)
 
         # Dump JSON
-        with open(JSON, "r") as json:
-            self.assertEqual(ui_schema.model_dump(), load(json))
+        self.assertEqual(ui_schema.model_dump(), loads(JSON.read_text()))
 
 
 if __name__ == "__main__":

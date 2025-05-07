@@ -18,8 +18,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, inject, ref } from 'vue';
 import Modal from '../ui/Modal.vue';
+import { postCheckPassword } from '../../generated/sdk.gen'
+import type { Provided } from '../Provided'
 
 const props = defineProps({
   entry: { type: Object, required: true },
@@ -41,7 +43,8 @@ const props = defineProps({
   oldExists = computed(() => !!props.entry.attrs.userPassword
     && props.entry.attrs.userPassword[0] != ''),
 
-  emit = defineEmits(['ok', 'update-form', 'update:modal']);
+  emit = defineEmits(['ok', 'update-form', 'update:modal']),
+  app = inject<Provided>('app');
 
 function init() {
   oldPassword.value = newPassword.value = repeated.value = '';
@@ -61,15 +64,13 @@ async function check() {
     passwordOk.value = undefined;
     return;
   }
-  const response = await fetch('api/password/' + props.entry.meta.dn, {
-    method: 'POST',
-    body: JSON.stringify({ check: oldPassword.value }),
-    headers: {
-      "Content-Type": "application/json",
-    },
+  const response = await postCheckPassword({
+    path: { dn: props.entry.meta.dn },
+    body: oldPassword.value,
+    client: app?.client
   });
 
-  passwordOk.value = await response.json() as boolean;
+  passwordOk.value = response.data;
 }
 
 async function onOk() {

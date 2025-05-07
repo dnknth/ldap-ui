@@ -11,6 +11,8 @@
 import { computed, inject, nextTick, ref, watch } from 'vue';
 import Popover from './ui/Popover.vue';
 import type { Provided } from './Provided';
+import { search } from '../generated/sdk.gen'
+import type { SearchResult } from '../generated/types.gen'
 
 interface Result {
   dn: string;
@@ -36,7 +38,7 @@ const props = defineProps({
 }),
 
   app = inject<Provided>('app'),
-  results = ref<Result[]>([]),
+  results = ref<SearchResult[]>([]),
   show = computed(() => props.query.trim() != ''
     && results.value && results.value.length > 1),
   emit = defineEmits(['select-dn']);
@@ -44,9 +46,9 @@ const props = defineProps({
 watch(() => props.query, async (q) => {
   if (!q) return;
 
-  const response = await fetch('api/search/' + q);
-  if (!response.ok) return;
-  results.value = await response.json() as Result[]
+  const response = await search({ path: { query: q }, client: app?.client });
+  if (!response.data) return;
+  results.value = await response.data
 
   if (results.value.length == 0 && !props.silent) {
     app?.showWarning('No search results');

@@ -5,7 +5,7 @@
     <new-entry-dialog v-model:modal="modal" :dn="entry.meta.dn" :return-to="focused" @ok="newEntry" />
     <copy-entry-dialog v-model:modal="modal" :entry="entry" :return-to="focused" @ok="newEntry" />
     <rename-entry-dialog v-model:modal="modal" :entry="entry" :return-to="focused" @ok="renameEntry" />
-    <delete-entry-dialog v-model:modal="modal" :dn="entry.meta.dn" :return-to="focused" @ok="deleteEntry" />
+    <delete-entry-dialog v-model:modal="modal" :dn="entry.meta.dn" :return-to="focused" @ok="deleteEntryByDn" />
     <discard-entry-dialog v-model:modal="modal" :dn="props.activeDn" :return-to="focused" @ok="discardEntry"
       @shown="emit('update:activeDn')" />
 
@@ -32,7 +32,7 @@
           <li @click="modal = 'new-entry';" role="menuitem">Add child…</li>
           <li @click="modal = 'copy-entry';" role="menuitem">Copy…</li>
           <li @click="modal = 'rename-entry';" role="menuitem">Rename…</li>
-          <li @click="ldif" role="menuitem">Export</li>
+          <li role="menuitem"><a :href="'api/ldif/' + entry.meta.dn">Export</a></li>
           <li @click="modal = 'delete-entry';" class="text-danger" role="menuitem">Delete…</li>
         </dropdown-menu>
       </div>
@@ -78,12 +78,17 @@ import CopyEntryDialog from './CopyEntryDialog.vue';
 import DeleteEntryDialog from './DeleteEntryDialog.vue';
 import DiscardEntryDialog from './DiscardEntryDialog.vue';
 import DropdownMenu from '../ui/DropdownMenu.vue';
-import type { Entry } from './Entry';
+import type { Entry, HttpValidationError } from '../../generated/types.gen';
 import NewEntryDialog from './NewEntryDialog.vue';
 import NodeLabel from '../NodeLabel.vue';
 import PasswordChangeDialog from './PasswordChangeDialog.vue';
 import type { Provided } from '../Provided';
 import RenameEntryDialog from './RenameEntryDialog.vue';
+import {
+  getEntry, postEntry, putEntry,
+  postRenameEntry, deleteEntry,
+  postChangePassword
+} from '../../generated/sdk.gen';
 
 function unique(element: unknown, index: number, array: Array<unknown>): boolean {
   return array.indexOf(element) == index;
@@ -193,6 +198,10 @@ function addMandatoryRows(): string | undefined {
     .filter(attr => !entry.value!.attrs[attr]);
   must.forEach(attr => entry.value!.attrs[attr] = ['']);
   return must.length ? must[0] + '-0' : undefined;
+
+}
+function showError(error: HttpValidationError) {
+  app?.showError(error.detail?.join('\n') || "Operation failed")
 }
 
 // Load an entry into the editing form
@@ -203,16 +212,17 @@ async function load(dn: string, changed: string[] | undefined, focused: string |
     entry.value = undefined;
     return;
   }
-
-  const response = await fetch('api/entry/' + dn)
-  if (!response.ok) {
-    app?.showError(await response.text())
+  const response = await getEntry({
+    path: { dn },
+    client: app?.client
+  });
+  if (response.error) {
+    showError(response.error)
     return;
   }
-  entry.value = await response.json() as Entry;
-
-  entry.value.changed = changed || [];
-  entry.value.meta.isNew = false;
+  entry.value = response.data;
+  entry.value!.changed = changed || [];
+  entry.value!.meta.isNew = false;
 
   document.title = dn.split(',')[0];
   focus(focused);
@@ -230,40 +240,50 @@ async function save() {
   }
 
   entry.value!.changed = [];
-  const response = await fetch('api/entry/' + entry.value!.meta.dn, {
-    method: entry.value!.meta.isNew ? 'PUT' : 'POST',
-    body: JSON.stringify(entry.value!.attrs),
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    app?.showError(await response.text())
-    return;
+  let changed: string[] = [];
+  if (entry.value!.meta.isNew) {
+    const response = await putEntry({
+      path: { dn: entry.value!.meta.dn },
+      body: entry.value!.attrs,
+      client: app?.client
+    });
+    if (response.error) {
+      showError(response.error)
+      return;
+    }
+    changed = response.data.changed;
+  }
+  else {
+    const response = await postEntry({
+      path: { dn: entry.value!.meta.dn },
+      body: entry.value!.attrs,
+      client: app?.client
+    });
+    if (response.error) {
+      showError(response.error)
+      return;
+    }
+    changed = response.data.changed;
   }
 
-  const data = await response.json() as { changed: string[] };
-  if (data.changed && data.changed.length) {
+  if (changed.length) {
     app?.showInfo('👍 Saved changes');
   }
   if (entry.value!.meta.isNew) {
     entry.value!.meta.isNew = false;
     emit('update:activeDn', entry.value!.meta.dn);
   }
-  else load(entry.value!.meta.dn, data.changed, focused.value);
+  else load(entry.value!.meta.dn, changed, focused.value);
 }
 
 async function renameEntry(rdn: string) {
-  const response = await fetch('api/rename/' + entry.value!.meta.dn, {
-    method: 'POST',
-    body: JSON.stringify(rdn),
-    headers: {
-      "Content-Type": "application/json",
-    },
+  const response = await postRenameEntry({
+    path: { dn: entry.value!.meta.dn },
+    body: rdn,
+    client: app?.client
   });
-  if (!response.ok) {
-    app?.showError(await response.text())
+  if (response.error) {
+    showError(response.error)
     return;
   }
 
@@ -272,53 +292,28 @@ async function renameEntry(rdn: string) {
   emit('update:activeDn', dnparts.join(','));
 }
 
-async function deleteEntry(dn: string) {
-  const response = await fetch('api/entry/' + dn, { method: 'DELETE' });
-  if (!response.ok) {
-    app?.showError(await response.text())
+async function deleteEntryByDn(dn: string) {
+  const response = await deleteEntry({ path: { dn } });
+  if (response.error) {
+    showError(response.error)
     return;
   }
-  else if (response.status == 204) {
-    app?.showInfo('👍 Deleted: ' + dn);
-    emit('update:activeDn', '-' + dn);
-  }
+  app?.showInfo('👍 Deleted: ' + dn);
+  emit('update:activeDn', '-' + dn);
 }
 
 async function changePassword(oldPass: string, newPass: string) {
-  const response = await fetch('api/password/' + entry.value!.meta.dn, {
-    method: 'POST',
-    body: JSON.stringify({ old: oldPass, new1: newPass }),
-    headers: {
-      "Content-Type": "application/json",
-    },
+  const response = await postChangePassword({
+    path: { dn: entry.value!.meta.dn },
+    body: { old: oldPass, new1: newPass },
+    client: app?.client
   });
-  if (!response.ok) {
-    app?.showError(await response.text())
-    return;
-  }
-
-  const data = await response.json() as string;
-
-  if (data !== undefined) {
-    entry.value!.attrs.userPassword = [data];
+  if (response.error) {
+    showError(response.error)
+  } else {
+    entry.value!.attrs.userPassword = [newPass];
     entry.value!.changed?.push('userPassword');
   }
-}
-
-// Download LDIF
-async function ldif() {
-  const response = await fetch('api/ldif/' + entry.value!.meta.dn);
-  if (!response.ok) {
-    app?.showError(await response.text())
-    return;
-  }
-
-  const a = document.createElement("a"),
-    url = URL.createObjectURL(await response.blob());
-  a.href = url;
-  a.download = entry.value!.meta.dn.split(',')[0].split('=')[1] + '.ldif';
-  document.body.appendChild(a);
-  a.click();
 }
 
 function attributes(kind: 'must' | 'may') {
