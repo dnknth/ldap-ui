@@ -1,24 +1,24 @@
-.PHONY: debug run clean tidy image push manifest
+.PHONY: clean debug deploy image manifest push pypi tidy 
 
 SITE = backend/ldap_ui/statics
 VERSION = $(shell fgrep __version__ backend/ldap_ui/__init__.py | cut -d'"' -f2)
 TAG = $(VERSION)-$(subst aarch64,arm64,$(shell uname -m))
 IMAGE = dnknth/ldap-ui
 
-debug: .venv $(SITE)
-	DEBUG=true .venv/bin/uvicorn --reload --port 5000 ldap_ui.app:app
+debug: $(SITE)
+	DEBUG=true uv run uvicorn --reload --port 5000 ldap_ui.app:app
 
 .env: env.example
 	cp $< $@
 
-.venv: pyproject.toml
-	uv sync
+dist: clean $(SITE)
+	uv run python -m build --wheel
 
-dist: .venv $(SITE)
-	.venv/bin/python -m build --wheel
+pypi: dist
+	- uv run twine upload dist/*
 
-pypi: clean dist
-	- .venv/bin/twine upload dist/*
+deploy: clean $(SITE)
+	rsync -a --delete $(SITE)/ mx:/opt/ldap-ui/venv/lib/python3.12/site-packages/ldap_ui/statics/
 
 $(SITE): node_modules
 	npm audit

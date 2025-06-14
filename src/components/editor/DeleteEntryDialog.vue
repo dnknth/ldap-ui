@@ -21,23 +21,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 import Modal from '../ui/Modal.vue';
 import NodeLabel from '../NodeLabel.vue';
-import type { TreeNode } from '../TreeNode';
+import type { TreeItem } from '../../generated/types.gen';
+import { getSubtree } from '../../generated/sdk.gen';
+import type { Provided } from '../Provided'
 
 const props = defineProps({
   dn: { type: String, required: true },
   modal: String,
   returnTo: String,
 }),
-  subtree = ref<TreeNode[]>([]),
-  emit = defineEmits(['ok', 'update:modal']);
+  subtree = ref<TreeItem[]>([]),
+  emit = defineEmits(['ok', 'update:modal']),
+  app = inject<Provided>('app');
+
 
 // List subordinate elements to be deleted
 async function init() {
-  const response = await fetch('api/subtree/' + props.dn)
-  subtree.value = await response.json() as TreeNode[];
+  const response = await getSubtree({
+    path: { root_dn: props.dn },
+    client: app?.client
+  })
+  if (response.data) {
+    subtree.value = response.data;
+  }
 }
 
 function onShown() {

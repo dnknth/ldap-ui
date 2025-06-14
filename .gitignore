@@ -28,3 +28,9 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Validation files
+*-actual.*
+
+# OpenAPI
+generated

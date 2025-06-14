@@ -9,6 +9,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import Modal from './ui/Modal.vue';
+import { postLdif } from '../generated/sdk.gen'
 
 const
   ldifData = ref(''),
@@ -39,7 +40,7 @@ async function onOk() {
   if (!ldifData.value) return;
 
   emit('update:modal');
-  const response = await fetch('api/ldif', { method: 'POST', body: ldifData.value });
-  if (response.ok) emit('ok');
+  const response = await postLdif({ body: ldifData.value });
+  if (!response.error) emit('ok');
 }
 </script>

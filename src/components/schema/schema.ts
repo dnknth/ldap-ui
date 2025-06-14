@@ -1,3 +1,5 @@
+import type {Schema} from '../../generated/types.gen';
+
 function unique(element: unknown, index: number, array: Array<unknown>): boolean {
   return array.indexOf(element) == index;
 }
@@ -185,19 +187,13 @@ class Syntax {
   toString() { return this.desc!; }
 }
 
-interface JsonSchema {
-  attributes: object;
-  objectClasses: object;
-  syntaxes: object;
-}
-
 export class LdapSchema extends Object {
   readonly attributes: Array<Attribute>;
   readonly objectClasses: Map<string, ObjectClass>;
   readonly syntaxes: Map<string, Syntax>;
   readonly attributesByName: Map<string, Attribute>;
 
-  constructor(json: JsonSchema) {
+  constructor(json: Schema) {
     super();
     this.syntaxes = new Map(Object.entries(json.syntaxes)
       .map(([oid, obj]) => [oid, new Syntax(obj)]));

@@ -7,15 +7,13 @@ to the user.
 """
 
 from enum import IntEnum
-from typing import Generator, Optional, TypeVar, Union, cast
+from typing import Generator, TypeVar, cast
 
 from ldap.schema import SubSchema
 from ldap.schema.models import AttributeType
 from ldap.schema.models import LDAPSyntax as LDAPSyntaxType
 from ldap.schema.models import ObjectClass as ObjectClassType
 from pydantic import BaseModel, Field, field_serializer
-
-__all__ = ("frontend_schema", "Attribute", "ObjectClass")
 
 T = TypeVar("T")
 
@@ -26,12 +24,12 @@ class Element(BaseModel):
     oid: str
     name: str
     names: list[str] = Field(min_length=1)
-    desc: Optional[str]
+    desc: str | None
     obsolete: bool
     sup: list[str]  # TODO check
 
 
-def element(obj: Union[AttributeType, ObjectClassType]) -> Element:
+def element(obj: AttributeType | ObjectClassType) -> Element:
     name = obj.names[0]
     return Element(
         oid=obj.oid,
@@ -68,10 +66,10 @@ class Attribute(Element):
     single_value: bool
     no_user_mod: bool
     usage: Usage
-    equality: Optional[str]
-    syntax: Optional[str]
-    substr: Optional[str]
-    ordering: Optional[str]
+    equality: str | None
+    syntax: str | None
+    substr: str | None
+    ordering: str | None
 
     @field_serializer("usage")
     def serialize_kind(self, usage: Usage, _info) -> str:
@@ -96,7 +94,7 @@ def extract_type(
 
     for oid in sub_schema.listall(schema_class):
         obj = sub_schema.get_obj(schema_class, oid)
-        if schema_class is LDAPSyntaxType or not obj.obsolete:  # pyright: ignore[reportOptionalMemberAccess]
+        if schema_class is LDAPSyntaxType or not obj.obsolete:  # type: ignore
             yield cast(T, obj)
 
 

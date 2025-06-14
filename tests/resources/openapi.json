@@ -1,0 +1,1328 @@
+{
+  "components": {
+    "schemas": {
+      "Attribute": {
+        "properties": {
+          "desc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Desc"
+          },
+          "equality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equality"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Names",
+            "type": "array"
+          },
+          "no_user_mod": {
+            "title": "No User Mod",
+            "type": "boolean"
+          },
+          "obsolete": {
+            "title": "Obsolete",
+            "type": "boolean"
+          },
+          "oid": {
+            "title": "Oid",
+            "type": "string"
+          },
+          "ordering": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ordering"
+          },
+          "single_value": {
+            "title": "Single Value",
+            "type": "boolean"
+          },
+          "substr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Substr"
+          },
+          "sup": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sup",
+            "type": "array"
+          },
+          "syntax": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Syntax"
+          },
+          "usage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "oid",
+          "name",
+          "names",
+          "desc",
+          "obsolete",
+          "sup",
+          "single_value",
+          "no_user_mod",
+          "usage",
+          "equality",
+          "syntax",
+          "substr",
+          "ordering"
+        ],
+        "title": "Attribute",
+        "type": "object"
+      },
+      "Body_put_blob": {
+        "properties": {
+          "blob": {
+            "format": "binary",
+            "title": "Blob",
+            "type": "string"
+          }
+        },
+        "required": [
+          "blob"
+        ],
+        "title": "Body_put_blob",
+        "type": "object"
+      },
+      "ChangePasswordRequest": {
+        "description": "Change a password",
+        "properties": {
+          "new1": {
+            "title": "New1",
+            "type": "string"
+          },
+          "old": {
+            "title": "Old",
+            "type": "string"
+          }
+        },
+        "required": [
+          "old",
+          "new1"
+        ],
+        "title": "ChangePasswordRequest",
+        "type": "object"
+      },
+      "ChangedAttributes": {
+        "description": "List of modified attributes",
+        "properties": {
+          "changed": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Changed",
+            "type": "array"
+          }
+        },
+        "required": [
+          "changed"
+        ],
+        "title": "ChangedAttributes",
+        "type": "object"
+      },
+      "Entry": {
+        "description": "Directory entry",
+        "properties": {
+          "attrs": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Attrs",
+            "type": "object"
+          },
+          "changed": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Changed",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "attrs",
+          "meta"
+        ],
+        "title": "Entry",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Kind": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "title": "Kind",
+        "type": "integer"
+      },
+      "Meta": {
+        "description": "Attribute classification for an entry",
+        "properties": {
+          "autoFilled": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Autofilled",
+            "type": "array"
+          },
+          "aux": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Aux",
+            "type": "array"
+          },
+          "binary": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Binary",
+            "type": "array"
+          },
+          "dn": {
+            "title": "Dn",
+            "type": "string"
+          },
+          "isNew": {
+            "default": false,
+            "title": "Isnew",
+            "type": "boolean"
+          },
+          "required": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Required",
+            "type": "array"
+          }
+        },
+        "required": [
+          "dn",
+          "required",
+          "aux",
+          "binary",
+          "autoFilled"
+        ],
+        "title": "Meta",
+        "type": "object"
+      },
+      "ObjectClass": {
+        "properties": {
+          "desc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Desc"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "may": {
+            "items": {
+              "type": "string"
+            },
+            "title": "May",
+            "type": "array"
+          },
+          "must": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Must",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Names",
+            "type": "array"
+          },
+          "obsolete": {
+            "title": "Obsolete",
+            "type": "boolean"
+          },
+          "oid": {
+            "title": "Oid",
+            "type": "string"
+          },
+          "sup": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sup",
+            "type": "array"
+          }
+        },
+        "required": [
+          "oid",
+          "name",
+          "names",
+          "desc",
+          "obsolete",
+          "sup",
+          "may",
+          "must",
+          "kind"
+        ],
+        "title": "ObjectClass",
+        "type": "object"
+      },
+      "Range": {
+        "description": "Numeric attribute range",
+        "properties": {
+          "max": {
+            "title": "Max",
+            "type": "integer"
+          },
+          "min": {
+            "title": "Min",
+            "type": "integer"
+          },
+          "next": {
+            "title": "Next",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "min",
+          "max",
+          "next"
+        ],
+        "title": "Range",
+        "type": "object"
+      },
+      "Schema": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Attribute"
+            },
+            "title": "Attributes",
+            "type": "object"
+          },
+          "objectClasses": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ObjectClass"
+            },
+            "title": "Objectclasses",
+            "type": "object"
+          },
+          "syntaxes": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Syntax"
+            },
+            "title": "Syntaxes",
+            "type": "object"
+          }
+        },
+        "required": [
+          "attributes",
+          "objectClasses",
+          "syntaxes"
+        ],
+        "title": "Schema",
+        "type": "object"
+      },
+      "SearchResult": {
+        "description": "Search result",
+        "properties": {
+          "dn": {
+            "title": "Dn",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dn",
+          "name"
+        ],
+        "title": "SearchResult",
+        "type": "object"
+      },
+      "Syntax": {
+        "properties": {
+          "desc": {
+            "title": "Desc",
+            "type": "string"
+          },
+          "not_human_readable": {
+            "title": "Not Human Readable",
+            "type": "boolean"
+          },
+          "oid": {
+            "title": "Oid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "oid",
+          "desc",
+          "not_human_readable"
+        ],
+        "title": "Syntax",
+        "type": "object"
+      },
+      "TreeItem": {
+        "description": "Entry in the navigation tree",
+        "properties": {
+          "dn": {
+            "title": "Dn",
+            "type": "string"
+          },
+          "hasSubordinates": {
+            "title": "Hassubordinates",
+            "type": "boolean"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "structuralObjectClass": {
+            "title": "Structuralobjectclass",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dn",
+          "structuralObjectClass",
+          "hasSubordinates",
+          "level"
+        ],
+        "title": "TreeItem",
+        "type": "object"
+      },
+      "Usage": {
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "title": "Usage",
+        "type": "integer"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBasic": {
+        "scheme": "basic",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "title": "LDAP UI",
+    "version": "0.10.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/blob/{attr}/{index}/{dn}": {
+      "delete": {
+        "description": "Remove a binary attribute",
+        "operationId": "delete_blob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attr",
+            "required": true,
+            "schema": {
+              "title": "Attr",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "index",
+            "required": true,
+            "schema": {
+              "title": "Index",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "dn",
+            "required": true,
+            "schema": {
+              "title": "Dn",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Delete Blob",
+        "tags": [
+          "Editing"
+        ]
+      },
+      "put": {
+        "description": "Upload a binary attribute",
+        "operationId": "put_blob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attr",
+            "required": true,
+            "schema": {
+              "title": "Attr",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "index",
+            "required": true,
+            "schema": {
+              "title": "Index",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "dn",
+            "required": true,
+            "schema": {
+              "title": "Dn",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_put_blob"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Put Blob",
+        "tags": [
+          "Editing"
+        ]
+      }
+    },
+    "/api/change-password/{dn}": {
+      "post": {
+        "description": "Update passwords",
+        "operationId": "post_change_password",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dn",
+            "required": true,
+            "schema": {
+              "title": "Dn",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Change Password",
+        "tags": [
+          "Editing"
+        ]
+      }
+    },
+    "/api/check-password/{dn}": {
+      "post": {
+        "description": "Verify a password",
+        "operationId": "post_check_password",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dn",
+            "required": true,
+            "schema": {
+              "title": "Dn",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "Check",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Post Check Password",
+                  "type": "boolean"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Check Password",
+        "tags": [
+          "Editing"
+        ]
+      }
+    },
+    "/api/entry/{dn}": {
+      "delete": {
+        "operationId": "delete_entry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dn",
+            "required": true,
+            "schema": {
+              "title": "Dn",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Delete Entry",
+        "tags": [
+          "Editing"
+        ]
+      },
+      "get": {
+        "description": "Retrieve a directory entry by DN",
+        "operationId": "get_entry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dn",
+            "required": true,
+            "schema": {
+              "title": "Dn",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entry"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Get Entry",
+        "tags": [
+          "Editing"
+        ]
+      },
+      "post": {
+        "operationId": "post_entry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dn",
+            "required": true,
+            "schema": {
+              "title": "Dn",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "title": "Attributes",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangedAttributes"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Post Entry",
+        "tags": [
+          "Editing"
+        ]
+      },
+      "put": {
+        "operationId": "put_entry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dn",
+            "required": true,
+            "schema": {
+              "title": "Dn",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "title": "Attributes",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangedAttributes"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Put Entry",
+        "tags": [
+          "Editing"
+        ]
+      }
+    },
+    "/api/ldif": {
+      "post": {
+        "description": "Import LDIF",
+        "operationId": "post_ldif",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "Ldif",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Upload Ldif",
+        "tags": [
+          "Editing"
+        ]
+      }
+    },
+    "/api/range/{attribute}": {
+      "get": {
+        "description": "List all values for a numeric attribute of an objectClass like uidNumber or gidNumber",
+        "operationId": "get_range",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attribute",
+            "required": true,
+            "schema": {
+              "title": "Attribute",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Range"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Attribute Range",
+        "tags": [
+          "Misc"
+        ]
+      }
+    },
+    "/api/rename/{dn}": {
+      "post": {
+        "description": "Rename an entry",
+        "operationId": "post_rename_entry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dn",
+            "required": true,
+            "schema": {
+              "title": "Dn",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "Rdn",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Rename Entry",
+        "tags": [
+          "Editing"
+        ]
+      }
+    },
+    "/api/schema": {
+      "get": {
+        "description": "Dump the LDAP schema as JSON",
+        "operationId": "get_schema",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Schema"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Ldap Schema",
+        "tags": [
+          "Misc"
+        ]
+      }
+    },
+    "/api/search/{query}": {
+      "get": {
+        "description": "Search the directory",
+        "operationId": "search",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "query",
+            "required": true,
+            "schema": {
+              "title": "Query",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SearchResult"
+                  },
+                  "title": "Response Search",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Search",
+        "tags": [
+          "Navigation"
+        ]
+      }
+    },
+    "/api/subtree/{root_dn}": {
+      "get": {
+        "description": "List the subtree below a DN",
+        "operationId": "get_subtree",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "root_dn",
+            "required": true,
+            "schema": {
+              "title": "Root Dn",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TreeItem"
+                  },
+                  "title": "Response Get Subtree",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "List Subtree",
+        "tags": [
+          "Misc"
+        ]
+      }
+    },
+    "/api/tree/{basedn}": {
+      "get": {
+        "description": "List directory entries below a DN",
+        "operationId": "get_tree",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "basedn",
+            "required": true,
+            "schema": {
+              "title": "Basedn",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TreeItem"
+                  },
+                  "title": "Response Get Tree",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Get Tree",
+        "tags": [
+          "Navigation"
+        ]
+      }
+    },
+    "/api/whoami": {
+      "get": {
+        "description": "DN of the current user",
+        "operationId": "get_who_am_i",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Who Am I",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Whoami",
+        "tags": [
+          "Misc"
+        ]
+      }
+    }
+  }
+}

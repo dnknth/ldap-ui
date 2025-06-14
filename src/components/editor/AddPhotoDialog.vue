@@ -8,8 +8,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 import Modal from '../ui/Modal.vue';
+import { putBlob } from '../../generated/sdk.gen'
+import type { Provided } from '../Provided'
 
 const props = defineProps({
   dn: { type: String, required: true },
@@ -21,21 +23,21 @@ const props = defineProps({
   returnTo: String,
 }),
   upload = ref<HTMLInputElement | null>(null),
-  emit = defineEmits(['ok', 'update:modal']);
+  emit = defineEmits(['ok', 'update:modal']),
+  app = inject<Provided>('app');
 
 // add an image
 async function onOk(evt: Event) {
   const target = evt.target as HTMLInputElement;
   if (!target?.files) return;
 
-  const fd = new FormData();
-  fd.append('blob', target.files[0])
-  const response = await fetch('api/blob/' + props.attr + '/0/' + props.dn, {
-    method: 'PUT',
-    body: fd,
+  const response = await putBlob({
+    path: { attr: props.attr!, index: 0, dn: props.dn },
+    body: { blob: target.files[0] },
+    client: app?.client
   });
 
-  if (response.ok) {
+  if (!response.error) {
     emit('update:modal');
     emit('ok', props.dn, [props.attr]);
   }

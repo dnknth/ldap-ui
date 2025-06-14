@@ -45,6 +45,9 @@ import NavBar from './components/NavBar.vue';
 import ObjectClassCard from './components/schema/ObjectClassCard.vue';
 import type { Provided } from './components/Provided';
 import TreeView from './components/TreeView.vue';
+import { getSchema, getWhoAmI } from './generated/sdk.gen';
+import { createClient } from './generated/client';
+
 
 interface Error {
   counter: number;
@@ -70,6 +73,9 @@ const
   oc = ref<string>(),        // objectClass info in side panel
   attr = ref<string>(),      // attribute info in side panel
 
+  // Adjust the base URL of the API client for relative mounts like /ldap
+  client = createClient({ baseUrl: window.location.href }),
+
   // Helpers for components
   provided: Provided = {
     get schema() { return schema.value; },
@@ -77,20 +83,21 @@ const
     showError,
     showException,
     showWarning,
+    client
   };
 
 provide('app', provided);
 
 onMounted(async () => { // Runs on page load
   // Get the DN of the current user
-  const whoamiResponse = await fetch('api/whoami');
-  if (whoamiResponse.ok) {
-    user.value = await whoamiResponse.json();
+  const whoamiResponse = await getWhoAmI({ client });
+  if (whoamiResponse.data) {
+    user.value = whoamiResponse.data;
 
     // Load the schema
-    const schemaResponse = await fetch('api/schema');
-    if (schemaResponse.ok) {
-      schema.value = new LdapSchema(await schemaResponse.json());
+    const schemaResponse = await getSchema({ client });
+    if (schemaResponse.data) {
+      schema.value = new LdapSchema(schemaResponse.data);
     }
   }
 });

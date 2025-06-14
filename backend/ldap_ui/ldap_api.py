@@ -1,51 +1,67 @@
 """
 ReST endpoints for LDAP access.
 
-Directory operations are accessible to the frontend
-through a hand-knit ReST API, responses are usually converted to JSON.
+Directory operations are exposed to the frontend
+by a hand-knit ReST API, responses are usually converted to JSON.
 
 Asynchronous LDAP operations are used as much as possible.
 """
 
 import base64
 import io
+from enum import StrEnum
 from http import HTTPStatus
-from typing import Any, Optional, Tuple, Union, cast
+from typing import Annotated, cast
 
 import ldif
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    File,
+    HTTPException,
+    Response,
+    UploadFile,
+)
+from fastapi.responses import PlainTextResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from ldap import (
-    INVALID_CREDENTIALS,  # pyright: ignore[reportAttributeAccessIssue]
-    SCOPE_BASE,  # pyright: ignore[reportAttributeAccessIssue]
-    SCOPE_ONELEVEL,  # pyright: ignore[reportAttributeAccessIssue]
-    SCOPE_SUBTREE,  # pyright: ignore[reportAttributeAccessIssue]
+    INVALID_CREDENTIALS,  # type: ignore
+    SCOPE_BASE,  # type: ignore
+    SCOPE_ONELEVEL,  # type: ignore
+    SCOPE_SUBTREE,  # type: ignore
 )
 from ldap.ldapobject import LDAPObject
 from ldap.modlist import addModlist, modifyModlist
 from ldap.schema import SubSchema
 from ldap.schema.models import AttributeType, LDAPSyntax, ObjectClass
-from pydantic import BaseModel, Field, TypeAdapter
-from starlette.datastructures import UploadFile
-from starlette.exceptions import HTTPException
-from starlette.requests import Request
-from starlette.responses import JSONResponse, PlainTextResponse, Response
-from starlette.routing import Router
 
 from . import settings
+from .entities import (
+    Attributes,
+    ChangedAttributes,
+    ChangePasswordRequest,
+    Entry,
+    Meta,
+    Range,
+    SearchResult,
+    TreeItem,
+)
 from .ldap_helpers import (
     WITH_OPERATIONAL_ATTRS,
+    LdapEntry,
+    anonymous_user_search,
     empty,
     get_entry_by_dn,
+    get_schema,
     ldap_connect,
-    result,
+    results,
     unique,
 )
 from .schema import ObjectClass as OC
-from .schema import frontend_schema
+from .schema import Schema, frontend_schema
 
-__all__ = ("api",)
-
-
-NO_CONTENT = Response(status_code=HTTPStatus.NO_CONTENT.value)
+NO_CONTENT = Response(status_code=HTTPStatus.NO_CONTENT)
 
 # Special fields
 PHOTOS = ("jpegPhoto", "thumbnailPhoto")
@@ -55,266 +71,379 @@ PASSWORDS = ("userPassword",)
 OCTET_STRING = "1.3.6.1.4.1.1466.115.121.1.40"
 INTEGER = "1.3.6.1.4.1.1466.115.121.1.27"
 
-# Starlette router to decorate endpoints
-api = Router()
+api = APIRouter(prefix="/api")
 
 
-@api.route("/whoami")
-async def whoami(request: Request) -> JSONResponse:
-    "DN of the current user"
-    return JSONResponse(request.state.ldap.whoami_s().replace("dn:", ""))
-
-
-class TreeItem(BaseModel):
-    dn: str
-    structuralObjectClass: str
-    hasSubordinates: bool
-    level: int
-
-
-@api.route("/tree/{basedn:path}")
-async def tree(request: Request) -> JSONResponse:
-    "List directory entries"
-
-    basedn = request.path_params["basedn"]
-    base_level = len(basedn.split(","))
-    scope = SCOPE_ONELEVEL
-    if basedn == "base":
-        scope = SCOPE_BASE
-        basedn = settings.BASE_DN
-
-    connection = request.state.ldap
-    entries = result(
-        connection, connection.search(basedn, scope, attrlist=WITH_OPERATIONAL_ATTRS)
-    )
-    return JSONResponse(
-        [
-            _tree_item(dn, attrs, base_level, request.app.state.schema).model_dump()
-            async for dn, attrs in entries
-        ]
-    )
-
-
-def _tree_item(
-    dn: str, attrs: dict[str, Any], level: int, schema: SubSchema
-) -> TreeItem:
-    structuralObjectClass = next(
-        iter(
-            filter(
-                lambda oc: oc.kind == OC.Kind.structural.value,  # pyright: ignore[reportOptionalMemberAccess]
-                map(
-                    lambda o: schema.get_obj(ObjectClass, o.decode()),
-                    attrs["objectClass"],
-                ),
-            )
-        )
-    )
-
-    return TreeItem(
-        dn=dn,
-        structuralObjectClass=structuralObjectClass.names[0],
-        hasSubordinates=attrs["hasSubordinates"][0] == b"TRUE"
-        if "hasSubordinates" in attrs
-        else bool(attrs.get("numSubordinates")),
-        level=len(dn.split(",")) - level,
-    )
-
-
-class Meta(BaseModel):
-    dn: str
-    required: list[str]
-    aux: list[str]
-    binary: list[str]
-    autoFilled: list[str]
-
-
-class Entry(BaseModel):
-    attrs: dict[str, list[str]]
-    meta: Meta
-
-
-def _entry(schema: SubSchema, res: Tuple[str, Any]) -> Entry:
-    "Prepare an LDAP entry for transmission"
-
-    dn, attrs = res
-    ocs = set([oc.decode() for oc in attrs["objectClass"]])
-    must_attrs, _may_attrs = schema.attribute_types(ocs)
-    soc = [
-        oc.names[0]  # pyright: ignore[reportOptionalMemberAccess]
-        for oc in map(lambda o: schema.get_obj(ObjectClass, o), ocs)
-        if oc.kind == OC.Kind.structural.value  # pyright: ignore[reportOptionalMemberAccess]
-    ]
-    aux = set(
-        schema.get_obj(ObjectClass, a).names[0]  # pyright: ignore[reportOptionalMemberAccess]
-        for a in schema.get_applicable_aux_classes(soc[0])
-    )
-
-    # 23 suppress userPassword
-    if "userPassword" in attrs:
-        attrs["userPassword"] = [b"*****"]
-
-    # Filter out binary attributes
-    binary = set()
-    for attr in attrs:
-        obj = schema.get_obj(AttributeType, attr)
-
-        # Octet strings are not used consistently.
-        # Try to decode as text and treat as binary on failure
-        if not obj.syntax or obj.syntax == OCTET_STRING:  # pyright: ignore[reportOptionalMemberAccess]
-            try:
-                for val in attrs[attr]:
-                    assert val.decode().isprintable()
-            except:  # noqa: E722
-                binary.add(attr)
-
-        else:  # Check human-readable flag in schema
-            syntax = schema.get_obj(LDAPSyntax, obj.syntax)  # pyright: ignore[reportOptionalMemberAccess]
-            if syntax.not_human_readable:  # pyright: ignore[reportOptionalMemberAccess]
-                binary.add(attr)
-
-    return Entry(
-        attrs={
-            k: [
-                base64.b64encode(val).decode() if k in binary else val for val in values
-            ]
-            for k, values in attrs.items()
-        },
-        meta=Meta(
-            dn=dn,
-            required=[schema.get_obj(AttributeType, a).names[0] for a in must_attrs],  # pyright: ignore[reportOptionalMemberAccess]
-            aux=sorted(aux - ocs),
-            binary=sorted(binary),
-            autoFilled=[],
+async def get_root_dse(connection: LDAPObject):
+    "Auto-detect base DN and LDAP schema from root DSE"
+    result = await unique(
+        connection,
+        connection.search(
+            "",
+            SCOPE_BASE,
+            attrlist=WITH_OPERATIONAL_ATTRS,
         ),
     )
+    if not settings.BASE_DN:
+        base_dns = result.attr("namingContexts")
+        assert len(base_dns) == 1, f"No unique base DN: {base_dns}"
+        settings.BASE_DN = base_dns[0]
+
+    if not settings.SCHEMA_DN:
+        schema_dns = result.attr("subschemaSubentry")
+        assert schema_dns, "Cannot determine LDAP schema"
+        settings.SCHEMA_DN = schema_dns[0]
 
 
-Attributes = TypeAdapter(dict[str, list[bytes]])
+async def authenticated(
+    credentials: Annotated[HTTPBasicCredentials, Depends(HTTPBasic())],
+    connection: Annotated[LDAPObject, Depends(ldap_connect)],
+) -> LDAPObject:
+    "Authenticate against the directory"
+
+    if not settings.BASE_DN or not settings.SCHEMA_DN:
+        await get_root_dse(connection)
+
+    # Hard-wired credentials
+    dn = settings.GET_BIND_DN()
+    password = settings.GET_BIND_PASSWORD()
+
+    # Search for basic auth user
+    if not dn:
+        password = credentials.password
+        dn = settings.GET_BIND_PATTERN(
+            credentials.username
+        ) or await anonymous_user_search(connection, credentials.username)
+
+    if dn:  # Log in
+        await empty(connection, connection.simple_bind(dn, password))
+        return connection
+
+    raise INVALID_CREDENTIALS([{"desc": f"Invalid credentials for DN: {dn}"}])
 
 
-@api.route("/entry/{dn:path}", methods=["GET", "POST", "DELETE", "PUT"])
-async def entry(request: Request) -> Response:
-    "Edit directory entries"
+AuthenticatedConnection = Annotated[LDAPObject, Depends(authenticated)]
 
-    dn = request.path_params["dn"]
-    connection = request.state.ldap
 
-    if request.method == "GET":
-        return JSONResponse(
-            _entry(
-                request.app.state.schema, await get_entry_by_dn(connection, dn)
-            ).model_dump()
+class Tag(StrEnum):
+    EDITING = "Editing"
+    MISC = "Misc"
+    NAVIGATION = "Navigation"
+
+
+@api.get(
+    "/tree/base",
+    tags=[Tag.NAVIGATION],
+    operation_id="get_base_entry",
+    include_in_schema=False,  # Overlaps with next endpoint
+)
+async def get_base_entry(connection: AuthenticatedConnection) -> list[TreeItem]:
+    "Get the directory base entry"
+
+    assert settings.BASE_DN, "An LDAP base DN is required!"
+    result = await unique(
+        connection,
+        connection.search(
+            settings.BASE_DN, SCOPE_BASE, attrlist=WITH_OPERATIONAL_ATTRS
+        ),
+    )
+    return [_tree_item(result, settings.BASE_DN)]
+
+
+@api.get("/tree/{basedn:path}", tags=[Tag.NAVIGATION], operation_id="get_tree")
+async def get_tree(basedn: str, connection: AuthenticatedConnection) -> list[TreeItem]:
+    "List directory entries below a DN"
+
+    return [
+        _tree_item(entry, basedn)
+        async for entry in results(
+            connection,
+            connection.search(basedn, SCOPE_ONELEVEL, attrlist=WITH_OPERATIONAL_ATTRS),
         )
+    ]
 
-    if request.method == "DELETE":
-        for entry_dn in sorted(
-            [
-                dn
-                async for dn, _attrs in result(
-                    connection,
-                    connection.search(dn, SCOPE_SUBTREE),
-                )
-            ],
-            key=len,
-            reverse=True,
-        ):
-            await empty(connection, connection.delete(entry_dn))
-        return NO_CONTENT
 
-    # Copy JSON payload into a dictionary of non-empty byte strings
-    json = Attributes.validate_json(await request.body())
-    req = {
-        k: [s for s in filter(None, v)]
-        for k, v in json.items()
-        if k not in PHOTOS and (k not in PASSWORDS or request.method == "PUT")
+def _tree_item(entry: LdapEntry, base_dn: str) -> TreeItem:
+    return TreeItem(
+        dn=entry.dn,
+        structuralObjectClass=entry.attr("structuralObjectClass")[0],
+        hasSubordinates=entry.hasSubordinates,
+        level=_level(entry.dn) - _level(base_dn),
+    )
+
+
+def _level(dn: str) -> int:
+    return len(dn.split(","))
+
+
+@api.get("/entry/{dn:path}", tags=[Tag.EDITING], operation_id="get_entry")
+async def get_entry(dn: str, connection: AuthenticatedConnection) -> Entry:
+    "Retrieve a directory entry by DN"
+    return _entry(
+        await get_entry_by_dn(connection, dn),
+        await get_schema(connection),
+    )
+
+
+def _entry(entry: LdapEntry, schema: SubSchema) -> Entry:
+    "Decode an LDAP entry for transmission"
+
+    meta = _meta(entry, schema)
+    attrs = {
+        k: ["*****"]  # 23 suppress userPassword
+        if k == "userPassword"
+        else [base64.b64encode(val).decode() for val in entry.attrs[k]]
+        if k in meta.binary
+        else entry.attr(k)
+        for k in sorted(entry.attrs)
+    }
+    return Entry(attrs=attrs, meta=meta)
+
+
+def _meta(entry: LdapEntry, schema: SubSchema) -> Meta:
+    "Classify entry attributes"
+
+    object_classes = set(entry.attr("objectClass"))
+    must_attrs, _may_attrs = schema.attribute_types(object_classes)
+    required = [
+        schema.get_obj(AttributeType, a).names[0]  # type: ignore
+        for a in must_attrs
+    ]
+    structural = [
+        oc.names[0]  # type: ignore
+        for oc in map(lambda o: schema.get_obj(ObjectClass, o), object_classes)
+        if oc.kind == OC.Kind.structural  # type: ignore
+    ]
+    aux = set(
+        schema.get_obj(ObjectClass, a).names[0]  # type: ignore
+        for a in schema.get_applicable_aux_classes(structural[0])
+    )
+
+    return Meta(
+        dn=entry.dn,
+        required=required,
+        aux=sorted(aux - object_classes),
+        binary=sorted(_binary_attributes(entry, schema)),
+        autoFilled=[],
+    )
+
+
+def _binary_attributes(entry: LdapEntry, schema: SubSchema) -> set[str]:
+    return set(attr for attr in entry.attrs if _is_binary(entry, attr, schema))
+
+
+def _is_binary(entry: LdapEntry, attr: str, schema: SubSchema) -> bool:
+    "Guess whether an attribute has binary content"
+
+    # Octet strings are not used consistently in schemata.
+    # Try to decode as text and treat as binary on failure
+    attr_type = schema.get_obj(AttributeType, attr)
+    if not attr_type.syntax or attr_type.syntax == OCTET_STRING:  # type: ignore
+        try:
+            return any(not val.isprintable() for val in entry.attr(attr))
+        except UnicodeDecodeError:
+            return True
+
+    # Check human-readable flag
+    return schema.get_obj(LDAPSyntax, attr_type.syntax).not_human_readable  # type: ignore
+
+
+@api.delete(
+    "/entry/{dn:path}",
+    status_code=HTTPStatus.NO_CONTENT,
+    tags=[Tag.EDITING],
+    operation_id="delete_entry",
+)
+async def delete_entry(dn: str, connection: AuthenticatedConnection) -> None:
+    for entry_dn in sorted(
+        [
+            entry.dn
+            async for entry in results(
+                connection,
+                connection.search(dn, SCOPE_SUBTREE),
+            )
+        ],
+        key=len,
+        reverse=True,
+    ):
+        await empty(connection, connection.delete(entry_dn))
+
+
+@api.post("/entry/{dn:path}", tags=[Tag.EDITING], operation_id="post_entry")
+async def post_entry(
+    dn: str, attributes: Attributes, connection: AuthenticatedConnection
+) -> ChangedAttributes:
+    entry = await get_entry_by_dn(connection, dn)
+    schema = await get_schema(connection)
+
+    expected = {
+        attr: _nonempty_byte_strings(attributes, attr)
+        for attr in attributes
+        if attr not in PASSWORDS
+        and not _is_binary(
+            entry, attr, schema
+        )  # FIXME Handle binary attributes properly
     }
 
-    if request.method == "POST":
-        # Get previous values from directory
-        res = await get_entry_by_dn(connection, dn)
-        mods = {k: v for k, v in res[1].items() if k in req}
-        modlist = modifyModlist(mods, req)
-
-        if modlist:  # Apply changes and send changed keys back
-            await empty(connection, connection.modify(dn, modlist))
-        return JSONResponse({"changed": sorted(set(m[1] for m in modlist))})
-
-    if request.method == "PUT":
-        # Create new object
-        modlist = addModlist(req)
-        if modlist:
-            await empty(connection, connection.add(dn, modlist))
-        return JSONResponse({"changed": ["dn"]})  # Dummy
-
-    raise HTTPException(HTTPStatus.METHOD_NOT_ALLOWED)
+    actual = {attr: v for attr, v in entry.attrs.items() if attr in expected}
+    modlist = modifyModlist(actual, expected)
+    if modlist:  # Apply changes and send changed keys back
+        await empty(connection, connection.modify(dn, modlist))
+    return ChangedAttributes(changed=list(sorted(set(m[1] for m in modlist))))
 
 
-@api.route("/blob/{attr}/{index:int}/{dn:path}", methods=["GET", "DELETE", "PUT"])
-async def blob(request: Request) -> Response:
-    "Handle binary attributes"
+def _nonempty_byte_strings(attributes: Attributes, attr: str) -> list[bytes]:
+    return [s.encode() for s in filter(None, attributes[attr])]
 
-    attr = request.path_params["attr"]
-    index = request.path_params["index"]
-    dn = request.path_params["dn"]
-    connection = request.state.ldap
 
-    _dn, attrs = await get_entry_by_dn(connection, dn)
+@api.put("/entry/{dn:path}", tags=[Tag.EDITING], operation_id="put_entry")
+async def put_entry(
+    dn: str, attributes: Attributes, connection: AuthenticatedConnection
+) -> ChangedAttributes:
+    modlist = addModlist(
+        {
+            attr: _nonempty_byte_strings(attributes, attr)
+            for attr in attributes
+            if attr not in PHOTOS
+        }
+    )
+    if modlist:
+        await empty(connection, connection.add(dn, modlist))
+    return ChangedAttributes(changed=["dn"])  # Dummy
 
-    if request.method == "GET":
-        if attr not in attrs or len(attrs[attr]) <= index:
-            raise HTTPException(
-                HTTPStatus.NOT_FOUND.value, f"Attribute {attr} not found for DN {dn}"
-            )
 
-        return Response(
-            attrs[attr][index],
-            media_type="application/octet-stream",
-            headers={
-                "Content-Disposition": f'attachment; filename="{attr}-{index:d}.bin"'
-            },
+@api.post(
+    "/rename/{dn:path}",
+    status_code=HTTPStatus.NO_CONTENT,
+    tags=[Tag.EDITING],
+    operation_id="post_rename_entry",
+)
+async def rename_entry(
+    dn: str, rdn: Annotated[str, Body()], connection: AuthenticatedConnection
+) -> None:
+    "Rename an entry"
+    await empty(connection, connection.rename(dn, rdn, delold=0))
+
+
+@api.get(
+    "/blob/{attr}/{index}/{dn:path}",
+    tags=[Tag.EDITING],
+    operation_id="get_blob",
+    include_in_schema=False,  # Not used in UI, images are transferred inline
+)
+async def get_blob(
+    attr: str, index: int, dn: str, connection: AuthenticatedConnection
+) -> Response:
+    "Retrieve a binary attribute"
+
+    entry = await get_entry_by_dn(connection, dn)
+
+    if attr not in entry.attrs or len(entry.attrs[attr]) <= index:
+        raise HTTPException(
+            HTTPStatus.NOT_FOUND, f"Attribute {attr} not found for DN {dn}"
         )
 
-    if request.method == "PUT":
-        async with request.form() as form_data:
-            blob = form_data["blob"]
-            if type(blob) is UploadFile:
-                data = await blob.read(cast(int, blob.size))
-                if attr in attrs:
-                    await empty(
-                        connection,
-                        connection.modify(
-                            dn, [(1, attr, None), (0, attr, attrs[attr] + [data])]
-                        ),
-                    )
-                else:
-                    await empty(connection, connection.modify(dn, [(0, attr, [data])]))
-        return NO_CONTENT
-
-    if request.method == "DELETE":
-        if attr not in attrs or len(attrs[attr]) <= index:
-            raise HTTPException(
-                HTTPStatus.NOT_FOUND.value, f"Attribute {attr} not found for DN {dn}"
-            )
-        await empty(connection, connection.modify(dn, [(1, attr, None)]))
-        data = attrs[attr][:index] + attrs[attr][index + 1 :]
-        if data:
-            await empty(connection, connection.modify(dn, [(0, attr, data)]))
-        return NO_CONTENT
-
-    raise HTTPException(HTTPStatus.METHOD_NOT_ALLOWED)
+    return Response(
+        entry.attrs[attr][index],
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{attr}-{index:d}.bin"'},
+    )
 
 
-@api.route("/ldif/{dn:path}")
-async def ldifDump(request: Request) -> PlainTextResponse:
+@api.put(
+    "/blob/{attr}/{index}/{dn:path}",
+    status_code=HTTPStatus.NO_CONTENT,
+    tags=[Tag.EDITING],
+    operation_id="put_blob",
+)
+async def put_blob(
+    attr: str,
+    index: int,
+    dn: str,
+    blob: Annotated[UploadFile, File()],
+    connection: AuthenticatedConnection,
+) -> None:
+    "Upload a binary attribute"
+    entry = await get_entry_by_dn(connection, dn)
+    data = await blob.read(cast(int, blob.size))
+    if attr in entry.attrs:
+        await empty(
+            connection,
+            connection.modify(
+                dn, [(1, attr, None), (0, attr, entry.attrs[attr] + [data])]
+            ),
+        )
+    else:
+        await empty(connection, connection.modify(dn, [(0, attr, [data])]))
+
+
+@api.delete(
+    "/blob/{attr}/{index}/{dn:path}",
+    status_code=HTTPStatus.NO_CONTENT,
+    tags=[Tag.EDITING],
+    operation_id="delete_blob",
+)
+async def delete_blob(
+    attr: str, index: int, dn: str, connection: AuthenticatedConnection
+) -> None:
+    "Remove a binary attribute"
+    entry = await get_entry_by_dn(connection, dn)
+    if attr not in entry.attrs or len(entry.attrs[attr]) <= index:
+        raise HTTPException(
+            HTTPStatus.NOT_FOUND, f"Attribute {attr} not found for DN {dn}"
+        )
+    await empty(connection, connection.modify(dn, [(1, attr, None)]))
+    data = entry.attrs[attr][:index] + entry.attrs[attr][index + 1 :]
+    if data:
+        await empty(connection, connection.modify(dn, [(0, attr, data)]))
+
+
+@api.post(
+    "/check-password/{dn:path}", tags=[Tag.EDITING], operation_id="post_check_password"
+)
+async def check_password(
+    dn: str, check: Annotated[str, Body()], connection: AuthenticatedConnection
+) -> bool:
+    "Verify a password"
+
+    try:
+        connection.simple_bind_s(dn, check)
+        return True
+    except INVALID_CREDENTIALS:
+        return False
+
+
+@api.post(
+    "/change-password/{dn:path}",
+    tags=[Tag.EDITING],
+    operation_id="post_change_password",
+    status_code=HTTPStatus.NO_CONTENT,
+)
+async def change_password(
+    dn: str, args: ChangePasswordRequest, connection: AuthenticatedConnection
+) -> None:
+    "Update passwords"
+    if args.new1:
+        await empty(
+            connection,
+            connection.passwd(dn, args.old or None, args.new1),
+        )
+    else:
+        await empty(connection, connection.modify(dn, [(1, "userPassword", None)]))
+
+
+@api.get(
+    "/ldif/{dn:path}",
+    include_in_schema=False,  # Used as a link target, no API call
+)
+async def export_ldif(dn: str, connection: AuthenticatedConnection) -> Response:
     "Dump an entry as LDIF"
 
-    dn = request.path_params["dn"]
     out = io.StringIO()
     writer = ldif.LDIFWriter(out)
-    connection = request.state.ldap
 
-    async for dn, attrs in result(connection, connection.search(dn, SCOPE_SUBTREE)):
-        writer.unparse(dn, attrs)
+    async for entry in results(connection, connection.search(dn, SCOPE_SUBTREE)):
+        writer.unparse(dn, entry.attrs)
 
     file_name = dn.split(",")[0].split("=")[1]
     return PlainTextResponse(
@@ -329,96 +458,35 @@ class LDIFReader(ldif.LDIFParser):
         self.count = 0
         self.con = con
 
-    def handle(self, dn: str, entry: dict[str, Any]):
+    def handle(self, dn: str, entry: Attributes):
         self.con.add_s(dn, addModlist(entry))
         self.count += 1
 
 
-@api.route("/ldif", methods=["POST"])
-async def ldifUpload(
-    request: Request,
-) -> Response:
+@api.post(
+    "/ldif",
+    tags=[Tag.EDITING],
+    operation_id="post_ldif",
+    status_code=HTTPStatus.NO_CONTENT,
+)
+async def upload_ldif(
+    ldif: Annotated[str, Body()], connection: AuthenticatedConnection
+) -> None:
     "Import LDIF"
 
-    reader = LDIFReader(await request.body(), request.state.ldap)
+    reader = LDIFReader(ldif.encode(), connection)
     try:
         reader.parse()
-        return NO_CONTENT
     except ValueError as e:
-        return Response(e.args[0], status_code=422)
+        raise HTTPException(HTTPStatus.UNPROCESSABLE_ENTITY, e.args[0])
 
 
-Rdn = TypeAdapter(str)
-
-
-@api.route("/rename/{dn:path}", methods=["POST"])
-async def rename(request: Request) -> Response:
-    "Rename an entry"
-
-    dn = request.path_params["dn"]
-    rdn = Rdn.validate_json(await request.body())
-    connection = request.state.ldap
-    await empty(connection, connection.rename(dn, rdn, delold=0))
-    return NO_CONTENT
-
-
-class ChangePasswordRequest(BaseModel):
-    old: str
-    new1: str
-
-
-class CheckPasswordRequest(BaseModel):
-    check: str = Field(min_length=1)
-
-
-PasswordRequest = TypeAdapter(Union[ChangePasswordRequest, CheckPasswordRequest])
-
-
-@api.route("/password/{dn:path}", methods=["POST"])
-async def passwd(request: Request) -> Response:
-    "Update passwords"
-
-    dn = request.path_params["dn"]
-    args = PasswordRequest.validate_json(await request.body())
-
-    if type(args) is CheckPasswordRequest:
-        with ldap_connect() as con:
-            try:
-                con.simple_bind_s(dn, args.check)
-                return JSONResponse(True)
-            except INVALID_CREDENTIALS:
-                return JSONResponse(False)
-
-    elif type(args) is ChangePasswordRequest:
-        connection = request.state.ldap
-        if args.new1:
-            await empty(
-                connection,
-                connection.passwd(dn, args.old or None, args.new1),
-            )
-            _dn, attrs = await get_entry_by_dn(connection, dn)
-            return JSONResponse(attrs["userPassword"][0].decode())
-
-        else:
-            await empty(connection, connection.modify(dn, [(1, "userPassword", None)]))
-            return NO_CONTENT
-
-    raise HTTPException(HTTPStatus.UNPROCESSABLE_ENTITY)
-
-
-def _cn(entry: dict) -> Optional[str]:
-    "Try to extract a CN"
-    if "cn" in entry and entry["cn"]:
-        return entry["cn"][0].decode()
-
-
-@api.route("/search/{query:path}")
-async def search(request: Request) -> JSONResponse:
+@api.get("/search/{query:path}", tags=[Tag.NAVIGATION], operation_id="search")
+async def search(query: str, connection: AuthenticatedConnection) -> list[SearchResult]:
     "Search the directory"
 
-    query = request.path_params["query"]
     if len(query) < settings.SEARCH_QUERY_MIN:
-        return JSONResponse([])
+        return []
 
     if "=" in query:  # Search specific attributes
         if "(" not in query:
@@ -428,50 +496,58 @@ async def search(request: Request) -> JSONResponse:
 
     # Collect results
     res = []
-    connection = request.state.ldap
-    async for dn, attrs in result(
+    async for entry in results(
         connection, connection.search(settings.BASE_DN, SCOPE_SUBTREE, query)
     ):
-        res.append({"dn": dn, "name": _cn(attrs) or dn})
+        res.append(
+            SearchResult(
+                dn=entry.dn,
+                name=entry.attr("cn")[0] if "cn" in entry.attrs else entry.dn,
+            )
+        )
         if len(res) >= settings.SEARCH_MAX:
             break
-    return JSONResponse(res)
+    return res
 
 
-@api.route("/subtree/{dn:path}")
-async def subtree(request: Request) -> JSONResponse:
+@api.get("/whoami", tags=[Tag.MISC], operation_id="get_who_am_i")
+async def whoami(connection: AuthenticatedConnection) -> str:
+    "DN of the current user"
+    return connection.whoami_s().replace("dn:", "")
+
+
+@api.get("/subtree/{root_dn:path}", tags=[Tag.MISC], operation_id="get_subtree")
+async def list_subtree(
+    root_dn: str, connection: AuthenticatedConnection
+) -> list[TreeItem]:
     "List the subtree below a DN"
 
-    root_dn = request.path_params["dn"]
-    start = len(root_dn.split(","))
-    connection = request.state.ldap
-    return JSONResponse(
-        sorted(
-            [
-                _tree_item(dn, attrs, start, request.app.state.schema).model_dump()
-                async for dn, attrs in result(
-                    connection,
-                    connection.search(root_dn, SCOPE_SUBTREE),
-                )
-                if root_dn != dn
-            ],
-            key=lambda item: tuple(reversed(item["dn"].lower().split(","))),
-        )
+    return sorted(
+        [
+            _tree_item(entry, root_dn)
+            async for entry in results(
+                connection,
+                connection.search(
+                    root_dn, SCOPE_SUBTREE, attrlist=WITH_OPERATIONAL_ATTRS
+                ),
+            )
+            if root_dn != entry.dn
+        ],
+        key=lambda item: tuple(reversed(item.dn.lower().split(","))),
     )
 
 
-@api.route("/range/{attribute}")
-async def attribute_range(request: Request) -> JSONResponse:
+@api.get("/range/{attribute}", tags=[Tag.MISC], operation_id="get_range")
+async def attribute_range(attribute: str, connection: AuthenticatedConnection) -> Range:
     "List all values for a numeric attribute of an objectClass like uidNumber or gidNumber"
 
-    attribute = request.path_params["attribute"]
-    connection = request.state.ldap
-    obj = request.app.state.schema.get_obj(AttributeType, attribute)
+    schema = await get_schema(connection)
+    obj = schema.get_obj(AttributeType, attribute)
 
     values = set(
         [
-            int(attrs[attribute][0])
-            async for dn, attrs in result(
+            int(entry.attrs[attribute][0])
+            async for entry in results(
                 connection,
                 connection.search(
                     settings.BASE_DN,
@@ -486,34 +562,25 @@ async def attribute_range(request: Request) -> JSONResponse:
 
     if not values:
         raise HTTPException(
-            HTTPStatus.NOT_FOUND.value, f"No values found for attribute {attribute}"
+            HTTPStatus.NOT_FOUND, f"No values found for attribute {attribute}"
         )
 
     minimum, maximum = min(values), max(values)
-    return JSONResponse(
-        {
-            "min": minimum,
-            "max": maximum,
-            "next": min(set(range(minimum, maximum + 2)) - values),
-        }
+    return Range(
+        min=minimum,
+        max=maximum,
+        next=min(set(range(minimum, maximum + 2)) - values),
     )
 
 
-@api.route("/schema")
-async def json_schema(request: Request) -> JSONResponse:
+@api.get(
+    "/schema",
+    tags=[Tag.MISC],
+    operation_id="get_schema",
+    response_model_exclude_none=True,
+    response_model_exclude_unset=True,
+)
+async def ldap_schema(connection: AuthenticatedConnection) -> Schema:
     "Dump the LDAP schema as JSON"
-    if getattr(request.app.state, "schema", None) is None:
-        connection = request.state.ldap
-        # See: https://hub.packtpub.com/python-ldap-applications-part-4-ldap-schema/
-        _dn, sub_schema = await unique(
-            connection,
-            connection.search(
-                settings.SCHEMA_DN,
-                SCOPE_BASE,
-                attrlist=WITH_OPERATIONAL_ATTRS,
-            ),
-        )
-        request.app.state.schema = SubSchema(sub_schema, check_uniqueness=2)
-
-    schema = frontend_schema(request.app.state.schema)
-    return JSONResponse(schema.model_dump())
+    assert settings.SCHEMA_DN, "An LDAP schema DN is required!"
+    return frontend_schema(await get_schema(connection))

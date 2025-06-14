@@ -22,7 +22,7 @@
         <span v-if="attr.name == 'jpegPhoto' || attr.name == 'thumbnailPhoto'">
           <img v-if="val" :src="'data:image/' + ((attr.name == 'jpegPhoto') ? 'jpeg' : '*') + ';base64,' + val"
             class="max-w-[120px] max-h-[120px] border p-[1px] inline mx-1" />
-          <span v-if="val" class="control remove-btn align-top ml-1" @click="deleteBlob(index)"
+          <span v-if="val" class="control remove-btn align-top ml-1" @click="doDeleteBlob(index)"
             title="Remove photo">⊖</span>
         </span>
         <span v-else-if="boolean">
@@ -56,6 +56,7 @@ import AttributeSearch from './AttributeSearch.vue';
 import type { Provided } from '../Provided';
 import SearchResults from '../SearchResults.vue';
 import ToggleButton from '../ui/ToggleButton.vue';
+import { getRange, deleteBlob } from '../../generated/sdk.gen';
 
 function unique(element: unknown, index: number, array: Array<unknown>): boolean {
   return element == '' || array.indexOf(element) == index;
@@ -155,14 +156,13 @@ onMounted(async () => {
     || props.values.length != 1
     || props.values[0]) return;
 
-  const response = await fetch('api/range/' + props.attr.name);
-  if (!response.ok) return;
+  const response = await getRange({
+    path: { attribute: props.attr.name! },
+    client: app?.client
+  });
+  if (!response.data) return;
 
-  const range = await response.json() as {
-    min: number;
-    max: number;
-    next: number;
-  };
+  const range = response.data;
   hint.value = range.min == range.max
     ? '> ' + range.min
     : '\u2209 (' + range.min + " - " + range.max + ')';
@@ -250,11 +250,12 @@ function complete(dn: string) {
 }
 
 // remove an image
-async function deleteBlob(index: number) {
-  const response = await fetch('api/blob/' + props.attr.name + '/' + index + '/' + props.meta.dn, {
-    method: 'DELETE',
+async function doDeleteBlob(index: number) {
+  const response = await deleteBlob({
+    path: { attr: props.attr.name!, index, dn: props.meta.dn },
+    client: app?.client
   });
-  if (response.ok) emit('reload-form', props.meta.dn, [props.attr.name]);
+  if (!response.error) emit('reload-form', props.meta.dn, [props.attr.name]);
 }
 </script>
 

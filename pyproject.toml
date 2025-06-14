@@ -4,7 +4,7 @@ authors = [{ name = "dnknth" }]
 description = "A fast and versatile LDAP editor"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 keywords = ["ldap", "web-ui", "python3"]
 classifiers = [
     "Operating System :: OS Independent",
@@ -14,13 +14,12 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 dependencies = [
-    "pydantic",
+    "fastapi>=0.115.12",
     "python-ldap",
     "python-multipart",
-    "starlette",
-    "uvicorn",
+    "uvicorn>=0.34.3",
 ]
-dynamic = [ "version" ]
+dynamic = ["version"]
 
 [project.scripts]
 ldap-ui = "ldap_ui.__main__:main"
@@ -33,10 +32,10 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-package-dir = {"" = "backend"}
+package-dir = { "" = "backend" }
 
 [tool.setuptools.dynamic]
-version = {attr = "ldap_ui.__version__"}
+version = { attr = "ldap_ui.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["backend"]
@@ -45,7 +44,4 @@ where = ["backend"]
 ldap_ui = ["statics/*", "statics/assets/*"]
 
 [dependency-groups]
-dev = [
-    "build>=1.1.1",
-    "twine>=4.0.2",
-]
+dev = ["build>=1.1.1", "httpx>=0.28.1", "twine>=4.0.2"]
