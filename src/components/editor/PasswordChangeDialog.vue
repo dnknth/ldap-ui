@@ -20,15 +20,16 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue';
 import Modal from '../ui/Modal.vue';
-import { postCheckPassword } from '../../generated/sdk.gen'
-import type { Provided } from '../Provided'
+import { postCheckPassword } from '../../generated/sdk.gen';
+import type { Provided } from '../Provided';
+import type { Entry } from '../../generated/types.gen';
 
-const props = defineProps({
-  entry: { type: Object, required: true },
-  modal: String,
-  returnTo: String,
-  user: String,
-}),
+const props = defineProps<{
+  entry: Entry
+  modal?: string
+  returnTo?: string
+  user?: string
+}>(),
 
   oldPassword = ref(''),
   newPassword = ref(''),
@@ -43,7 +44,11 @@ const props = defineProps({
   oldExists = computed(() => !!props.entry.attrs.userPassword
     && props.entry.attrs.userPassword[0] != ''),
 
-  emit = defineEmits(['ok', 'update-form', 'update:modal']),
+  emit = defineEmits<{
+    'ok': [oldPw: string, newPw: string]
+    'update-form': []
+    'update:modal': []
+  }>(),
   app = inject<Provided>('app');
 
 function init() {

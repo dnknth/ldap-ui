@@ -81,11 +81,12 @@ class Node implements TreeItem {
   }
 }
 
-const props = defineProps({
-  activeDn: String,
-}),
+const props = defineProps<{ activeDn?: string }>(),
   tree = ref<Node>(),
-  emit = defineEmits(['base-dn', 'update:activeDn']),
+  emit = defineEmits<{
+    'base-dn': [dn?: string]
+    'update:activeDn': [dn: string]
+  }>(),
   app = inject<Provided>('app');
 
 onMounted(async () => {

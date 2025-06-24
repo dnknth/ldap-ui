@@ -13,8 +13,12 @@
 import { onMounted, ref, watch } from 'vue';
 import { useEventListener, useMouseInElement } from '@vueuse/core';
 
-const props = defineProps({ open: Boolean }),
-  emit = defineEmits(['opened', 'closed', 'update:open']),
+const props = defineProps<{ open: boolean }>(),
+  emit = defineEmits<{
+    'opened': []
+    'closed': []
+    'update:open': []
+  }>(),
   items = ref<HTMLElement | null>(null),
   selected = ref<number>(),
   { isOutside } = useMouseInElement(items);

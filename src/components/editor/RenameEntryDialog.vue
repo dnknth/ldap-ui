@@ -13,17 +13,21 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import Modal from '../ui/Modal.vue';
+import type { Entry } from '../../generated/types.gen';
 
-const props = defineProps({
-  entry: { type: Object, required: true },
-  modal: String,
-  returnTo: String,
-}),
+const props = defineProps<{
+  entry: Entry
+  modal?: string
+  returnTo?: string
+}>(),
 
   rdn = ref<string>(),
   select = ref<HTMLInputElement | null>(null),
   rdns = computed(() => Object.keys(props.entry.attrs).filter(ok)),
-  emit = defineEmits(['ok', 'update:modal']);
+  emit = defineEmits<{
+    'ok': [rdn: string]
+    'update:modal': []
+  }>();
 
 function init() {
   rdn.value = rdns.value.length == 1 ? rdns.value[0] : undefined;

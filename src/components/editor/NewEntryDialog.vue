@@ -28,18 +28,21 @@ import Modal from '../ui/Modal.vue';
 import type { Provided } from '../Provided';
 import type { Entry } from '../../generated/types.gen';
 
-const props = defineProps({
-  dn: { type: String, required: true },
-  modal: String,
-  returnTo: String,
-}),
+const props = defineProps<{
+  dn: string
+  modal?: string
+  returnTo?: string
+}>(),
   app = inject<Provided>('app'),
   objectClass = ref(''),
   rdn = ref(''),
   name = ref(''),
   select = ref<HTMLSelectElement | null>(null),
   oc = computed(() => app?.schema?.oc(objectClass.value)),
-  emit = defineEmits(['ok', 'update:modal']);
+  emit = defineEmits<{
+    'ok': [entry: Entry]
+    'update:modal': []
+  }>();
 
 function init() {
   objectClass.value = rdn.value = name.value = '';

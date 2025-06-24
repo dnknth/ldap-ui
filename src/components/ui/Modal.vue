@@ -57,7 +57,14 @@ const props = defineProps({
   hideFooter: { type: Boolean, default: false },
   returnTo: String,
 }),
-  emit = defineEmits(['ok', 'cancel', 'show', 'shown', 'hide', 'hidden']);
+  emit = defineEmits<{
+    'ok': []
+    'cancel': []
+    'show': []
+    'shown': []
+    'hide': []
+    'hidden': []
+  }>();
 
 function onOk() {
   if (props.open) emit('ok');

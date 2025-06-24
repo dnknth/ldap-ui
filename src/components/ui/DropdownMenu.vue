@@ -22,5 +22,5 @@ import { ref } from 'vue';
 import Popover from './Popover.vue';
 
 const open = ref(false);
-defineProps({ title: String });
+defineProps<{ title?: string }>();
 </script>

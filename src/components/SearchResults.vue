@@ -41,7 +41,7 @@ const props = defineProps({
   results = ref<SearchResult[]>([]),
   show = computed(() => props.query.trim() != ''
     && results.value && results.value.length > 1),
-  emit = defineEmits(['select-dn']);
+  emit = defineEmits<{ 'select-dn': [dn: string] }>();
 
 watch(() => props.query, async (q) => {
   if (!q) return;

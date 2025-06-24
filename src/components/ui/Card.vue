@@ -14,9 +14,7 @@
 </template>
 
 <script setup lang="ts">
-defineProps({
-  title: { type: String, required: true },
-});
+defineProps<{ title: string }>();
 
-const emit = defineEmits(['close']);
+const emit = defineEmits<{ 'close': [] }>();
 </script>

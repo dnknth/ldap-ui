@@ -12,16 +12,20 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import Modal from '../ui/Modal.vue';
+import type { Entry } from '../../generated/types.gen';
 
-const props = defineProps({
-  entry: { type: Object, required: true },
-  modal: String,
-  returnTo: String,
-}),
+const props = defineProps<{
+  entry: Entry
+  modal?: string
+  returnTo?: string
+}>(),
   dn = ref(''),
   error = ref(''),
   newdn = ref<HTMLInputElement | null>(null),
-  emit = defineEmits(['ok', 'update:modal']);
+  emit = defineEmits<{
+    'ok': [entry: Entry]
+    'update:modal': []
+  }>();
 
 function init() {
   error.value = '';

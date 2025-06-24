@@ -96,11 +96,11 @@ function unique(element: unknown, index: number, array: Array<unknown>): boolean
 
 const inputTags = ['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'],
 
-  props = defineProps({
-    activeDn: String,
-    baseDn: String,
-    user: String,
-  }),
+  props = defineProps<{
+    activeDn?: string
+    baseDn?: string
+    user: string
+  }>(),
 
   app = inject<Provided>('app'),
   entry = ref<Entry>(),   // entry in editor
@@ -118,10 +118,14 @@ const inputTags = ['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'],
     const oc = entry.value?.attrs.objectClass
       .map(oc => app?.schema?.oc(oc as string))
       .filter(oc => oc && oc.structural)[0];
-    return oc ? oc.name : '';
+    return oc ? oc.name! : '';
   }),
 
-  emit = defineEmits(['update:activeDn', 'show-attr', 'show-oc']);
+  emit = defineEmits<{
+    'update:activeDn': [dn?: string]
+    'show-attr': [name?: string]
+    'show-oc': [name: string]
+  }>();
 
 watch(() => props.activeDn, (dn) => {
   if (!entry.value || dn != entry.value!.meta.dn) focused.value = undefined;
@@ -157,7 +161,7 @@ function newEntry(newEntry: Entry) {
   focus(addMandatoryRows());
 }
 
-function discardEntry(dn: string) {
+function discardEntry(dn?: string) {
   entry.value = undefined;
   emit('update:activeDn', dn);
 }
@@ -184,7 +188,7 @@ function removeObjectClass(newOcs: string[]) {
   }
 }
 
-function updateRow(attr: string, values: string[], index: number) {
+function updateRow(attr: string, values: string[], index?: number) {
   entry.value!.attrs[attr] = values;
   if (attr == 'objectClass') {
     removeObjectClass(values);
@@ -205,7 +209,7 @@ function showError(error: HttpValidationError) {
 }
 
 // Load an entry into the editing form
-async function load(dn: string, changed: string[] | undefined, focused: string | undefined) {
+async function load(dn?: string, changed?: string[], focused?: string) {
   invalid.value = [];
 
   if (!dn || dn.startsWith('-')) {

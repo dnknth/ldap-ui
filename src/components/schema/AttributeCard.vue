@@ -20,8 +20,10 @@ import { computed, inject } from 'vue';
 import Card from '../ui/Card.vue';
 import type { Provided } from '../Provided';
 
-const props = defineProps({ modelValue: String }),
+const props = defineProps<{ modelValue?: string }>(),
   app = inject<Provided>('app'),
   attr = computed(() => app?.schema?.attr(props.modelValue)),
-  emit = defineEmits(['show-attr', 'update:modelValue']);
+  emit = defineEmits<{
+    'update:modelValue': [name?: string]
+  }>();
 </script>
