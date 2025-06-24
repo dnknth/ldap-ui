@@ -43,13 +43,18 @@ const
   input = ref<HTMLInputElement | null>(null),
   query = ref(''),
   collapsed = ref(false),
-  emit = defineEmits(['select-dn', 'show-modal', 'show-oc', 'update:treeOpen']);
+  emit = defineEmits<{
+    'select-dn': [dn?: string]
+    'show-modal': [name: string]
+    'show-oc': [name: string]
+    'update:treeOpen': [open: boolean]
+  }>();
 
-defineProps({
-  baseDn: String,
-  treeOpen: Boolean,
-  user: String,
-});
+defineProps<{
+  baseDn?: string
+  treeOpen: boolean
+  user: string
+}>();
 
 function search() {
   query.value = '';

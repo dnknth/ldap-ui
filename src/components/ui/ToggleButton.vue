@@ -2,8 +2,8 @@
 
 import { computed } from 'vue';
 
-const props = defineProps(['value']),
-  emit = defineEmits(['update:value']),
+const props = defineProps<{ value?: string }>(),
+  emit = defineEmits<{ 'update:value': [value: string] }>(),
   on = computed(() => props.value == 'TRUE');
 
 </script>

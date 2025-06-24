@@ -14,15 +14,19 @@
 import { ref } from 'vue';
 import Modal from '../ui/Modal.vue';
 
-defineProps({
-  dn: String,
-  modal: String,
-  returnTo: String,
-});
+defineProps<{
+  dn?: string
+  modal?: string
+  returnTo?: string
+}>();
 
 const
   next = ref<string>(),
-  emit = defineEmits(['ok', 'shown', 'update:modal']);
+  emit = defineEmits<{
+    'ok': [next?: string]
+    'shown': []
+    'update:modal': []
+  }>();
 
 function onShown() {
   document.getElementById('ui-modal-ok')?.focus();

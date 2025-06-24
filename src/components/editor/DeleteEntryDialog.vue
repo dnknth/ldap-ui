@@ -8,7 +8,7 @@
       <p class="text-danger mb-2">The following child nodes will be also deleted:</p>
       <div v-for="node in subtree" :key="node.dn">
         <span v-for="i in node.level" class="ml-6" :key="i"></span>
-        <node-label :oc="node.structuralObjectClass">
+        <node-label dn="" :oc="node.structuralObjectClass">
           {{ node.dn.split(',')[0] }}
         </node-label>
       </div>
@@ -28,13 +28,16 @@ import type { TreeItem } from '../../generated/types.gen';
 import { getSubtree } from '../../generated/sdk.gen';
 import type { Provided } from '../Provided'
 
-const props = defineProps({
-  dn: { type: String, required: true },
-  modal: String,
-  returnTo: String,
-}),
+const props = defineProps<{
+  dn: string
+  modal?: string
+  returnTo?: string
+}>(),
   subtree = ref<TreeItem[]>([]),
-  emit = defineEmits(['ok', 'update:modal']),
+  emit = defineEmits<{
+    'ok': [dn: string]
+    'update:modal': []
+  }>(),
   app = inject<Provided>('app');
 
 

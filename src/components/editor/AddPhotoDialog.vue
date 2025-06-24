@@ -23,7 +23,10 @@ const props = defineProps({
   returnTo: String,
 }),
   upload = ref<HTMLInputElement | null>(null),
-  emit = defineEmits(['ok', 'update:modal']),
+  emit = defineEmits<{
+    'ok': [dn: string, attrs: string[]]
+    'update:modal': []
+  }>(),
   app = inject<Provided>('app');
 
 // add an image
@@ -39,7 +42,7 @@ async function onOk(evt: Event) {
 
   if (!response.error) {
     emit('update:modal');
-    emit('ok', props.dn, [props.attr]);
+    emit('ok', props.dn, [props.attr!]);
   }
 }
 </script>

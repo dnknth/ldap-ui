@@ -13,9 +13,12 @@ import { postLdif } from '../generated/sdk.gen'
 
 const
   ldifData = ref(''),
-  emit = defineEmits(['ok', 'update:modal']);
+  emit = defineEmits<{
+    ok: []
+    'update:modal': []
+  }>();
 
-defineProps({ modal: String });
+defineProps<{ modal?: string }>();
 
 function init() {
   ldifData.value = '';

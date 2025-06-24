@@ -57,6 +57,7 @@ import type { Provided } from '../Provided';
 import SearchResults from '../SearchResults.vue';
 import ToggleButton from '../ui/ToggleButton.vue';
 import { getRange, deleteBlob } from '../../generated/sdk.gen';
+import type { Meta } from '@/generated';
 
 function unique(element: unknown, index: number, array: Array<unknown>): boolean {
   return element == '' || array.indexOf(element) == index;
@@ -83,15 +84,15 @@ const dateFormat: Intl.DateTimeFormatOptions = {
 
   idRanges = ['uidNumber', 'gidNumber'], // Numeric ID ranges
 
-  props = defineProps({
-    attr: { type: Attribute, required: true },
-    baseDn: String,
-    values: { type: Array<string>, required: true },
-    meta: { type: Object, required: true },
-    must: { type: Boolean, required: true },
-    may: { type: Boolean, required: true },
-    changed: { type: Boolean, required: true },
-  }),
+  props = defineProps<{
+    attr: Attribute
+    baseDn?: string
+    values: string[]
+    meta: Meta
+    must: boolean
+    may: boolean
+    changed: boolean
+  }>(),
 
   app = inject<Provided>('app'),
 
@@ -118,7 +119,7 @@ const dateFormat: Intl.DateTimeFormatOptions = {
 
   binary = computed<boolean>(() =>
     password.value ? false // Corner case with octetStringMatch
-      : props.meta.binary.includes(props.attr.name)),
+      : props.meta.binary.includes(props.attr.name!)),
 
   disabled = computed(() => isRdn.value
     || props.attr.name == 'objectClass'
@@ -126,11 +127,10 @@ const dateFormat: Intl.DateTimeFormatOptions = {
     || (!props.meta.isNew && (password.value || binary.value))),
 
   placeholder = computed(() => {
-    let symbol = '';
-    if (completable.value) symbol = ' \uf002 '; // fa-search
-    if (missing.value) symbol = ' \uf071 ';     // fa-warning
-    if (empty.value) symbol = ' \uf1f8 ';       // fa-trash
-    return symbol;
+    if (missing.value) return ' \uf071 ';     // fa-warning
+    if (empty.value) return ' \uf1f8 ';       // fa-trash
+    if (completable.value) return ' \uf002 '; // fa-search
+    return '';
   }),
 
   shown = computed(() =>
@@ -145,7 +145,14 @@ const dateFormat: Intl.DateTimeFormatOptions = {
     return props.attr.syntax == syntaxes.integer ? 'number' : 'text';
   }),
 
-  emit = defineEmits(['reload-form', 'show-attr', 'show-modal', 'show-oc', 'update', 'valid']);
+  emit = defineEmits<{
+    'show-attr': [name?: string]
+    'show-modal': [name: string]
+    'show-oc': [name: string]
+    'reload-form': [dn?: string, values?: string[], focused?: string]
+    'update': [attr: string, values: string[], index?: number]
+    'valid': [ok: boolean]
+  }>();
 
 watch(valid, (ok) => emit('valid', ok));
 
@@ -167,7 +174,7 @@ onMounted(async () => {
     ? '> ' + range.min
     : '\u2209 (' + range.min + " - " + range.max + ')';
   autoFilled.value = '' + range.next;
-  emit('update', props.attr.name, [autoFilled.value], 0);
+  emit('update', props.attr.name!, [autoFilled.value], 0);
   validate();
 });
 
@@ -189,14 +196,14 @@ function update(evt: Event) {
 function updateValue(index: number, value: string) {
   const values = props.values.slice();
   values[index] = value;
-  emit('update', props.attr.name, values);
+  emit('update', props.attr.name!, values);
 }
 
 // Add an empty row in the entry form
 function addRow() {
   const values = props.values.slice();
   if (!values.includes('')) values.push('');
-  emit('update', props.attr.name, values, values.length - 1);
+  emit('update', props.attr.name!, values, values.length - 1);
 }
 
 // Remove a row from the entry form
@@ -246,7 +253,7 @@ function complete(dn: string) {
   const values = props.values.slice();
   values[index] = dn;
   query.value = '';
-  emit('update', props.attr.name, values);
+  emit('update', props.attr.name!, values);
 }
 
 // remove an image
@@ -255,7 +262,7 @@ async function doDeleteBlob(index: number) {
     path: { attr: props.attr.name!, index, dn: props.meta.dn },
     client: app?.client
   });
-  if (!response.error) emit('reload-form', props.meta.dn, [props.attr.name]);
+  if (!response.error) emit('reload-form', props.meta.dn, [props.attr.name!]);
 }
 </script>
 

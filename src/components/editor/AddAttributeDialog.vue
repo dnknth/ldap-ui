@@ -11,13 +11,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import Modal from '../ui/Modal.vue';
+import type { Entry } from '../../generated/types.gen';
 
-const props = defineProps({
-  entry: { type: Object, required: true },
-  attributes: { type: Array<string>, required: true },
-  modal: String,
-  returnTo: String,
-}),
+const props = defineProps<{
+  entry: Entry
+  attributes: string[]
+  modal?: string
+  returnTo?: string
+}>(),
   attr = ref<string>(),
   select = ref<HTMLSelectElement | null>(null),
   available = computed(() => {
@@ -25,7 +26,11 @@ const props = defineProps({
     const attrs = Object.keys(props.entry.attrs);
     return props.attributes.filter(attr => !attrs.includes(attr));
   }),
-  emit = defineEmits(['ok', 'show-modal', 'update:modal']);
+  emit = defineEmits<{
+    'ok': [attr: string]
+    'show-modal': [name: string]
+    'update:modal': [name?: string]
+  }>();
 
 // Add the selected attribute
 function onOk() {

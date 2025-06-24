@@ -12,17 +12,17 @@ import { computed, inject, nextTick, ref, watch } from 'vue';
 import Popover from '../ui/Popover.vue';
 import type { Provided } from '../Provided';
 
-const props = defineProps({
-  query: { type: String, default: '' },
-  for: { type: String, default: '' },
-}),
+const props = defineProps<{
+  query?: string
+  for?: string
+}>(),
   app = inject<Provided>('app'),
   results = ref<Attribute[]>([]),
-  show = computed(() => props.query.trim() != ''
+  show = computed(() => (props.query ?? '').trim() != ''
     && results.value
     && results.value.length > 0
     && !(results.value.length == 1 && props.query == results.value[0].name)),
-  emit = defineEmits(['done']);
+  emit = defineEmits<{ 'done': [attr: string] }>();
 
 watch(() => props.query,
   (q) => {
@@ -39,8 +39,10 @@ function done(value: string) {
 
   nextTick(() => {
     // Return focus to search input
-    const el = document.getElementById(props.for);
-    if (el) el.focus();
+    if (props.for) {
+      const el = document.getElementById(props.for);
+      if (el) el.focus();
+    }
   });
 }
 </script>
