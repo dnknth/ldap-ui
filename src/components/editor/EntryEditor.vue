@@ -251,7 +251,7 @@ async function save() {
       showError(response.error)
       return;
     }
-    changed = response.data.changed;
+    changed = response.data;
   }
   else {
     const response = await postEntry({
@@ -263,7 +263,7 @@ async function save() {
       showError(response.error)
       return;
     }
-    changed = response.data.changed;
+    changed = response.data;
   }
 
   if (changed.length) {

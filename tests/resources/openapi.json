@@ -148,23 +148,6 @@
         "title": "ChangePasswordRequest",
         "type": "object"
       },
-      "ChangedAttributes": {
-        "description": "List of modified attributes",
-        "properties": {
-          "changed": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Changed",
-            "type": "array"
-          }
-        },
-        "required": [
-          "changed"
-        ],
-        "title": "ChangedAttributes",
-        "type": "object"
-      },
       "Entry": {
         "description": "Directory entry",
         "properties": {
@@ -521,7 +504,7 @@
   },
   "info": {
     "title": "LDAP UI",
-    "version": "0.10.0"
+    "version": "0.10.2"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -882,7 +865,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChangedAttributes"
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Response Post Entry",
+                  "type": "array"
                 }
               }
             },
@@ -944,7 +931,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChangedAttributes"
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Response Put Entry",
+                  "type": "array"
                 }
               }
             },

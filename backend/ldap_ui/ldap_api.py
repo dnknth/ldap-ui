@@ -204,11 +204,6 @@ def _meta(entry: LdapEntry, schema: SubSchema) -> Meta:
     "Classify entry attributes"
 
     object_classes = set(entry.attr("objectClass"))
-    must_attrs, _may_attrs = schema.attribute_types(object_classes)
-    required = [
-        schema.get_obj(AttributeType, a).names[0]  # type: ignore
-        for a in must_attrs
-    ]
     structural = [
         oc.names[0]  # type: ignore
         for oc in map(lambda o: schema.get_obj(ObjectClass, o), object_classes)
@@ -221,7 +216,6 @@ def _meta(entry: LdapEntry, schema: SubSchema) -> Meta:
 
     return Meta(
         dn=entry.dn,
-        required=required,
         aux=sorted(aux - object_classes),
         binary=sorted(_binary_attributes(entry, schema)),
         autoFilled=[],
@@ -289,7 +283,7 @@ async def post_entry(
     modlist = modifyModlist(actual, expected)
     if modlist:  # Apply changes and send changed keys back
         await empty(connection, connection.modify(dn, modlist))
-    return ChangedAttributes(changed=list(sorted(set(m[1] for m in modlist))))
+    return list(sorted(set(m[1] for m in modlist)))
 
 
 def _nonempty_byte_strings(attributes: Attributes, attr: str) -> list[bytes]:
@@ -309,7 +303,7 @@ async def put_entry(
     )
     if modlist:
         await empty(connection, connection.add(dn, modlist))
-    return ChangedAttributes(changed=["dn"])  # Dummy
+    return ["dn"]  # Dummy
 
 
 @api.post(

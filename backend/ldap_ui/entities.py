@@ -16,7 +16,6 @@ class Meta(BaseModel):
     "Attribute classification for an entry"
 
     dn: str
-    required: list[str]
     aux: list[str]
     binary: list[str]
     autoFilled: list[str]
@@ -25,19 +24,15 @@ class Meta(BaseModel):
 
 Attributes = dict[str, list[str]]
 
+ChangedAttributes = list[str]  # Names of modified attributes
+
 
 class Entry(BaseModel):
     "Directory entry"
 
     attrs: Attributes
     meta: Meta
-    changed: list[str] = Field(default_factory=list)
-
-
-class ChangedAttributes(BaseModel):
-    "List of modified attributes"
-
-    changed: list[str]
+    changed: ChangedAttributes = Field(default_factory=list)
 
 
 class ChangePasswordRequest(BaseModel):
