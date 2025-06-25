@@ -13,7 +13,7 @@
       <span class="cursor-pointer" @click="emit('show-modal', 'ldif-import')">Import…</span>
 
       <dropdown-menu title="Schema">
-        <li role="menuitem" v-for="key in app?.schema?.objectClasses.keys()" :key="key" @click="emit('show-oc', key)">
+        <li role="menuitem" v-for="key in app?.schema.objectClasses.keys()" :key="key" @click="emit('show-oc', key)">
           {{ key }}
         </li>
       </dropdown-menu>
@@ -21,43 +21,45 @@
       <form @submit.prevent="search">
         <input
           class="glyph px-2 py-1 rounded focus:border focus:border-front/80 outline-none text-front dark:bg-gray-800/80"
-          autofocus :placeholder="' \uf002'" name="q" @focusin="input?.select();" accesskey="k" @keyup.esc="query = '';"
+          autofocus :placeholder="' \uf002'" name="q" @focusin="input?.select()" accesskey="k" @keyup.esc="query = ''"
           id="nav-search" ref="input" />
-        <search-results for="nav-search" @select-dn="query = ''; emit('select-dn', $event);" :shorten="baseDn"
-          :query="query" />
+        <search-results for="nav-search" @select-dn="
+          query = '';
+        emit('select-dn', $event);
+        " :shorten="baseDn" :query="query" />
       </form>
     </div>
-
   </nav>
 </template>
 
 <script setup lang="ts">
-import { inject, nextTick, ref } from 'vue';
-import DropdownMenu from './ui/DropdownMenu.vue';
-import type { Provided } from './Provided';
-import NodeLabel from './NodeLabel.vue';
-import SearchResults from './SearchResults.vue';
+import { inject, nextTick, ref } from "vue";
+import DropdownMenu from "./ui/DropdownMenu.vue";
+import type { Provided } from "./Provided";
+import NodeLabel from "./NodeLabel.vue";
+import SearchResults from "./SearchResults.vue";
 
-const
-  app = inject<Provided>('app'),
+const app = inject<Provided>("app"),
   input = ref<HTMLInputElement | null>(null),
-  query = ref(''),
+  query = ref(""),
   collapsed = ref(false),
   emit = defineEmits<{
-    'select-dn': [dn?: string]
-    'show-modal': [name: string]
-    'show-oc': [name: string]
-    'update:treeOpen': [open: boolean]
+    "select-dn": [dn?: string];
+    "show-modal": [name: string];
+    "show-oc": [name: string];
+    "update:treeOpen": [open: boolean];
   }>();
 
 defineProps<{
-  baseDn?: string
-  treeOpen: boolean
-  user: string
+  baseDn?: string;
+  treeOpen: boolean;
+  user: string;
 }>();
 
 function search() {
-  query.value = '';
-  nextTick(() => { query.value = input?.value?.value || ''; });
+  query.value = "";
+  nextTick(() => {
+    query.value = input?.value?.value || "";
+  });
 }
 </script>

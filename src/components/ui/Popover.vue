@@ -10,14 +10,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
-import { useEventListener, useMouseInElement } from '@vueuse/core';
+import { onMounted, ref, watch } from "vue";
+import { useEventListener, useMouseInElement } from "@vueuse/core";
 
-const props = defineProps<{ open: boolean }>(),
+const props = defineProps<{ open?: boolean }>(),
   emit = defineEmits<{
-    'opened': []
-    'closed': []
-    'update:open': []
+    opened: [];
+    closed: [];
+    "update:open": [];
   }>(),
   items = ref<HTMLElement | null>(null),
   selected = ref<number>(),
@@ -25,15 +25,14 @@ const props = defineProps<{ open: boolean }>(),
 
 function close() {
   selected.value = undefined;
-  if (props.open) emit('update:open');
+  if (props.open) emit("update:open");
 }
 
 function move(offset: number) {
   const maxpos = items.value!.children.length - 1;
   if (selected.value === undefined) {
     selected.value = offset > 0 ? 0 : maxpos;
-  }
-  else {
+  } else {
     selected.value += offset;
     if (selected.value > maxpos) selected.value = 0;
     else if (selected.value < 0) selected.value = maxpos;
@@ -43,19 +42,19 @@ function move(offset: number) {
 function scroll(e: KeyboardEvent) {
   if (!props.open || !items.value) return;
   switch (e.key) {
-    case 'Esc':
-    case 'Escape':
+    case "Esc":
+    case "Escape":
       close();
       break;
-    case 'ArrowDown':
+    case "ArrowDown":
       move(1);
       e.preventDefault();
       break;
-    case 'ArrowUp':
+    case "ArrowUp":
       move(-1);
       e.preventDefault();
       break;
-    case 'Enter': {
+    case "Enter": {
       const target = items.value.children[selected.value!] as HTMLElement;
       target.click();
       e.preventDefault();
@@ -65,37 +64,36 @@ function scroll(e: KeyboardEvent) {
 }
 
 onMounted(() => {
-  useEventListener(document, 'keydown', scroll);
-  useEventListener(document, 'click', close);
+  useEventListener(document, "keydown", scroll);
+  useEventListener(document, "click", close);
 });
 
 watch(selected, (pos) => {
   if (!props.open || !items.value) return;
   for (const child of items.value.children) {
-    child.classList.remove('selected');
+    child.classList.remove("selected");
   }
-  if (pos != undefined) items.value.children[pos].classList.add('selected');
+  if (pos != undefined) items.value.children[pos].classList.add("selected");
 });
 
 watch(isOutside, (outside) => {
   for (const child of items.value!.children) {
     if (outside) {
-      child.classList.remove('hover:bg-primary/40');
-    }
-    else {
+      child.classList.remove("hover:bg-primary/40");
+    } else {
       selected.value = undefined;
-      child.classList.add('hover:bg-primary/40');
+      child.classList.add("hover:bg-primary/40");
     }
   }
 });
 </script>
 
 <style>
-.ui-popover [role=menuitem] {
+.ui-popover [role="menuitem"] {
   @apply cursor-pointer px-4;
 }
 
-.ui-popover [role=menuitem].selected {
+.ui-popover [role="menuitem"].selected {
   @apply bg-primary/40;
 }
 </style>

@@ -4,10 +4,7 @@
       "desc": "RFC4512: name of aliased object",
       "equality": "distinguishedNameMatch",
       "name": "aliasedObjectName",
-      "names": [
-        "aliasedObjectName",
-        "aliasedEntryName"
-      ],
+      "names": ["aliasedObjectName", "aliasedEntryName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.1",
@@ -22,9 +19,7 @@
       "desc": "RFC4512: alternative servers",
       "equality": null,
       "name": "altServer",
-      "names": [
-        "altServer"
-      ],
+      "names": ["altServer"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.1466.101.120.6",
@@ -39,9 +34,7 @@
       "desc": null,
       "equality": "caseIgnoreIA5Match",
       "name": "aRecord",
-      "names": [
-        "aRecord"
-      ],
+      "names": ["aRecord"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.26",
@@ -56,9 +49,7 @@
       "desc": "RFC1274: domain associated with object",
       "equality": "caseIgnoreIA5Match",
       "name": "associatedDomain",
-      "names": [
-        "associatedDomain"
-      ],
+      "names": ["associatedDomain"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.37",
@@ -73,9 +64,7 @@
       "desc": "RFC1274: DN of entry associated with domain",
       "equality": "distinguishedNameMatch",
       "name": "associatedName",
-      "names": [
-        "associatedName"
-      ],
+      "names": ["associatedName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.38",
@@ -90,9 +79,7 @@
       "desc": "RFC4512: attribute types",
       "equality": "objectIdentifierFirstComponentMatch",
       "name": "attributeTypes",
-      "names": [
-        "attributeTypes"
-      ],
+      "names": ["attributeTypes"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.21.5",
@@ -107,9 +94,7 @@
       "desc": "RFC1274: audio (u-law)",
       "equality": null,
       "name": "audio",
-      "names": [
-        "audio"
-      ],
+      "names": ["audio"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.55",
@@ -124,9 +109,7 @@
       "desc": "RFC2256: X.509 authority revocation list, use ;binary",
       "equality": null,
       "name": "authorityRevocationList",
-      "names": [
-        "authorityRevocationList"
-      ],
+      "names": ["authorityRevocationList"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.38",
@@ -141,9 +124,7 @@
       "desc": "Boot image name",
       "equality": "caseExactIA5Match",
       "name": "bootFile",
-      "names": [
-        "bootFile"
-      ],
+      "names": ["bootFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.24",
@@ -158,9 +139,7 @@
       "desc": "rpc.bootparamd parameter",
       "equality": null,
       "name": "bootParameter",
-      "names": [
-        "bootParameter"
-      ],
+      "names": ["bootParameter"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.23",
@@ -175,9 +154,7 @@
       "desc": "RFC1274: name of building",
       "equality": "caseIgnoreMatch",
       "name": "buildingName",
-      "names": [
-        "buildingName"
-      ],
+      "names": ["buildingName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.48",
@@ -192,9 +169,7 @@
       "desc": "RFC2256: business category",
       "equality": "caseIgnoreMatch",
       "name": "businessCategory",
-      "names": [
-        "businessCategory"
-      ],
+      "names": ["businessCategory"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.15",
@@ -209,19 +184,14 @@
       "desc": "RFC4519: two-letter ISO-3166 country code",
       "equality": null,
       "name": "c",
-      "names": [
-        "c",
-        "countryName"
-      ],
+      "names": ["c", "countryName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.6",
       "ordering": null,
       "single_value": true,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": "1.3.6.1.4.1.1466.115.121.1.11",
       "usage": "userApplications"
     },
@@ -229,9 +199,7 @@
       "desc": "RFC2256: X.509 CA certificate, use ;binary",
       "equality": "certificateExactMatch",
       "name": "cACertificate",
-      "names": [
-        "cACertificate"
-      ],
+      "names": ["cACertificate"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.37",
@@ -246,9 +214,7 @@
       "desc": "RFC2798: vehicle license or registration plate",
       "equality": "caseIgnoreMatch",
       "name": "carLicense",
-      "names": [
-        "carLicense"
-      ],
+      "names": ["carLicense"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.16.840.1.113730.3.1.1",
@@ -263,9 +229,7 @@
       "desc": "RFC2256: X.509 certificate revocation list, use ;binary",
       "equality": null,
       "name": "certificateRevocationList",
-      "names": [
-        "certificateRevocationList"
-      ],
+      "names": ["certificateRevocationList"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.39",
@@ -280,19 +244,14 @@
       "desc": "RFC4519: common name(s) for which the entity is known by",
       "equality": null,
       "name": "cn",
-      "names": [
-        "cn",
-        "commonName"
-      ],
+      "names": ["cn", "commonName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.3",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -300,9 +259,7 @@
       "desc": null,
       "equality": "caseIgnoreIA5Match",
       "name": "cNAMERecord",
-      "names": [
-        "cNAMERecord"
-      ],
+      "names": ["cNAMERecord"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.31",
@@ -317,10 +274,7 @@
       "desc": "RFC1274: friendly country name",
       "equality": "caseIgnoreMatch",
       "name": "co",
-      "names": [
-        "co",
-        "friendlyCountryName"
-      ],
+      "names": ["co", "friendlyCountryName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.43",
@@ -335,9 +289,7 @@
       "desc": "the largest committed CSN of a context",
       "equality": "CSNMatch",
       "name": "contextCSN",
-      "names": [
-        "contextCSN"
-      ],
+      "names": ["contextCSN"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.666.1.25",
@@ -352,9 +304,7 @@
       "desc": "RFC4512: time which object was created",
       "equality": "generalizedTimeMatch",
       "name": "createTimestamp",
-      "names": [
-        "createTimestamp"
-      ],
+      "names": ["createTimestamp"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "2.5.18.1",
@@ -369,9 +319,7 @@
       "desc": "RFC4512: name of creator",
       "equality": "distinguishedNameMatch",
       "name": "creatorsName",
-      "names": [
-        "creatorsName"
-      ],
+      "names": ["creatorsName"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "2.5.18.3",
@@ -386,9 +334,7 @@
       "desc": "RFC2256: X.509 cross certificate pair, use ;binary",
       "equality": null,
       "name": "crossCertificatePair",
-      "names": [
-        "crossCertificatePair"
-      ],
+      "names": ["crossCertificatePair"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.40",
@@ -403,10 +349,7 @@
       "desc": "RFC1274/2247: domain component",
       "equality": "caseIgnoreIA5Match",
       "name": "dc",
-      "names": [
-        "dc",
-        "domainComponent"
-      ],
+      "names": ["dc", "domainComponent"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.25",
@@ -421,9 +364,7 @@
       "desc": "RFC2256: delta revocation list; use ;binary",
       "equality": null,
       "name": "deltaRevocationList",
-      "names": [
-        "deltaRevocationList"
-      ],
+      "names": ["deltaRevocationList"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.53",
@@ -438,9 +379,7 @@
       "desc": "RFC2798: identifies a department within an organization",
       "equality": "caseIgnoreMatch",
       "name": "departmentNumber",
-      "names": [
-        "departmentNumber"
-      ],
+      "names": ["departmentNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.16.840.1.113730.3.1.2",
@@ -455,9 +394,7 @@
       "desc": "RFC4519: descriptive information",
       "equality": "caseIgnoreMatch",
       "name": "description",
-      "names": [
-        "description"
-      ],
+      "names": ["description"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.13",
@@ -472,9 +409,7 @@
       "desc": "RFC2256: destination indicator",
       "equality": "caseIgnoreMatch",
       "name": "destinationIndicator",
-      "names": [
-        "destinationIndicator"
-      ],
+      "names": ["destinationIndicator"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.27",
@@ -489,9 +424,7 @@
       "desc": "RFC2798: preferred name to be used when displaying entries",
       "equality": "caseIgnoreMatch",
       "name": "displayName",
-      "names": [
-        "displayName"
-      ],
+      "names": ["displayName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.16.840.1.113730.3.1.241",
@@ -506,9 +439,7 @@
       "desc": "RFC4519: common supertype of DN attributes",
       "equality": "distinguishedNameMatch",
       "name": "distinguishedName",
-      "names": [
-        "distinguishedName"
-      ],
+      "names": ["distinguishedName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.49",
@@ -523,9 +454,7 @@
       "desc": "RFC1274: DIT Redirect",
       "equality": "distinguishedNameMatch",
       "name": "dITRedirect",
-      "names": [
-        "dITRedirect"
-      ],
+      "names": ["dITRedirect"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.54",
@@ -540,18 +469,14 @@
       "desc": "RFC2256: name of DMD",
       "equality": null,
       "name": "dmdName",
-      "names": [
-        "dmdName"
-      ],
+      "names": ["dmdName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.54",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -559,9 +484,7 @@
       "desc": "RFC2256: DN qualifier",
       "equality": "caseIgnoreMatch",
       "name": "dnQualifier",
-      "names": [
-        "dnQualifier"
-      ],
+      "names": ["dnQualifier"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.46",
@@ -576,9 +499,7 @@
       "desc": "RFC1274: DN of author of document",
       "equality": "distinguishedNameMatch",
       "name": "documentAuthor",
-      "names": [
-        "documentAuthor"
-      ],
+      "names": ["documentAuthor"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.14",
@@ -593,9 +514,7 @@
       "desc": "RFC1274: unique identifier of document",
       "equality": "caseIgnoreMatch",
       "name": "documentIdentifier",
-      "names": [
-        "documentIdentifier"
-      ],
+      "names": ["documentIdentifier"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.11",
@@ -610,9 +529,7 @@
       "desc": "RFC1274: location of document original",
       "equality": "caseIgnoreMatch",
       "name": "documentLocation",
-      "names": [
-        "documentLocation"
-      ],
+      "names": ["documentLocation"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.15",
@@ -627,9 +544,7 @@
       "desc": "RFC1274: publisher of document",
       "equality": "caseIgnoreMatch",
       "name": "documentPublisher",
-      "names": [
-        "documentPublisher"
-      ],
+      "names": ["documentPublisher"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.56",
@@ -644,9 +559,7 @@
       "desc": "RFC1274: title of document",
       "equality": "caseIgnoreMatch",
       "name": "documentTitle",
-      "names": [
-        "documentTitle"
-      ],
+      "names": ["documentTitle"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.12",
@@ -661,9 +574,7 @@
       "desc": "RFC1274: version of document",
       "equality": "caseIgnoreMatch",
       "name": "documentVersion",
-      "names": [
-        "documentVersion"
-      ],
+      "names": ["documentVersion"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.13",
@@ -678,10 +589,7 @@
       "desc": "RFC1274: favorite drink",
       "equality": "caseIgnoreMatch",
       "name": "drink",
-      "names": [
-        "drink",
-        "favouriteDrink"
-      ],
+      "names": ["drink", "favouriteDrink"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.5",
@@ -696,9 +604,7 @@
       "desc": "RFC1274: DSA Quality",
       "equality": null,
       "name": "dSAQuality",
-      "names": [
-        "dSAQuality"
-      ],
+      "names": ["dSAQuality"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.49",
@@ -713,9 +619,7 @@
       "desc": "RFC2589: dynamic subtrees",
       "equality": null,
       "name": "dynamicSubtrees",
-      "names": [
-        "dynamicSubtrees"
-      ],
+      "names": ["dynamicSubtrees"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.1466.101.119.4",
@@ -730,11 +634,7 @@
       "desc": "RFC3280: legacy attribute for email addresses in DNs",
       "equality": "caseIgnoreIA5Match",
       "name": "email",
-      "names": [
-        "email",
-        "emailAddress",
-        "pkcs9email"
-      ],
+      "names": ["email", "emailAddress", "pkcs9email"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.2.840.113549.1.9.1",
@@ -749,9 +649,7 @@
       "desc": "RFC2798: numerically identifies an employee within an organization",
       "equality": "caseIgnoreMatch",
       "name": "employeeNumber",
-      "names": [
-        "employeeNumber"
-      ],
+      "names": ["employeeNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.16.840.1.113730.3.1.3",
@@ -766,9 +664,7 @@
       "desc": "RFC2798: type of employment for a person",
       "equality": "caseIgnoreMatch",
       "name": "employeeType",
-      "names": [
-        "employeeType"
-      ],
+      "names": ["employeeType"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.16.840.1.113730.3.1.4",
@@ -783,9 +679,7 @@
       "desc": "RFC2256: enhanced search guide",
       "equality": null,
       "name": "enhancedSearchGuide",
-      "names": [
-        "enhancedSearchGuide"
-      ],
+      "names": ["enhancedSearchGuide"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.47",
@@ -800,9 +694,7 @@
       "desc": "change sequence number of the entry content",
       "equality": "CSNMatch",
       "name": "entryCSN",
-      "names": [
-        "entryCSN"
-      ],
+      "names": ["entryCSN"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.666.1.7",
@@ -817,9 +709,7 @@
       "desc": "DN of the entry",
       "equality": "distinguishedNameMatch",
       "name": "entryDN",
-      "names": [
-        "entryDN"
-      ],
+      "names": ["entryDN"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "1.3.6.1.1.20",
@@ -834,9 +724,7 @@
       "desc": "RFC2589: entry time-to-live",
       "equality": null,
       "name": "entryTtl",
-      "names": [
-        "entryTtl"
-      ],
+      "names": ["entryTtl"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.1466.101.119.3",
@@ -851,9 +739,7 @@
       "desc": "UUID of the entry",
       "equality": "UUIDMatch",
       "name": "entryUUID",
-      "names": [
-        "entryUUID"
-      ],
+      "names": ["entryUUID"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "1.3.6.1.1.16.4",
@@ -868,10 +754,7 @@
       "desc": "RFC2256: Facsimile (Fax) Telephone Number",
       "equality": null,
       "name": "facsimileTelephoneNumber",
-      "names": [
-        "facsimileTelephoneNumber",
-        "fax"
-      ],
+      "names": ["facsimileTelephoneNumber", "fax"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.23",
@@ -886,9 +769,7 @@
       "desc": "The GECOS field; the common name",
       "equality": "caseIgnoreIA5Match",
       "name": "gecos",
-      "names": [
-        "gecos"
-      ],
+      "names": ["gecos"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.2",
@@ -903,18 +784,14 @@
       "desc": "RFC2256: name qualifier indicating a generation",
       "equality": null,
       "name": "generationQualifier",
-      "names": [
-        "generationQualifier"
-      ],
+      "names": ["generationQualifier"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.44",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -922,9 +799,7 @@
       "desc": "RFC2307: An integer uniquely identifying a group in an administrative domain",
       "equality": "integerMatch",
       "name": "gidNumber",
-      "names": [
-        "gidNumber"
-      ],
+      "names": ["gidNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.1",
@@ -939,19 +814,14 @@
       "desc": "RFC2256: first name(s) for which the entity is known by",
       "equality": null,
       "name": "givenName",
-      "names": [
-        "givenName",
-        "gn"
-      ],
+      "names": ["givenName", "gn"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.42",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -959,9 +829,7 @@
       "desc": "X.501: entry has children",
       "equality": "booleanMatch",
       "name": "hasSubordinates",
-      "names": [
-        "hasSubordinates"
-      ],
+      "names": ["hasSubordinates"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "2.5.18.9",
@@ -976,9 +844,7 @@
       "desc": "The absolute path to the home directory",
       "equality": "caseExactIA5Match",
       "name": "homeDirectory",
-      "names": [
-        "homeDirectory"
-      ],
+      "names": ["homeDirectory"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.3",
@@ -993,10 +859,7 @@
       "desc": "RFC1274: home telephone number",
       "equality": "telephoneNumberMatch",
       "name": "homePhone",
-      "names": [
-        "homePhone",
-        "homeTelephoneNumber"
-      ],
+      "names": ["homePhone", "homeTelephoneNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.20",
@@ -1011,9 +874,7 @@
       "desc": "RFC1274: home postal address",
       "equality": "caseIgnoreListMatch",
       "name": "homePostalAddress",
-      "names": [
-        "homePostalAddress"
-      ],
+      "names": ["homePostalAddress"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.39",
@@ -1028,9 +889,7 @@
       "desc": "RFC1274: host computer",
       "equality": "caseIgnoreMatch",
       "name": "host",
-      "names": [
-        "host"
-      ],
+      "names": ["host"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.9",
@@ -1045,9 +904,7 @@
       "desc": "RFC2256: house identifier",
       "equality": "caseIgnoreMatch",
       "name": "houseIdentifier",
-      "names": [
-        "houseIdentifier"
-      ],
+      "names": ["houseIdentifier"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.51",
@@ -1062,9 +919,7 @@
       "desc": "RFC1274: general information",
       "equality": "caseIgnoreMatch",
       "name": "info",
-      "names": [
-        "info"
-      ],
+      "names": ["info"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.4",
@@ -1079,18 +934,14 @@
       "desc": "RFC2256: initials of some or all of names, but not the surname(s).",
       "equality": null,
       "name": "initials",
-      "names": [
-        "initials"
-      ],
+      "names": ["initials"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.43",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -1098,9 +949,7 @@
       "desc": "RFC2256: international ISDN number",
       "equality": "numericStringMatch",
       "name": "internationalISDNNumber",
-      "names": [
-        "internationalISDNNumber"
-      ],
+      "names": ["internationalISDNNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.25",
@@ -1115,9 +964,7 @@
       "desc": "IP address",
       "equality": "caseIgnoreIA5Match",
       "name": "ipHostNumber",
-      "names": [
-        "ipHostNumber"
-      ],
+      "names": ["ipHostNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.19",
@@ -1132,9 +979,7 @@
       "desc": "IP netmask",
       "equality": "caseIgnoreIA5Match",
       "name": "ipNetmaskNumber",
-      "names": [
-        "ipNetmaskNumber"
-      ],
+      "names": ["ipNetmaskNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.21",
@@ -1149,9 +994,7 @@
       "desc": "IP network",
       "equality": "caseIgnoreIA5Match",
       "name": "ipNetworkNumber",
-      "names": [
-        "ipNetworkNumber"
-      ],
+      "names": ["ipNetworkNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.20",
@@ -1166,9 +1009,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "ipProtocolNumber",
-      "names": [
-        "ipProtocolNumber"
-      ],
+      "names": ["ipProtocolNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.17",
@@ -1183,9 +1024,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "ipServicePort",
-      "names": [
-        "ipServicePort"
-      ],
+      "names": ["ipServicePort"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.15",
@@ -1200,18 +1039,14 @@
       "desc": null,
       "equality": null,
       "name": "ipServiceProtocol",
-      "names": [
-        "ipServiceProtocol"
-      ],
+      "names": ["ipServiceProtocol"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.16",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -1219,9 +1054,7 @@
       "desc": "RFC1274: Janet mailbox",
       "equality": "caseIgnoreIA5Match",
       "name": "janetMailbox",
-      "names": [
-        "janetMailbox"
-      ],
+      "names": ["janetMailbox"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.46",
@@ -1236,9 +1069,7 @@
       "desc": "RFC2798: a JPEG image",
       "equality": null,
       "name": "jpegPhoto",
-      "names": [
-        "jpegPhoto"
-      ],
+      "names": ["jpegPhoto"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.60",
@@ -1253,9 +1084,7 @@
       "desc": "RFC2256: knowledge information",
       "equality": "caseIgnoreMatch",
       "name": "knowledgeInformation",
-      "names": [
-        "knowledgeInformation"
-      ],
+      "names": ["knowledgeInformation"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.2",
@@ -1270,19 +1099,14 @@
       "desc": "RFC2256: locality which this object resides in",
       "equality": null,
       "name": "l",
-      "names": [
-        "l",
-        "localityName"
-      ],
+      "names": ["l", "localityName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.7",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -1290,9 +1114,7 @@
       "desc": "RFC2079: Uniform Resource Identifier with optional label",
       "equality": "caseExactMatch",
       "name": "labeledURI",
-      "names": [
-        "labeledURI"
-      ],
+      "names": ["labeledURI"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.250.1.57",
@@ -1307,9 +1129,7 @@
       "desc": "RFC4512: LDAP syntaxes",
       "equality": "objectIdentifierFirstComponentMatch",
       "name": "ldapSyntaxes",
-      "names": [
-        "ldapSyntaxes"
-      ],
+      "names": ["ldapSyntaxes"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.1466.101.120.16",
@@ -1324,9 +1144,7 @@
       "desc": "The path to the login shell",
       "equality": "caseExactIA5Match",
       "name": "loginShell",
-      "names": [
-        "loginShell"
-      ],
+      "names": ["loginShell"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.4",
@@ -1341,9 +1159,7 @@
       "desc": "MAC address",
       "equality": "caseIgnoreIA5Match",
       "name": "macAddress",
-      "names": [
-        "macAddress"
-      ],
+      "names": ["macAddress"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.22",
@@ -1358,10 +1174,7 @@
       "desc": "RFC1274: RFC822 Mailbox",
       "equality": "caseIgnoreIA5Match",
       "name": "mail",
-      "names": [
-        "mail",
-        "rfc822Mailbox"
-      ],
+      "names": ["mail", "rfc822Mailbox"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.3",
@@ -1376,9 +1189,7 @@
       "desc": "RFC1274: mail preference option",
       "equality": null,
       "name": "mailPreferenceOption",
-      "names": [
-        "mailPreferenceOption"
-      ],
+      "names": ["mailPreferenceOption"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.47",
@@ -1393,9 +1204,7 @@
       "desc": "RFC1274: DN of manager",
       "equality": "distinguishedNameMatch",
       "name": "manager",
-      "names": [
-        "manager"
-      ],
+      "names": ["manager"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.10",
@@ -1410,9 +1219,7 @@
       "desc": "RFC4512: matching rules",
       "equality": "objectIdentifierFirstComponentMatch",
       "name": "matchingRules",
-      "names": [
-        "matchingRules"
-      ],
+      "names": ["matchingRules"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.21.4",
@@ -1427,9 +1234,7 @@
       "desc": "RFC4512: matching rule uses",
       "equality": "objectIdentifierFirstComponentMatch",
       "name": "matchingRuleUse",
-      "names": [
-        "matchingRuleUse"
-      ],
+      "names": ["matchingRuleUse"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.21.8",
@@ -1444,9 +1249,7 @@
       "desc": null,
       "equality": "caseIgnoreIA5Match",
       "name": "mDRecord",
-      "names": [
-        "mDRecord"
-      ],
+      "names": ["mDRecord"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.27",
@@ -1461,18 +1264,14 @@
       "desc": "RFC2256: member of a group",
       "equality": null,
       "name": "member",
-      "names": [
-        "member"
-      ],
+      "names": ["member"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.31",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "distinguishedName"
-      ],
+      "sup": ["distinguishedName"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -1480,9 +1279,7 @@
       "desc": null,
       "equality": "caseExactIA5Match",
       "name": "memberNisNetgroup",
-      "names": [
-        "memberNisNetgroup"
-      ],
+      "names": ["memberNisNetgroup"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.13",
@@ -1497,9 +1294,7 @@
       "desc": null,
       "equality": "caseExactIA5Match",
       "name": "memberUid",
-      "names": [
-        "memberUid"
-      ],
+      "names": ["memberUid"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.12",
@@ -1514,10 +1309,7 @@
       "desc": "RFC1274: mobile telephone number",
       "equality": "telephoneNumberMatch",
       "name": "mobile",
-      "names": [
-        "mobile",
-        "mobileTelephoneNumber"
-      ],
+      "names": ["mobile", "mobileTelephoneNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.41",
@@ -1532,9 +1324,7 @@
       "desc": "RFC4512: name of last modifier",
       "equality": "distinguishedNameMatch",
       "name": "modifiersName",
-      "names": [
-        "modifiersName"
-      ],
+      "names": ["modifiersName"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "2.5.18.4",
@@ -1549,9 +1339,7 @@
       "desc": "RFC4512: time which object was last modified",
       "equality": "generalizedTimeMatch",
       "name": "modifyTimestamp",
-      "names": [
-        "modifyTimestamp"
-      ],
+      "names": ["modifyTimestamp"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "2.5.18.2",
@@ -1566,9 +1354,7 @@
       "desc": null,
       "equality": "caseIgnoreIA5Match",
       "name": "mXRecord",
-      "names": [
-        "mXRecord"
-      ],
+      "names": ["mXRecord"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.28",
@@ -1583,9 +1369,7 @@
       "desc": "RFC4519: common supertype of name attributes",
       "equality": "caseIgnoreMatch",
       "name": "name",
-      "names": [
-        "name"
-      ],
+      "names": ["name"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.41",
@@ -1600,9 +1384,7 @@
       "desc": "RFC4512: naming contexts",
       "equality": "distinguishedNameMatch",
       "name": "namingContexts",
-      "names": [
-        "namingContexts"
-      ],
+      "names": ["namingContexts"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.1466.101.120.5",
@@ -1617,9 +1399,7 @@
       "desc": null,
       "equality": "caseExactIA5Match",
       "name": "nisMapEntry",
-      "names": [
-        "nisMapEntry"
-      ],
+      "names": ["nisMapEntry"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.27",
@@ -1634,18 +1414,14 @@
       "desc": null,
       "equality": null,
       "name": "nisMapName",
-      "names": [
-        "nisMapName"
-      ],
+      "names": ["nisMapName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.26",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -1653,9 +1429,7 @@
       "desc": "Netgroup triple",
       "equality": null,
       "name": "nisNetgroupTriple",
-      "names": [
-        "nisNetgroupTriple"
-      ],
+      "names": ["nisNetgroupTriple"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.14",
@@ -1670,9 +1444,7 @@
       "desc": null,
       "equality": "caseIgnoreIA5Match",
       "name": "nSRecord",
-      "names": [
-        "nSRecord"
-      ],
+      "names": ["nSRecord"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.29",
@@ -1687,19 +1459,14 @@
       "desc": "RFC2256: organization this object belongs to",
       "equality": null,
       "name": "o",
-      "names": [
-        "o",
-        "organizationName"
-      ],
+      "names": ["o", "organizationName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.10",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -1707,9 +1474,7 @@
       "desc": "RFC4512: object classes of the entity",
       "equality": "objectIdentifierMatch",
       "name": "objectClass",
-      "names": [
-        "objectClass"
-      ],
+      "names": ["objectClass"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.0",
@@ -1724,9 +1489,7 @@
       "desc": "RFC4512: object classes",
       "equality": "objectIdentifierFirstComponentMatch",
       "name": "objectClasses",
-      "names": [
-        "objectClasses"
-      ],
+      "names": ["objectClasses"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.21.6",
@@ -1741,9 +1504,7 @@
       "desc": "Access Control List",
       "equality": "caseIgnoreMatch",
       "name": "olcAccess",
-      "names": [
-        "olcAccess"
-      ],
+      "names": ["olcAccess"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.1",
@@ -1758,9 +1519,7 @@
       "desc": "Check ACLs against content of Add ops",
       "equality": "booleanMatch",
       "name": "olcAddContentAcl",
-      "names": [
-        "olcAddContentAcl"
-      ],
+      "names": ["olcAddContentAcl"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.86",
@@ -1775,9 +1534,7 @@
       "desc": "Allowed set of deprecated features",
       "equality": "caseIgnoreMatch",
       "name": "olcAllows",
-      "names": [
-        "olcAllows"
-      ],
+      "names": ["olcAllows"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.2",
@@ -1792,9 +1549,7 @@
       "desc": "File for slapd command line options",
       "equality": "caseExactMatch",
       "name": "olcArgsFile",
-      "names": [
-        "olcArgsFile"
-      ],
+      "names": ["olcArgsFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.3",
@@ -1809,9 +1564,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcAttributeOptions",
-      "names": [
-        "olcAttributeOptions"
-      ],
+      "names": ["olcAttributeOptions"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.5",
@@ -1826,9 +1579,7 @@
       "desc": "OpenLDAP attributeTypes",
       "equality": "caseIgnoreMatch",
       "name": "olcAttributeTypes",
-      "names": [
-        "olcAttributeTypes"
-      ],
+      "names": ["olcAttributeTypes"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.4",
@@ -1843,9 +1594,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcAuthIDRewrite",
-      "names": [
-        "olcAuthIDRewrite"
-      ],
+      "names": ["olcAuthIDRewrite"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.6",
@@ -1860,9 +1609,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcAuthzPolicy",
-      "names": [
-        "olcAuthzPolicy"
-      ],
+      "names": ["olcAuthzPolicy"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.7",
@@ -1877,9 +1624,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcAuthzRegexp",
-      "names": [
-        "olcAuthzRegexp"
-      ],
+      "names": ["olcAuthzRegexp"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.8",
@@ -1894,9 +1639,7 @@
       "desc": "A type of backend",
       "equality": "caseIgnoreMatch",
       "name": "olcBackend",
-      "names": [
-        "olcBackend"
-      ],
+      "names": ["olcBackend"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.9",
@@ -1911,9 +1654,7 @@
       "desc": "Power of 2 used to set IDL size",
       "equality": "integerMatch",
       "name": "olcBkMdbIdlExp",
-      "names": [
-        "olcBkMdbIdlExp"
-      ],
+      "names": ["olcBkMdbIdlExp"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.1.12.1",
@@ -1928,9 +1669,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcConcurrency",
-      "names": [
-        "olcConcurrency"
-      ],
+      "names": ["olcConcurrency"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.10",
@@ -1945,9 +1684,7 @@
       "desc": "Directory for slapd configuration backend",
       "equality": "caseExactMatch",
       "name": "olcConfigDir",
-      "names": [
-        "olcConfigDir"
-      ],
+      "names": ["olcConfigDir"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.79",
@@ -1962,9 +1699,7 @@
       "desc": "File for slapd configuration directives",
       "equality": "caseExactMatch",
       "name": "olcConfigFile",
-      "names": [
-        "olcConfigFile"
-      ],
+      "names": ["olcConfigFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.78",
@@ -1979,9 +1714,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcConnMaxPending",
-      "names": [
-        "olcConnMaxPending"
-      ],
+      "names": ["olcConnMaxPending"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.11",
@@ -1996,9 +1729,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcConnMaxPendingAuth",
-      "names": [
-        "olcConnMaxPendingAuth"
-      ],
+      "names": ["olcConnMaxPendingAuth"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.12",
@@ -2013,18 +1744,14 @@
       "desc": "The backend type for a database instance",
       "equality": null,
       "name": "olcDatabase",
-      "names": [
-        "olcDatabase"
-      ],
+      "names": ["olcDatabase"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.13",
       "ordering": null,
       "single_value": true,
       "substr": null,
-      "sup": [
-        "olcBackend"
-      ],
+      "sup": ["olcBackend"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -2032,9 +1759,7 @@
       "desc": "Database checkpoint interval in kbytes and minutes",
       "equality": "caseIgnoreMatch",
       "name": "olcDbCheckpoint",
-      "names": [
-        "olcDbCheckpoint"
-      ],
+      "names": ["olcDbCheckpoint"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.1.2",
@@ -2049,9 +1774,7 @@
       "desc": "Directory for database content",
       "equality": "caseIgnoreMatch",
       "name": "olcDbDirectory",
-      "names": [
-        "olcDbDirectory"
-      ],
+      "names": ["olcDbDirectory"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.1",
@@ -2066,9 +1789,7 @@
       "desc": "Database environment flags",
       "equality": "caseIgnoreMatch",
       "name": "olcDbEnvFlags",
-      "names": [
-        "olcDbEnvFlags"
-      ],
+      "names": ["olcDbEnvFlags"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.12.3",
@@ -2083,9 +1804,7 @@
       "desc": "Attribute index parameters",
       "equality": "caseIgnoreMatch",
       "name": "olcDbIndex",
-      "names": [
-        "olcDbIndex"
-      ],
+      "names": ["olcDbIndex"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.2",
@@ -2100,9 +1819,7 @@
       "desc": "Maximum size of an entry in bytes",
       "equality": "integerMatch",
       "name": "olcDbMaxEntrySize",
-      "names": [
-        "olcDbMaxEntrySize"
-      ],
+      "names": ["olcDbMaxEntrySize"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.12.4",
@@ -2117,9 +1834,7 @@
       "desc": "Maximum number of threads that may access the DB concurrently",
       "equality": "integerMatch",
       "name": "olcDbMaxReaders",
-      "names": [
-        "olcDbMaxReaders"
-      ],
+      "names": ["olcDbMaxReaders"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.12.1",
@@ -2134,9 +1849,7 @@
       "desc": "Maximum size of DB in bytes",
       "equality": "integerMatch",
       "name": "olcDbMaxSize",
-      "names": [
-        "olcDbMaxSize"
-      ],
+      "names": ["olcDbMaxSize"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.12.2",
@@ -2151,9 +1864,7 @@
       "desc": "Unix permissions of database files",
       "equality": "caseIgnoreMatch",
       "name": "olcDbMode",
-      "names": [
-        "olcDbMode"
-      ],
+      "names": ["olcDbMode"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.3",
@@ -2168,9 +1879,7 @@
       "desc": "Hi/Lo thresholds for splitting multivalued attr out of main blob",
       "equality": "caseIgnoreMatch",
       "name": "olcDbMultival",
-      "names": [
-        "olcDbMultival"
-      ],
+      "names": ["olcDbMultival"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.12.6",
@@ -2185,9 +1894,7 @@
       "desc": "Disable synchronous database writes",
       "equality": "booleanMatch",
       "name": "olcDbNoSync",
-      "names": [
-        "olcDbNoSync"
-      ],
+      "names": ["olcDbNoSync"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.1.4",
@@ -2202,9 +1909,7 @@
       "desc": "Number of entries to process in one read transaction",
       "equality": "integerMatch",
       "name": "olcDbRtxnSize",
-      "names": [
-        "olcDbRtxnSize"
-      ],
+      "names": ["olcDbRtxnSize"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.12.5",
@@ -2219,9 +1924,7 @@
       "desc": "Depth of search stack in IDLs",
       "equality": "integerMatch",
       "name": "olcDbSearchStack",
-      "names": [
-        "olcDbSearchStack"
-      ],
+      "names": ["olcDbSearchStack"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.1.9",
@@ -2236,9 +1939,7 @@
       "desc": null,
       "equality": "distinguishedNameMatch",
       "name": "olcDefaultSearchBase",
-      "names": [
-        "olcDefaultSearchBase"
-      ],
+      "names": ["olcDefaultSearchBase"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.14",
@@ -2253,9 +1954,7 @@
       "desc": null,
       "equality": "booleanMatch",
       "name": "olcDisabled",
-      "names": [
-        "olcDisabled"
-      ],
+      "names": ["olcDisabled"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.21",
@@ -2270,9 +1969,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcDisallows",
-      "names": [
-        "olcDisallows"
-      ],
+      "names": ["olcDisallows"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.15",
@@ -2287,9 +1984,7 @@
       "desc": "OpenLDAP DIT content rules",
       "equality": "caseIgnoreMatch",
       "name": "olcDitContentRules",
-      "names": [
-        "olcDitContentRules"
-      ],
+      "names": ["olcDitContentRules"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.16",
@@ -2304,9 +1999,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcExtraAttrs",
-      "names": [
-        "olcExtraAttrs"
-      ],
+      "names": ["olcExtraAttrs"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.20",
@@ -2321,9 +2014,7 @@
       "desc": null,
       "equality": "booleanMatch",
       "name": "olcGentleHUP",
-      "names": [
-        "olcGentleHUP"
-      ],
+      "names": ["olcGentleHUP"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.17",
@@ -2338,9 +2029,7 @@
       "desc": null,
       "equality": "booleanMatch",
       "name": "olcHidden",
-      "names": [
-        "olcHidden"
-      ],
+      "names": ["olcHidden"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.17",
@@ -2355,9 +2044,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcIdleTimeout",
-      "names": [
-        "olcIdleTimeout"
-      ],
+      "names": ["olcIdleTimeout"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.18",
@@ -2372,18 +2059,14 @@
       "desc": null,
       "equality": null,
       "name": "olcInclude",
-      "names": [
-        "olcInclude"
-      ],
+      "names": ["olcInclude"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.19",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "labeledURI"
-      ],
+      "sup": ["labeledURI"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -2391,9 +2074,7 @@
       "desc": null,
       "equality": "booleanMatch",
       "name": "olcIndexHash64",
-      "names": [
-        "olcIndexHash64"
-      ],
+      "names": ["olcIndexHash64"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.94",
@@ -2408,9 +2089,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcIndexIntLen",
-      "names": [
-        "olcIndexIntLen"
-      ],
+      "names": ["olcIndexIntLen"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.84",
@@ -2425,9 +2104,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcIndexSubstrAnyLen",
-      "names": [
-        "olcIndexSubstrAnyLen"
-      ],
+      "names": ["olcIndexSubstrAnyLen"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.22",
@@ -2442,9 +2119,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcIndexSubstrAnyStep",
-      "names": [
-        "olcIndexSubstrAnyStep"
-      ],
+      "names": ["olcIndexSubstrAnyStep"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.23",
@@ -2459,9 +2134,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcIndexSubstrIfMaxLen",
-      "names": [
-        "olcIndexSubstrIfMaxLen"
-      ],
+      "names": ["olcIndexSubstrIfMaxLen"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.21",
@@ -2476,9 +2149,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcIndexSubstrIfMinLen",
-      "names": [
-        "olcIndexSubstrIfMinLen"
-      ],
+      "names": ["olcIndexSubstrIfMinLen"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.20",
@@ -2493,9 +2164,7 @@
       "desc": null,
       "equality": "booleanMatch",
       "name": "olcLastBind",
-      "names": [
-        "olcLastBind"
-      ],
+      "names": ["olcLastBind"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.22",
@@ -2510,9 +2179,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcLastBindPrecision",
-      "names": [
-        "olcLastBindPrecision"
-      ],
+      "names": ["olcLastBindPrecision"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.23",
@@ -2527,9 +2194,7 @@
       "desc": null,
       "equality": "booleanMatch",
       "name": "olcLastMod",
-      "names": [
-        "olcLastMod"
-      ],
+      "names": ["olcLastMod"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.4",
@@ -2544,9 +2209,7 @@
       "desc": "OpenLDAP ldapSyntax",
       "equality": "caseIgnoreMatch",
       "name": "olcLdapSyntaxes",
-      "names": [
-        "olcLdapSyntaxes"
-      ],
+      "names": ["olcLdapSyntaxes"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.85",
@@ -2561,9 +2224,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcLimits",
-      "names": [
-        "olcLimits"
-      ],
+      "names": ["olcLimits"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.5",
@@ -2578,9 +2239,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcListenerThreads",
-      "names": [
-        "olcListenerThreads"
-      ],
+      "names": ["olcListenerThreads"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.93",
@@ -2595,9 +2254,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcLocalSSF",
-      "names": [
-        "olcLocalSSF"
-      ],
+      "names": ["olcLocalSSF"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.26",
@@ -2612,9 +2269,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcLogFile",
-      "names": [
-        "olcLogFile"
-      ],
+      "names": ["olcLogFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.27",
@@ -2629,9 +2284,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcLogFileFormat",
-      "names": [
-        "olcLogFileFormat"
-      ],
+      "names": ["olcLogFileFormat"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.104",
@@ -2646,9 +2299,7 @@
       "desc": null,
       "equality": "booleanMatch",
       "name": "olcLogFileOnly",
-      "names": [
-        "olcLogFileOnly"
-      ],
+      "names": ["olcLogFileOnly"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.102",
@@ -2663,9 +2314,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcLogFileRotate",
-      "names": [
-        "olcLogFileRotate"
-      ],
+      "names": ["olcLogFileRotate"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.103",
@@ -2680,9 +2329,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcLogLevel",
-      "names": [
-        "olcLogLevel"
-      ],
+      "names": ["olcLogLevel"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.28",
@@ -2697,9 +2344,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcMaxDerefDepth",
-      "names": [
-        "olcMaxDerefDepth"
-      ],
+      "names": ["olcMaxDerefDepth"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.6",
@@ -2714,9 +2359,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcMaxFilterDepth",
-      "names": [
-        "olcMaxFilterDepth"
-      ],
+      "names": ["olcMaxFilterDepth"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.101",
@@ -2731,9 +2374,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcModuleLoad",
-      "names": [
-        "olcModuleLoad"
-      ],
+      "names": ["olcModuleLoad"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.30",
@@ -2748,9 +2389,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcModulePath",
-      "names": [
-        "olcModulePath"
-      ],
+      "names": ["olcModulePath"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.31",
@@ -2765,9 +2404,7 @@
       "desc": null,
       "equality": "booleanMatch",
       "name": "olcMonitoring",
-      "names": [
-        "olcMonitoring"
-      ],
+      "names": ["olcMonitoring"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.18",
@@ -2782,10 +2419,7 @@
       "desc": null,
       "equality": "booleanMatch",
       "name": "olcMultiProvider",
-      "names": [
-        "olcMultiProvider",
-        "olcMirrorMode"
-      ],
+      "names": ["olcMultiProvider", "olcMirrorMode"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.16",
@@ -2800,9 +2434,7 @@
       "desc": "OpenLDAP object classes",
       "equality": "caseIgnoreMatch",
       "name": "olcObjectClasses",
-      "names": [
-        "olcObjectClasses"
-      ],
+      "names": ["olcObjectClasses"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.32",
@@ -2817,9 +2449,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcObjectIdentifier",
-      "names": [
-        "olcObjectIdentifier"
-      ],
+      "names": ["olcObjectIdentifier"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.33",
@@ -2834,18 +2464,14 @@
       "desc": null,
       "equality": null,
       "name": "olcOverlay",
-      "names": [
-        "olcOverlay"
-      ],
+      "names": ["olcOverlay"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.34",
       "ordering": null,
       "single_value": true,
       "substr": null,
-      "sup": [
-        "olcDatabase"
-      ],
+      "sup": ["olcDatabase"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -2853,9 +2479,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcPasswordCryptSaltFormat",
-      "names": [
-        "olcPasswordCryptSaltFormat"
-      ],
+      "names": ["olcPasswordCryptSaltFormat"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.35",
@@ -2870,9 +2494,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcPasswordHash",
-      "names": [
-        "olcPasswordHash"
-      ],
+      "names": ["olcPasswordHash"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.36",
@@ -2887,9 +2509,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcPidFile",
-      "names": [
-        "olcPidFile"
-      ],
+      "names": ["olcPidFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.37",
@@ -2904,9 +2524,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcPlugin",
-      "names": [
-        "olcPlugin"
-      ],
+      "names": ["olcPlugin"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.38",
@@ -2921,9 +2539,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcPluginLogFile",
-      "names": [
-        "olcPluginLogFile"
-      ],
+      "names": ["olcPluginLogFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.39",
@@ -2938,9 +2554,7 @@
       "desc": null,
       "equality": "booleanMatch",
       "name": "olcReadOnly",
-      "names": [
-        "olcReadOnly"
-      ],
+      "names": ["olcReadOnly"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.40",
@@ -2955,18 +2569,14 @@
       "desc": null,
       "equality": null,
       "name": "olcReferral",
-      "names": [
-        "olcReferral"
-      ],
+      "names": ["olcReferral"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.41",
       "ordering": null,
       "single_value": true,
       "substr": null,
-      "sup": [
-        "labeledURI"
-      ],
+      "sup": ["labeledURI"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -2974,18 +2584,14 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcReplica",
-      "names": [
-        "olcReplica"
-      ],
+      "names": ["olcReplica"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.7",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "labeledURI"
-      ],
+      "sup": ["labeledURI"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -2993,9 +2599,7 @@
       "desc": null,
       "equality": null,
       "name": "olcReplicaArgsFile",
-      "names": [
-        "olcReplicaArgsFile"
-      ],
+      "names": ["olcReplicaArgsFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.43",
@@ -3010,9 +2614,7 @@
       "desc": null,
       "equality": null,
       "name": "olcReplicaPidFile",
-      "names": [
-        "olcReplicaPidFile"
-      ],
+      "names": ["olcReplicaPidFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.44",
@@ -3027,9 +2629,7 @@
       "desc": null,
       "equality": null,
       "name": "olcReplicationInterval",
-      "names": [
-        "olcReplicationInterval"
-      ],
+      "names": ["olcReplicationInterval"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.45",
@@ -3044,9 +2644,7 @@
       "desc": null,
       "equality": null,
       "name": "olcReplogFile",
-      "names": [
-        "olcReplogFile"
-      ],
+      "names": ["olcReplogFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.46",
@@ -3061,9 +2659,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcRequires",
-      "names": [
-        "olcRequires"
-      ],
+      "names": ["olcRequires"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.47",
@@ -3078,9 +2674,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcRestrict",
-      "names": [
-        "olcRestrict"
-      ],
+      "names": ["olcRestrict"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.48",
@@ -3095,9 +2689,7 @@
       "desc": null,
       "equality": "booleanMatch",
       "name": "olcReverseLookup",
-      "names": [
-        "olcReverseLookup"
-      ],
+      "names": ["olcReverseLookup"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.49",
@@ -3112,9 +2704,7 @@
       "desc": null,
       "equality": "distinguishedNameMatch",
       "name": "olcRootDN",
-      "names": [
-        "olcRootDN"
-      ],
+      "names": ["olcRootDN"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.8",
@@ -3129,9 +2719,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcRootDSE",
-      "names": [
-        "olcRootDSE"
-      ],
+      "names": ["olcRootDSE"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.51",
@@ -3146,9 +2734,7 @@
       "desc": null,
       "equality": "octetStringMatch",
       "name": "olcRootPW",
-      "names": [
-        "olcRootPW"
-      ],
+      "names": ["olcRootPW"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.9",
@@ -3163,9 +2749,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcSaslAuxprops",
-      "names": [
-        "olcSaslAuxprops"
-      ],
+      "names": ["olcSaslAuxprops"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.89",
@@ -3180,9 +2764,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcSaslAuxpropsDontUseCopy",
-      "names": [
-        "olcSaslAuxpropsDontUseCopy"
-      ],
+      "names": ["olcSaslAuxpropsDontUseCopy"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.91",
@@ -3197,9 +2779,7 @@
       "desc": null,
       "equality": "booleanMatch",
       "name": "olcSaslAuxpropsDontUseCopyIgnore",
-      "names": [
-        "olcSaslAuxpropsDontUseCopyIgnore"
-      ],
+      "names": ["olcSaslAuxpropsDontUseCopyIgnore"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.92",
@@ -3214,9 +2794,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcSaslCBinding",
-      "names": [
-        "olcSaslCBinding"
-      ],
+      "names": ["olcSaslCBinding"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.100",
@@ -3231,9 +2809,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcSaslHost",
-      "names": [
-        "olcSaslHost"
-      ],
+      "names": ["olcSaslHost"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.53",
@@ -3248,9 +2824,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcSaslRealm",
-      "names": [
-        "olcSaslRealm"
-      ],
+      "names": ["olcSaslRealm"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.54",
@@ -3265,9 +2839,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcSaslSecProps",
-      "names": [
-        "olcSaslSecProps"
-      ],
+      "names": ["olcSaslSecProps"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.56",
@@ -3282,9 +2854,7 @@
       "desc": null,
       "equality": "distinguishedNameMatch",
       "name": "olcSchemaDN",
-      "names": [
-        "olcSchemaDN"
-      ],
+      "names": ["olcSchemaDN"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.58",
@@ -3299,9 +2869,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcSecurity",
-      "names": [
-        "olcSecurity"
-      ],
+      "names": ["olcSecurity"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.59",
@@ -3316,9 +2884,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcServerID",
-      "names": [
-        "olcServerID"
-      ],
+      "names": ["olcServerID"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.81",
@@ -3333,9 +2899,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcSizeLimit",
-      "names": [
-        "olcSizeLimit"
-      ],
+      "names": ["olcSizeLimit"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.60",
@@ -3350,9 +2914,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcSockbufMaxIncoming",
-      "names": [
-        "olcSockbufMaxIncoming"
-      ],
+      "names": ["olcSockbufMaxIncoming"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.61",
@@ -3367,9 +2929,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcSockbufMaxIncomingAuth",
-      "names": [
-        "olcSockbufMaxIncomingAuth"
-      ],
+      "names": ["olcSockbufMaxIncomingAuth"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.62",
@@ -3384,9 +2944,7 @@
       "desc": "Attributes whose values will always be sorted",
       "equality": "caseIgnoreMatch",
       "name": "olcSortVals",
-      "names": [
-        "olcSortVals"
-      ],
+      "names": ["olcSortVals"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.83",
@@ -3401,9 +2959,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcSubordinate",
-      "names": [
-        "olcSubordinate"
-      ],
+      "names": ["olcSubordinate"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.15",
@@ -3418,9 +2974,7 @@
       "desc": null,
       "equality": "distinguishedNameMatch",
       "name": "olcSuffix",
-      "names": [
-        "olcSuffix"
-      ],
+      "names": ["olcSuffix"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.10",
@@ -3435,9 +2989,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcSyncrepl",
-      "names": [
-        "olcSyncrepl"
-      ],
+      "names": ["olcSyncrepl"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.11",
@@ -3452,9 +3004,7 @@
       "desc": "Store sync context in a subentry",
       "equality": "booleanMatch",
       "name": "olcSyncUseSubentry",
-      "names": [
-        "olcSyncUseSubentry"
-      ],
+      "names": ["olcSyncUseSubentry"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.19",
@@ -3469,9 +3019,7 @@
       "desc": "Custom TCP buffer size",
       "equality": "caseExactMatch",
       "name": "olcTCPBuffer",
-      "names": [
-        "olcTCPBuffer"
-      ],
+      "names": ["olcTCPBuffer"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.90",
@@ -3486,9 +3034,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcThreadQueues",
-      "names": [
-        "olcThreadQueues"
-      ],
+      "names": ["olcThreadQueues"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.95",
@@ -3503,9 +3049,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcThreads",
-      "names": [
-        "olcThreads"
-      ],
+      "names": ["olcThreads"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.66",
@@ -3520,9 +3064,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcTimeLimit",
-      "names": [
-        "olcTimeLimit"
-      ],
+      "names": ["olcTimeLimit"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.67",
@@ -3537,9 +3079,7 @@
       "desc": "X.509 certificate, must use ;binary",
       "equality": "certificateExactMatch",
       "name": "olcTLSCACertificate",
-      "names": [
-        "olcTLSCACertificate"
-      ],
+      "names": ["olcTLSCACertificate"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.97",
@@ -3554,9 +3094,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcTLSCACertificateFile",
-      "names": [
-        "olcTLSCACertificateFile"
-      ],
+      "names": ["olcTLSCACertificateFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.68",
@@ -3571,9 +3109,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcTLSCACertificatePath",
-      "names": [
-        "olcTLSCACertificatePath"
-      ],
+      "names": ["olcTLSCACertificatePath"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.69",
@@ -3588,9 +3124,7 @@
       "desc": "X.509 certificate, must use ;binary",
       "equality": "certificateExactMatch",
       "name": "olcTLSCertificate",
-      "names": [
-        "olcTLSCertificate"
-      ],
+      "names": ["olcTLSCertificate"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.98",
@@ -3605,9 +3139,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcTLSCertificateFile",
-      "names": [
-        "olcTLSCertificateFile"
-      ],
+      "names": ["olcTLSCertificateFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.70",
@@ -3622,9 +3154,7 @@
       "desc": "X.509 privateKey, must use ;binary",
       "equality": "privateKeyMatch",
       "name": "olcTLSCertificateKey",
-      "names": [
-        "olcTLSCertificateKey"
-      ],
+      "names": ["olcTLSCertificateKey"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.99",
@@ -3639,9 +3169,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcTLSCertificateKeyFile",
-      "names": [
-        "olcTLSCertificateKeyFile"
-      ],
+      "names": ["olcTLSCertificateKeyFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.71",
@@ -3656,9 +3184,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcTLSCipherSuite",
-      "names": [
-        "olcTLSCipherSuite"
-      ],
+      "names": ["olcTLSCipherSuite"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.72",
@@ -3673,9 +3199,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcTLSCRLCheck",
-      "names": [
-        "olcTLSCRLCheck"
-      ],
+      "names": ["olcTLSCRLCheck"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.73",
@@ -3690,9 +3214,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcTLSCRLFile",
-      "names": [
-        "olcTLSCRLFile"
-      ],
+      "names": ["olcTLSCRLFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.82",
@@ -3707,9 +3229,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcTLSDHParamFile",
-      "names": [
-        "olcTLSDHParamFile"
-      ],
+      "names": ["olcTLSDHParamFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.77",
@@ -3724,9 +3244,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcTLSECName",
-      "names": [
-        "olcTLSECName"
-      ],
+      "names": ["olcTLSECName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.96",
@@ -3741,9 +3259,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcTLSProtocolMin",
-      "names": [
-        "olcTLSProtocolMin"
-      ],
+      "names": ["olcTLSProtocolMin"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.87",
@@ -3758,9 +3274,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcTLSRandFile",
-      "names": [
-        "olcTLSRandFile"
-      ],
+      "names": ["olcTLSRandFile"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.74",
@@ -3775,9 +3289,7 @@
       "desc": null,
       "equality": "caseExactMatch",
       "name": "olcTLSVerifyClient",
-      "names": [
-        "olcTLSVerifyClient"
-      ],
+      "names": ["olcTLSVerifyClient"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.75",
@@ -3792,9 +3304,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcToolThreads",
-      "names": [
-        "olcToolThreads"
-      ],
+      "names": ["olcToolThreads"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.80",
@@ -3809,9 +3319,7 @@
       "desc": null,
       "equality": "distinguishedNameMatch",
       "name": "olcUpdateDN",
-      "names": [
-        "olcUpdateDN"
-      ],
+      "names": ["olcUpdateDN"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.12",
@@ -3826,18 +3334,14 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "olcUpdateRef",
-      "names": [
-        "olcUpdateRef"
-      ],
+      "names": ["olcUpdateRef"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.2.0.13",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "labeledURI"
-      ],
+      "sup": ["labeledURI"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -3845,9 +3349,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "olcWriteTimeout",
-      "names": [
-        "olcWriteTimeout"
-      ],
+      "names": ["olcWriteTimeout"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.3.0.88",
@@ -3862,9 +3364,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "oncRpcNumber",
-      "names": [
-        "oncRpcNumber"
-      ],
+      "names": ["oncRpcNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.18",
@@ -3879,9 +3379,7 @@
       "desc": "RFC1274: organizational status",
       "equality": "caseIgnoreMatch",
       "name": "organizationalStatus",
-      "names": [
-        "organizationalStatus"
-      ],
+      "names": ["organizationalStatus"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.45",
@@ -3896,9 +3394,7 @@
       "desc": null,
       "equality": null,
       "name": "otherMailbox",
-      "names": [
-        "otherMailbox"
-      ],
+      "names": ["otherMailbox"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.22",
@@ -3913,19 +3409,14 @@
       "desc": "RFC2256: organizational unit this object belongs to",
       "equality": null,
       "name": "ou",
-      "names": [
-        "ou",
-        "organizationalUnitName"
-      ],
+      "names": ["ou", "organizationalUnitName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.11",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -3933,18 +3424,14 @@
       "desc": "RFC2256: owner (of the object)",
       "equality": null,
       "name": "owner",
-      "names": [
-        "owner"
-      ],
+      "names": ["owner"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.32",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "distinguishedName"
-      ],
+      "sup": ["distinguishedName"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -3952,10 +3439,7 @@
       "desc": "RFC1274: pager telephone number",
       "equality": "telephoneNumberMatch",
       "name": "pager",
-      "names": [
-        "pager",
-        "pagerTelephoneNumber"
-      ],
+      "names": ["pager", "pagerTelephoneNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.42",
@@ -3970,9 +3454,7 @@
       "desc": "RFC1274: Personal Signature (G3 fax)",
       "equality": null,
       "name": "personalSignature",
-      "names": [
-        "personalSignature"
-      ],
+      "names": ["personalSignature"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.53",
@@ -3987,9 +3469,7 @@
       "desc": "RFC1274: personal title",
       "equality": "caseIgnoreMatch",
       "name": "personalTitle",
-      "names": [
-        "personalTitle"
-      ],
+      "names": ["personalTitle"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.40",
@@ -4004,9 +3484,7 @@
       "desc": "RFC1274: photo (G3 fax)",
       "equality": null,
       "name": "photo",
-      "names": [
-        "photo"
-      ],
+      "names": ["photo"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.7",
@@ -4021,9 +3499,7 @@
       "desc": "RFC2256: Physical Delivery Office Name",
       "equality": "caseIgnoreMatch",
       "name": "physicalDeliveryOfficeName",
-      "names": [
-        "physicalDeliveryOfficeName"
-      ],
+      "names": ["physicalDeliveryOfficeName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.19",
@@ -4038,9 +3514,7 @@
       "desc": "PKCS#8 PrivateKeyInfo, use ;binary",
       "equality": "privateKeyMatch",
       "name": "pKCS8PrivateKey",
-      "names": [
-        "pKCS8PrivateKey"
-      ],
+      "names": ["pKCS8PrivateKey"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.666.1.60",
@@ -4055,9 +3529,7 @@
       "desc": "RFC2256: postal address",
       "equality": "caseIgnoreListMatch",
       "name": "postalAddress",
-      "names": [
-        "postalAddress"
-      ],
+      "names": ["postalAddress"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.16",
@@ -4072,9 +3544,7 @@
       "desc": "RFC2256: postal code",
       "equality": "caseIgnoreMatch",
       "name": "postalCode",
-      "names": [
-        "postalCode"
-      ],
+      "names": ["postalCode"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.17",
@@ -4089,9 +3559,7 @@
       "desc": "RFC2256: Post Office Box",
       "equality": "caseIgnoreMatch",
       "name": "postOfficeBox",
-      "names": [
-        "postOfficeBox"
-      ],
+      "names": ["postOfficeBox"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.18",
@@ -4106,9 +3574,7 @@
       "desc": "RFC2256: preferred delivery method",
       "equality": null,
       "name": "preferredDeliveryMethod",
-      "names": [
-        "preferredDeliveryMethod"
-      ],
+      "names": ["preferredDeliveryMethod"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.28",
@@ -4123,9 +3589,7 @@
       "desc": "RFC2798: preferred written or spoken language for a person",
       "equality": "caseIgnoreMatch",
       "name": "preferredLanguage",
-      "names": [
-        "preferredLanguage"
-      ],
+      "names": ["preferredLanguage"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.16.840.1.113730.3.1.39",
@@ -4140,9 +3604,7 @@
       "desc": "RFC2256: presentation address",
       "equality": "presentationAddressMatch",
       "name": "presentationAddress",
-      "names": [
-        "presentationAddress"
-      ],
+      "names": ["presentationAddress"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.29",
@@ -4157,9 +3619,7 @@
       "desc": "RFC2256: protocol information",
       "equality": "protocolInformationMatch",
       "name": "protocolInformation",
-      "names": [
-        "protocolInformation"
-      ],
+      "names": ["protocolInformation"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.48",
@@ -4174,18 +3634,14 @@
       "desc": "X.520(4th): pseudonym for the object",
       "equality": null,
       "name": "pseudonym",
-      "names": [
-        "pseudonym"
-      ],
+      "names": ["pseudonym"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.65",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -4193,9 +3649,7 @@
       "desc": "The timestamp of the last successful authentication",
       "equality": "generalizedTimeMatch",
       "name": "pwdLastSuccess",
-      "names": [
-        "pwdLastSuccess"
-      ],
+      "names": ["pwdLastSuccess"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.42.2.27.8.1.29",
@@ -4210,9 +3664,7 @@
       "desc": "RFC3296: subordinate referral URL",
       "equality": "caseExactMatch",
       "name": "ref",
-      "names": [
-        "ref"
-      ],
+      "names": ["ref"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.16.840.1.113730.3.1.34",
@@ -4227,18 +3679,14 @@
       "desc": "RFC2256: registered postal address",
       "equality": null,
       "name": "registeredAddress",
-      "names": [
-        "registeredAddress"
-      ],
+      "names": ["registeredAddress"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.26",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "postalAddress"
-      ],
+      "sup": ["postalAddress"],
       "syntax": "1.3.6.1.4.1.1466.115.121.1.41",
       "usage": "userApplications"
     },
@@ -4246,18 +3694,14 @@
       "desc": "RFC2256: occupant of role",
       "equality": null,
       "name": "roleOccupant",
-      "names": [
-        "roleOccupant"
-      ],
+      "names": ["roleOccupant"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.33",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "distinguishedName"
-      ],
+      "sup": ["distinguishedName"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -4265,9 +3709,7 @@
       "desc": "RFC1274: room number",
       "equality": "caseIgnoreMatch",
       "name": "roomNumber",
-      "names": [
-        "roomNumber"
-      ],
+      "names": ["roomNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.6",
@@ -4282,9 +3724,7 @@
       "desc": "Account Flags",
       "equality": "caseIgnoreIA5Match",
       "name": "sambaAcctFlags",
-      "names": [
-        "sambaAcctFlags"
-      ],
+      "names": ["sambaAcctFlags"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.26",
@@ -4299,9 +3739,7 @@
       "desc": "Base at which the samba RID generation algorithm should operate",
       "equality": "integerMatch",
       "name": "sambaAlgorithmicRidBase",
-      "names": [
-        "sambaAlgorithmicRidBase"
-      ],
+      "names": ["sambaAlgorithmicRidBase"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.40",
@@ -4316,9 +3754,7 @@
       "desc": "Bad password attempt count",
       "equality": "integerMatch",
       "name": "sambaBadPasswordCount",
-      "names": [
-        "sambaBadPasswordCount"
-      ],
+      "names": ["sambaBadPasswordCount"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.48",
@@ -4333,9 +3769,7 @@
       "desc": "Time of the last bad password attempt",
       "equality": "integerMatch",
       "name": "sambaBadPasswordTime",
-      "names": [
-        "sambaBadPasswordTime"
-      ],
+      "names": ["sambaBadPasswordTime"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.49",
@@ -4350,9 +3784,7 @@
       "desc": "A boolean option",
       "equality": "booleanMatch",
       "name": "sambaBoolOption",
-      "names": [
-        "sambaBoolOption"
-      ],
+      "names": ["sambaBoolOption"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.43",
@@ -4367,9 +3799,7 @@
       "desc": "Clear text password (used for trusted domain passwords)",
       "equality": "octetStringMatch",
       "name": "sambaClearTextPassword",
-      "names": [
-        "sambaClearTextPassword"
-      ],
+      "names": ["sambaClearTextPassword"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.68",
@@ -4384,9 +3814,7 @@
       "desc": "Windows NT domain to which the user belongs",
       "equality": "caseIgnoreMatch",
       "name": "sambaDomainName",
-      "names": [
-        "sambaDomainName"
-      ],
+      "names": ["sambaDomainName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.38",
@@ -4401,9 +3829,7 @@
       "desc": "NetBIOS name of a domain",
       "equality": "caseIgnoreMatch",
       "name": "sambaFlatName",
-      "names": [
-        "sambaFlatName"
-      ],
+      "names": ["sambaFlatName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.74",
@@ -4418,9 +3844,7 @@
       "desc": "Disconnect Users outside logon hours (default: -1 => off, 0 => on)",
       "equality": "integerMatch",
       "name": "sambaForceLogoff",
-      "names": [
-        "sambaForceLogoff"
-      ],
+      "names": ["sambaForceLogoff"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.66",
@@ -4435,9 +3859,7 @@
       "desc": "NT Group Type",
       "equality": "integerMatch",
       "name": "sambaGroupType",
-      "names": [
-        "sambaGroupType"
-      ],
+      "names": ["sambaGroupType"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.19",
@@ -4452,9 +3874,7 @@
       "desc": "Driver letter of home directory mapping",
       "equality": "caseIgnoreIA5Match",
       "name": "sambaHomeDrive",
-      "names": [
-        "sambaHomeDrive"
-      ],
+      "names": ["sambaHomeDrive"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.33",
@@ -4469,9 +3889,7 @@
       "desc": "Home directory UNC path",
       "equality": "caseIgnoreMatch",
       "name": "sambaHomePath",
-      "names": [
-        "sambaHomePath"
-      ],
+      "names": ["sambaHomePath"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.37",
@@ -4486,9 +3904,7 @@
       "desc": "An integer option",
       "equality": "integerMatch",
       "name": "sambaIntegerOption",
-      "names": [
-        "sambaIntegerOption"
-      ],
+      "names": ["sambaIntegerOption"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.44",
@@ -4503,9 +3919,7 @@
       "desc": "Timestamp of when the user will be logged off automatically",
       "equality": "integerMatch",
       "name": "sambaKickoffTime",
-      "names": [
-        "sambaKickoffTime"
-      ],
+      "names": ["sambaKickoffTime"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.32",
@@ -4520,9 +3934,7 @@
       "desc": "LanManager Password",
       "equality": "caseIgnoreIA5Match",
       "name": "sambaLMPassword",
-      "names": [
-        "sambaLMPassword"
-      ],
+      "names": ["sambaLMPassword"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.24",
@@ -4537,9 +3949,7 @@
       "desc": "Lockout duration in minutes (default: 30, -1 => forever)",
       "equality": "integerMatch",
       "name": "sambaLockoutDuration",
-      "names": [
-        "sambaLockoutDuration"
-      ],
+      "names": ["sambaLockoutDuration"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.63",
@@ -4554,9 +3964,7 @@
       "desc": "Reset time after lockout in minutes (default: 30)",
       "equality": "integerMatch",
       "name": "sambaLockoutObservationWindow",
-      "names": [
-        "sambaLockoutObservationWindow"
-      ],
+      "names": ["sambaLockoutObservationWindow"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.64",
@@ -4571,9 +3979,7 @@
       "desc": "Lockout users after bad logon attempts (default: 0 => off)",
       "equality": "integerMatch",
       "name": "sambaLockoutThreshold",
-      "names": [
-        "sambaLockoutThreshold"
-      ],
+      "names": ["sambaLockoutThreshold"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.65",
@@ -4588,9 +3994,7 @@
       "desc": "Timestamp of last logoff",
       "equality": "integerMatch",
       "name": "sambaLogoffTime",
-      "names": [
-        "sambaLogoffTime"
-      ],
+      "names": ["sambaLogoffTime"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.31",
@@ -4605,9 +4009,7 @@
       "desc": "Logon Hours",
       "equality": "caseIgnoreIA5Match",
       "name": "sambaLogonHours",
-      "names": [
-        "sambaLogonHours"
-      ],
+      "names": ["sambaLogonHours"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.55",
@@ -4622,9 +4024,7 @@
       "desc": "Logon script path",
       "equality": "caseIgnoreMatch",
       "name": "sambaLogonScript",
-      "names": [
-        "sambaLogonScript"
-      ],
+      "names": ["sambaLogonScript"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.34",
@@ -4639,9 +4039,7 @@
       "desc": "Timestamp of last logon",
       "equality": "integerMatch",
       "name": "sambaLogonTime",
-      "names": [
-        "sambaLogonTime"
-      ],
+      "names": ["sambaLogonTime"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.30",
@@ -4656,9 +4054,7 @@
       "desc": "Force Users to logon for password change (default: 0 => off, 2 => on)",
       "equality": "integerMatch",
       "name": "sambaLogonToChgPwd",
-      "names": [
-        "sambaLogonToChgPwd"
-      ],
+      "names": ["sambaLogonToChgPwd"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.60",
@@ -4673,9 +4069,7 @@
       "desc": "Maximum password age, in seconds (default: -1 => never expire passwords)",
       "equality": "integerMatch",
       "name": "sambaMaxPwdAge",
-      "names": [
-        "sambaMaxPwdAge"
-      ],
+      "names": ["sambaMaxPwdAge"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.61",
@@ -4690,9 +4084,7 @@
       "desc": "Minimum password age, in seconds (default: 0 => allow immediate password change)",
       "equality": "integerMatch",
       "name": "sambaMinPwdAge",
-      "names": [
-        "sambaMinPwdAge"
-      ],
+      "names": ["sambaMinPwdAge"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.62",
@@ -4707,9 +4099,7 @@
       "desc": "Minimal password length (default: 5)",
       "equality": "integerMatch",
       "name": "sambaMinPwdLength",
-      "names": [
-        "sambaMinPwdLength"
-      ],
+      "names": ["sambaMinPwdLength"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.58",
@@ -4724,9 +4114,7 @@
       "desc": "Base64 encoded user parameter string",
       "equality": "caseExactMatch",
       "name": "sambaMungedDial",
-      "names": [
-        "sambaMungedDial"
-      ],
+      "names": ["sambaMungedDial"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.47",
@@ -4741,9 +4129,7 @@
       "desc": "Next NT rid to give out for groups",
       "equality": "integerMatch",
       "name": "sambaNextGroupRid",
-      "names": [
-        "sambaNextGroupRid"
-      ],
+      "names": ["sambaNextGroupRid"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.22",
@@ -4758,9 +4144,7 @@
       "desc": "Next NT rid to give out for anything",
       "equality": "integerMatch",
       "name": "sambaNextRid",
-      "names": [
-        "sambaNextRid"
-      ],
+      "names": ["sambaNextRid"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.39",
@@ -4775,9 +4159,7 @@
       "desc": "Next NT rid to give our for users",
       "equality": "integerMatch",
       "name": "sambaNextUserRid",
-      "names": [
-        "sambaNextUserRid"
-      ],
+      "names": ["sambaNextUserRid"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.21",
@@ -4792,9 +4174,7 @@
       "desc": "MD4 hash of the unicode password",
       "equality": "caseIgnoreIA5Match",
       "name": "sambaNTPassword",
-      "names": [
-        "sambaNTPassword"
-      ],
+      "names": ["sambaNTPassword"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.25",
@@ -4809,9 +4189,7 @@
       "desc": "Option Name",
       "equality": "caseIgnoreMatch",
       "name": "sambaOptionName",
-      "names": [
-        "sambaOptionName"
-      ],
+      "names": ["sambaOptionName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.42",
@@ -4826,9 +4204,7 @@
       "desc": "Concatenated MD5 hashes of the salted NT passwords used on this account",
       "equality": "caseIgnoreIA5Match",
       "name": "sambaPasswordHistory",
-      "names": [
-        "sambaPasswordHistory"
-      ],
+      "names": ["sambaPasswordHistory"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.54",
@@ -4843,9 +4219,7 @@
       "desc": "Previous clear text password (used for trusted domain passwords)",
       "equality": "octetStringMatch",
       "name": "sambaPreviousClearTextPassword",
-      "names": [
-        "sambaPreviousClearTextPassword"
-      ],
+      "names": ["sambaPreviousClearTextPassword"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.69",
@@ -4860,9 +4234,7 @@
       "desc": "Primary Group Security ID",
       "equality": "caseIgnoreIA5Match",
       "name": "sambaPrimaryGroupSID",
-      "names": [
-        "sambaPrimaryGroupSID"
-      ],
+      "names": ["sambaPrimaryGroupSID"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.23",
@@ -4877,9 +4249,7 @@
       "desc": "Roaming profile path",
       "equality": "caseIgnoreMatch",
       "name": "sambaProfilePath",
-      "names": [
-        "sambaProfilePath"
-      ],
+      "names": ["sambaProfilePath"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.35",
@@ -4894,9 +4264,7 @@
       "desc": "Timestamp of when the user is allowed to update the password",
       "equality": "integerMatch",
       "name": "sambaPwdCanChange",
-      "names": [
-        "sambaPwdCanChange"
-      ],
+      "names": ["sambaPwdCanChange"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.28",
@@ -4911,9 +4279,7 @@
       "desc": "Length of Password History Entries (default: 0 => off)",
       "equality": "integerMatch",
       "name": "sambaPwdHistoryLength",
-      "names": [
-        "sambaPwdHistoryLength"
-      ],
+      "names": ["sambaPwdHistoryLength"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.59",
@@ -4928,9 +4294,7 @@
       "desc": "Timestamp of the last password update",
       "equality": "integerMatch",
       "name": "sambaPwdLastSet",
-      "names": [
-        "sambaPwdLastSet"
-      ],
+      "names": ["sambaPwdLastSet"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.27",
@@ -4945,9 +4309,7 @@
       "desc": "Timestamp of when the password will expire",
       "equality": "integerMatch",
       "name": "sambaPwdMustChange",
-      "names": [
-        "sambaPwdMustChange"
-      ],
+      "names": ["sambaPwdMustChange"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.29",
@@ -4962,9 +4324,7 @@
       "desc": "Allow Machine Password changes (default: 0 => off)",
       "equality": "integerMatch",
       "name": "sambaRefuseMachinePwdChange",
-      "names": [
-        "sambaRefuseMachinePwdChange"
-      ],
+      "names": ["sambaRefuseMachinePwdChange"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.67",
@@ -4979,9 +4339,7 @@
       "desc": "SID of a trusted domain",
       "equality": "caseIgnoreIA5Match",
       "name": "sambaSecurityIdentifier",
-      "names": [
-        "sambaSecurityIdentifier"
-      ],
+      "names": ["sambaSecurityIdentifier"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.77",
@@ -4996,9 +4354,7 @@
       "desc": "Share Name",
       "equality": "caseIgnoreMatch",
       "name": "sambaShareName",
-      "names": [
-        "sambaShareName"
-      ],
+      "names": ["sambaShareName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.41",
@@ -5013,9 +4369,7 @@
       "desc": "Security ID",
       "equality": "caseIgnoreIA5Match",
       "name": "sambaSID",
-      "names": [
-        "sambaSID"
-      ],
+      "names": ["sambaSID"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.20",
@@ -5030,9 +4384,7 @@
       "desc": "Security ID List",
       "equality": "caseIgnoreIA5Match",
       "name": "sambaSIDList",
-      "names": [
-        "sambaSIDList"
-      ],
+      "names": ["sambaSIDList"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.51",
@@ -5047,9 +4399,7 @@
       "desc": "A string list option",
       "equality": "caseIgnoreMatch",
       "name": "sambaStringListOption",
-      "names": [
-        "sambaStringListOption"
-      ],
+      "names": ["sambaStringListOption"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.46",
@@ -5064,9 +4414,7 @@
       "desc": "A string option",
       "equality": "caseExactIA5Match",
       "name": "sambaStringOption",
-      "names": [
-        "sambaStringOption"
-      ],
+      "names": ["sambaStringOption"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.45",
@@ -5081,9 +4429,7 @@
       "desc": "Trust attributes for a trusted domain",
       "equality": "integerMatch",
       "name": "sambaTrustAttributes",
-      "names": [
-        "sambaTrustAttributes"
-      ],
+      "names": ["sambaTrustAttributes"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.71",
@@ -5098,9 +4444,7 @@
       "desc": "Authentication information for the incoming portion of a trust",
       "equality": "caseExactMatch",
       "name": "sambaTrustAuthIncoming",
-      "names": [
-        "sambaTrustAuthIncoming"
-      ],
+      "names": ["sambaTrustAuthIncoming"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.76",
@@ -5115,9 +4459,7 @@
       "desc": "Authentication information for the outgoing portion of a trust",
       "equality": "caseExactMatch",
       "name": "sambaTrustAuthOutgoing",
-      "names": [
-        "sambaTrustAuthOutgoing"
-      ],
+      "names": ["sambaTrustAuthOutgoing"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.75",
@@ -5132,9 +4474,7 @@
       "desc": "Direction of a trust",
       "equality": "integerMatch",
       "name": "sambaTrustDirection",
-      "names": [
-        "sambaTrustDirection"
-      ],
+      "names": ["sambaTrustDirection"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.72",
@@ -5149,9 +4489,7 @@
       "desc": "Trust Password Flags",
       "equality": "caseIgnoreIA5Match",
       "name": "sambaTrustFlags",
-      "names": [
-        "sambaTrustFlags"
-      ],
+      "names": ["sambaTrustFlags"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.53",
@@ -5166,9 +4504,7 @@
       "desc": "Forest trust information for a trusted domain object",
       "equality": "caseExactMatch",
       "name": "sambaTrustForestTrustInfo",
-      "names": [
-        "sambaTrustForestTrustInfo"
-      ],
+      "names": ["sambaTrustForestTrustInfo"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.78",
@@ -5183,9 +4519,7 @@
       "desc": "Fully qualified name of the domain with which a trust exists",
       "equality": "caseIgnoreMatch",
       "name": "sambaTrustPartner",
-      "names": [
-        "sambaTrustPartner"
-      ],
+      "names": ["sambaTrustPartner"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.73",
@@ -5200,9 +4534,7 @@
       "desc": "Type of trust",
       "equality": "integerMatch",
       "name": "sambaTrustType",
-      "names": [
-        "sambaTrustType"
-      ],
+      "names": ["sambaTrustType"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.70",
@@ -5217,9 +4549,7 @@
       "desc": "List of user workstations the user is allowed to logon to",
       "equality": "caseIgnoreMatch",
       "name": "sambaUserWorkstations",
-      "names": [
-        "sambaUserWorkstations"
-      ],
+      "names": ["sambaUserWorkstations"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.1.36",
@@ -5234,9 +4564,7 @@
       "desc": "RFC2256: search guide, deprecated by enhancedSearchGuide",
       "equality": null,
       "name": "searchGuide",
-      "names": [
-        "searchGuide"
-      ],
+      "names": ["searchGuide"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.14",
@@ -5251,9 +4579,7 @@
       "desc": "RFC1274: DN of secretary",
       "equality": "distinguishedNameMatch",
       "name": "secretary",
-      "names": [
-        "secretary"
-      ],
+      "names": ["secretary"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.21",
@@ -5268,18 +4594,14 @@
       "desc": "RFC4519: DN of related object",
       "equality": null,
       "name": "seeAlso",
-      "names": [
-        "seeAlso"
-      ],
+      "names": ["seeAlso"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.34",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "distinguishedName"
-      ],
+      "sup": ["distinguishedName"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -5287,9 +4609,7 @@
       "desc": "RFC2256: serial number of the entity",
       "equality": "caseIgnoreMatch",
       "name": "serialNumber",
-      "names": [
-        "serialNumber"
-      ],
+      "names": ["serialNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.5",
@@ -5304,9 +4624,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "shadowExpire",
-      "names": [
-        "shadowExpire"
-      ],
+      "names": ["shadowExpire"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.10",
@@ -5321,9 +4639,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "shadowFlag",
-      "names": [
-        "shadowFlag"
-      ],
+      "names": ["shadowFlag"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.11",
@@ -5338,9 +4654,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "shadowInactive",
-      "names": [
-        "shadowInactive"
-      ],
+      "names": ["shadowInactive"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.9",
@@ -5355,9 +4669,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "shadowLastChange",
-      "names": [
-        "shadowLastChange"
-      ],
+      "names": ["shadowLastChange"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.5",
@@ -5372,9 +4684,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "shadowMax",
-      "names": [
-        "shadowMax"
-      ],
+      "names": ["shadowMax"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.7",
@@ -5389,9 +4699,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "shadowMin",
-      "names": [
-        "shadowMin"
-      ],
+      "names": ["shadowMin"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.6",
@@ -5406,9 +4714,7 @@
       "desc": null,
       "equality": "integerMatch",
       "name": "shadowWarning",
-      "names": [
-        "shadowWarning"
-      ],
+      "names": ["shadowWarning"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.8",
@@ -5423,9 +4729,7 @@
       "desc": "RFC1274: Single Level Quality",
       "equality": null,
       "name": "singleLevelQuality",
-      "names": [
-        "singleLevelQuality"
-      ],
+      "names": ["singleLevelQuality"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.50",
@@ -5440,19 +4744,14 @@
       "desc": "RFC2256: last (family) name(s) for which the entity is known by",
       "equality": null,
       "name": "sn",
-      "names": [
-        "sn",
-        "surname"
-      ],
+      "names": ["sn", "surname"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.4",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -5460,9 +4759,7 @@
       "desc": null,
       "equality": "caseIgnoreIA5Match",
       "name": "sOARecord",
-      "names": [
-        "sOARecord"
-      ],
+      "names": ["sOARecord"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.30",
@@ -5477,19 +4774,14 @@
       "desc": "RFC2256: state or province which this object resides in",
       "equality": null,
       "name": "st",
-      "names": [
-        "st",
-        "stateOrProvinceName"
-      ],
+      "names": ["st", "stateOrProvinceName"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.8",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -5497,10 +4789,7 @@
       "desc": "RFC2256: street address of this object",
       "equality": "caseIgnoreMatch",
       "name": "street",
-      "names": [
-        "street",
-        "streetAddress"
-      ],
+      "names": ["street", "streetAddress"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.9",
@@ -5515,9 +4804,7 @@
       "desc": "RFC4512: structural object class of entry",
       "equality": "objectIdentifierMatch",
       "name": "structuralObjectClass",
-      "names": [
-        "structuralObjectClass"
-      ],
+      "names": ["structuralObjectClass"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "2.5.21.9",
@@ -5532,9 +4819,7 @@
       "desc": "RFC4512: name of controlling subschema entry",
       "equality": "distinguishedNameMatch",
       "name": "subschemaSubentry",
-      "names": [
-        "subschemaSubentry"
-      ],
+      "names": ["subschemaSubentry"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "2.5.18.10",
@@ -5549,9 +4834,7 @@
       "desc": "RFC1274: Subtree Maximum Quality",
       "equality": null,
       "name": "subtreeMaximumQuality",
-      "names": [
-        "subtreeMaximumQuality"
-      ],
+      "names": ["subtreeMaximumQuality"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.52",
@@ -5566,9 +4849,7 @@
       "desc": "RFC1274: Subtree Minimum Quality",
       "equality": null,
       "name": "subtreeMinimumQuality",
-      "names": [
-        "subtreeMinimumQuality"
-      ],
+      "names": ["subtreeMinimumQuality"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.51",
@@ -5583,9 +4864,7 @@
       "desc": "RFC2256: supported algorithms",
       "equality": null,
       "name": "supportedAlgorithms",
-      "names": [
-        "supportedAlgorithms"
-      ],
+      "names": ["supportedAlgorithms"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.52",
@@ -5600,9 +4879,7 @@
       "desc": "RFC2256: supported application context",
       "equality": "objectIdentifierMatch",
       "name": "supportedApplicationContext",
-      "names": [
-        "supportedApplicationContext"
-      ],
+      "names": ["supportedApplicationContext"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.30",
@@ -5617,9 +4894,7 @@
       "desc": "RFC4512: supported controls",
       "equality": null,
       "name": "supportedControl",
-      "names": [
-        "supportedControl"
-      ],
+      "names": ["supportedControl"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.1466.101.120.13",
@@ -5634,9 +4909,7 @@
       "desc": "RFC4512: supported extended operations",
       "equality": null,
       "name": "supportedExtension",
-      "names": [
-        "supportedExtension"
-      ],
+      "names": ["supportedExtension"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.1466.101.120.7",
@@ -5651,9 +4924,7 @@
       "desc": "RFC4512: features supported by the server",
       "equality": "objectIdentifierMatch",
       "name": "supportedFeatures",
-      "names": [
-        "supportedFeatures"
-      ],
+      "names": ["supportedFeatures"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.3.5",
@@ -5668,9 +4939,7 @@
       "desc": "RFC4512: supported LDAP versions",
       "equality": null,
       "name": "supportedLDAPVersion",
-      "names": [
-        "supportedLDAPVersion"
-      ],
+      "names": ["supportedLDAPVersion"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.1466.101.120.15",
@@ -5685,9 +4954,7 @@
       "desc": "RFC4512: supported SASL mechanisms",
       "equality": null,
       "name": "supportedSASLMechanisms",
-      "names": [
-        "supportedSASLMechanisms"
-      ],
+      "names": ["supportedSASLMechanisms"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.4.1.1466.101.120.14",
@@ -5702,9 +4969,7 @@
       "desc": "RFC2256: Telephone Number",
       "equality": "telephoneNumberMatch",
       "name": "telephoneNumber",
-      "names": [
-        "telephoneNumber"
-      ],
+      "names": ["telephoneNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.20",
@@ -5719,9 +4984,7 @@
       "desc": "RFC2256: Teletex Terminal Identifier",
       "equality": null,
       "name": "teletexTerminalIdentifier",
-      "names": [
-        "teletexTerminalIdentifier"
-      ],
+      "names": ["teletexTerminalIdentifier"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.22",
@@ -5736,9 +4999,7 @@
       "desc": "RFC2256: Telex Number",
       "equality": null,
       "name": "telexNumber",
-      "names": [
-        "telexNumber"
-      ],
+      "names": ["telexNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.21",
@@ -5753,9 +5014,7 @@
       "desc": null,
       "equality": "caseIgnoreMatch",
       "name": "textEncodedORAddress",
-      "names": [
-        "textEncodedORAddress"
-      ],
+      "names": ["textEncodedORAddress"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.2",
@@ -5770,18 +5029,14 @@
       "desc": "RFC2256: title associated with the entity",
       "equality": null,
       "name": "title",
-      "names": [
-        "title"
-      ],
+      "names": ["title"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.12",
       "ordering": null,
       "single_value": false,
       "substr": null,
-      "sup": [
-        "name"
-      ],
+      "sup": ["name"],
       "syntax": null,
       "usage": "userApplications"
     },
@@ -5789,10 +5044,7 @@
       "desc": "RFC4519: user identifier",
       "equality": "caseIgnoreMatch",
       "name": "uid",
-      "names": [
-        "uid",
-        "userid"
-      ],
+      "names": ["uid", "userid"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.1",
@@ -5807,9 +5059,7 @@
       "desc": "RFC2307: An integer uniquely identifying a user in an administrative domain",
       "equality": "integerMatch",
       "name": "uidNumber",
-      "names": [
-        "uidNumber"
-      ],
+      "names": ["uidNumber"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "1.3.6.1.1.1.1.0",
@@ -5824,9 +5074,7 @@
       "desc": "RFC1274: unique identifer",
       "equality": "caseIgnoreMatch",
       "name": "uniqueIdentifier",
-      "names": [
-        "uniqueIdentifier"
-      ],
+      "names": ["uniqueIdentifier"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.44",
@@ -5841,9 +5089,7 @@
       "desc": "RFC2256: unique member of a group",
       "equality": "uniqueMemberMatch",
       "name": "uniqueMember",
-      "names": [
-        "uniqueMember"
-      ],
+      "names": ["uniqueMember"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.50",
@@ -5858,9 +5104,7 @@
       "desc": "RFC2256: X.509 user certificate, use ;binary",
       "equality": "certificateExactMatch",
       "name": "userCertificate",
-      "names": [
-        "userCertificate"
-      ],
+      "names": ["userCertificate"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.36",
@@ -5875,9 +5119,7 @@
       "desc": "RFC1274: category of user",
       "equality": "caseIgnoreMatch",
       "name": "userClass",
-      "names": [
-        "userClass"
-      ],
+      "names": ["userClass"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.1.8",
@@ -5892,9 +5134,7 @@
       "desc": "RFC4519/2307: password of user",
       "equality": "octetStringMatch",
       "name": "userPassword",
-      "names": [
-        "userPassword"
-      ],
+      "names": ["userPassword"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.35",
@@ -5909,9 +5149,7 @@
       "desc": "RFC2798: personal identity information, a PKCS #12 PFX",
       "equality": null,
       "name": "userPKCS12",
-      "names": [
-        "userPKCS12"
-      ],
+      "names": ["userPKCS12"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.16.840.1.113730.3.1.216",
@@ -5926,9 +5164,7 @@
       "desc": "RFC2798: PKCS#7 SignedData used to support S/MIME",
       "equality": null,
       "name": "userSMIMECertificate",
-      "names": [
-        "userSMIMECertificate"
-      ],
+      "names": ["userSMIMECertificate"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.16.840.1.113730.3.1.40",
@@ -5943,9 +5179,7 @@
       "desc": "RFC3045: name of implementation vendor",
       "equality": "caseExactMatch",
       "name": "vendorName",
-      "names": [
-        "vendorName"
-      ],
+      "names": ["vendorName"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "1.3.6.1.1.4",
@@ -5960,9 +5194,7 @@
       "desc": "RFC3045: version of implementation",
       "equality": "caseExactMatch",
       "name": "vendorVersion",
-      "names": [
-        "vendorVersion"
-      ],
+      "names": ["vendorVersion"],
       "no_user_mod": true,
       "obsolete": false,
       "oid": "1.3.6.1.1.5",
@@ -5977,9 +5209,7 @@
       "desc": "RFC2256: X.121 Address",
       "equality": "numericStringMatch",
       "name": "x121Address",
-      "names": [
-        "x121Address"
-      ],
+      "names": ["x121Address"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.24",
@@ -5994,9 +5224,7 @@
       "desc": "RFC2256: X.500 unique identifier",
       "equality": "bitStringMatch",
       "name": "x500UniqueIdentifier",
-      "names": [
-        "x500UniqueIdentifier"
-      ],
+      "names": ["x500UniqueIdentifier"],
       "no_user_mod": false,
       "obsolete": false,
       "oid": "2.5.4.45",
@@ -6020,35 +5248,23 @@
         "organizationalUnitName",
         "seeAlso"
       ],
-      "must": [
-        "userid"
-      ],
+      "must": ["userid"],
       "name": "account",
-      "names": [
-        "account"
-      ],
+      "names": ["account"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.5",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "alias": {
       "desc": "RFC4512: an alias",
       "kind": "structural",
       "may": [],
-      "must": [
-        "aliasedObjectName"
-      ],
+      "must": ["aliasedObjectName"],
       "name": "alias",
-      "names": [
-        "alias"
-      ],
+      "names": ["alias"],
       "obsolete": false,
       "oid": "2.5.6.1",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "applicationentity": {
       "desc": "RFC2256: an application entity",
@@ -6061,117 +5277,71 @@
         "seeAlso",
         "supportedApplicationContext"
       ],
-      "must": [
-        "cn",
-        "presentationAddress"
-      ],
+      "must": ["cn", "presentationAddress"],
       "name": "applicationEntity",
-      "names": [
-        "applicationEntity"
-      ],
+      "names": ["applicationEntity"],
       "obsolete": false,
       "oid": "2.5.6.12",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "applicationprocess": {
       "desc": "RFC2256: an application process",
       "kind": "structural",
-      "may": [
-        "description",
-        "l",
-        "ou",
-        "seeAlso"
-      ],
-      "must": [
-        "cn"
-      ],
+      "may": ["description", "l", "ou", "seeAlso"],
+      "must": ["cn"],
       "name": "applicationProcess",
-      "names": [
-        "applicationProcess"
-      ],
+      "names": ["applicationProcess"],
       "obsolete": false,
       "oid": "2.5.6.11",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "bootabledevice": {
       "desc": "A device with boot parameters",
       "kind": "auxiliary",
-      "may": [
-        "bootFile",
-        "bootParameter"
-      ],
+      "may": ["bootFile", "bootParameter"],
       "must": [],
       "name": "bootableDevice",
-      "names": [
-        "bootableDevice"
-      ],
+      "names": ["bootableDevice"],
       "obsolete": false,
       "oid": "1.3.6.1.1.1.2.12",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "certificationauthority": {
       "desc": "RFC2256: a certificate authority",
       "kind": "auxiliary",
-      "may": [
-        "crossCertificatePair"
-      ],
+      "may": ["crossCertificatePair"],
       "must": [
         "authorityRevocationList",
         "cACertificate",
         "certificateRevocationList"
       ],
       "name": "certificationAuthority",
-      "names": [
-        "certificationAuthority"
-      ],
+      "names": ["certificationAuthority"],
       "obsolete": false,
       "oid": "2.5.6.16",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "certificationauthority-v2": {
       "desc": null,
       "kind": "auxiliary",
-      "may": [
-        "deltaRevocationList"
-      ],
+      "may": ["deltaRevocationList"],
       "must": [],
       "name": "certificationAuthority-V2",
-      "names": [
-        "certificationAuthority-V2"
-      ],
+      "names": ["certificationAuthority-V2"],
       "obsolete": false,
       "oid": "2.5.6.16.2",
-      "sup": [
-        "certificationAuthority"
-      ]
+      "sup": ["certificationAuthority"]
     },
     "country": {
       "desc": "RFC2256: a country",
       "kind": "structural",
-      "may": [
-        "description",
-        "searchGuide"
-      ],
-      "must": [
-        "c"
-      ],
+      "may": ["description", "searchGuide"],
+      "must": ["c"],
       "name": "country",
-      "names": [
-        "country"
-      ],
+      "names": ["country"],
       "obsolete": false,
       "oid": "2.5.6.2",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "crldistributionpoint": {
       "desc": null,
@@ -6181,52 +5351,34 @@
         "certificateRevocationList",
         "deltaRevocationList"
       ],
-      "must": [
-        "cn"
-      ],
+      "must": ["cn"],
       "name": "cRLDistributionPoint",
-      "names": [
-        "cRLDistributionPoint"
-      ],
+      "names": ["cRLDistributionPoint"],
       "obsolete": false,
       "oid": "2.5.6.19",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "dcobject": {
       "desc": "RFC2247: domain component object",
       "kind": "auxiliary",
       "may": [],
-      "must": [
-        "dc"
-      ],
+      "must": ["dc"],
       "name": "dcObject",
-      "names": [
-        "dcObject"
-      ],
+      "names": ["dcObject"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.1466.344",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "deltacrl": {
       "desc": "RFC4523: X.509 delta CRL",
       "kind": "auxiliary",
-      "may": [
-        "deltaRevocationList"
-      ],
+      "may": ["deltaRevocationList"],
       "must": [],
       "name": "deltaCRL",
-      "names": [
-        "deltaCRL"
-      ],
+      "names": ["deltaCRL"],
       "obsolete": false,
       "oid": "2.5.6.23",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "device": {
       "desc": "RFC2256: a device",
@@ -6240,18 +5392,12 @@
         "seeAlso",
         "serialNumber"
       ],
-      "must": [
-        "cn"
-      ],
+      "must": ["cn"],
       "name": "device",
-      "names": [
-        "device"
-      ],
+      "names": ["device"],
       "obsolete": false,
       "oid": "2.5.6.14",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "dmd": {
       "desc": null,
@@ -6279,18 +5425,12 @@
         "userPassword",
         "x121Address"
       ],
-      "must": [
-        "dmdName"
-      ],
+      "must": ["dmdName"],
       "name": "dmd",
-      "names": [
-        "dmd"
-      ],
+      "names": ["dmd"],
       "obsolete": false,
       "oid": "2.5.6.20",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "dnsdomain": {
       "desc": null,
@@ -6305,14 +5445,10 @@
       ],
       "must": [],
       "name": "dNSDomain",
-      "names": [
-        "dNSDomain"
-      ],
+      "names": ["dNSDomain"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.15",
-      "sup": [
-        "domain"
-      ]
+      "sup": ["domain"]
     },
     "document": {
       "desc": null,
@@ -6330,18 +5466,12 @@
         "organizationalUnitName",
         "seeAlso"
       ],
-      "must": [
-        "documentIdentifier"
-      ],
+      "must": ["documentIdentifier"],
       "name": "document",
-      "names": [
-        "document"
-      ],
+      "names": ["document"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.6",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "documentseries": {
       "desc": null,
@@ -6354,18 +5484,12 @@
         "seeAlso",
         "telephonenumber"
       ],
-      "must": [
-        "commonName"
-      ],
+      "must": ["commonName"],
       "name": "documentSeries",
-      "names": [
-        "documentSeries"
-      ],
+      "names": ["documentSeries"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.9",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "domain": {
       "desc": null,
@@ -6396,52 +5520,34 @@
         "userPassword",
         "x121Address"
       ],
-      "must": [
-        "domainComponent"
-      ],
+      "must": ["domainComponent"],
       "name": "domain",
-      "names": [
-        "domain"
-      ],
+      "names": ["domain"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.13",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "domainrelatedobject": {
       "desc": "RFC1274: an object related to an domain",
       "kind": "auxiliary",
       "may": [],
-      "must": [
-        "associatedDomain"
-      ],
+      "must": ["associatedDomain"],
       "name": "domainRelatedObject",
-      "names": [
-        "domainRelatedObject"
-      ],
+      "names": ["domainRelatedObject"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.17",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "dsa": {
       "desc": "RFC2256: a directory system agent (a server)",
       "kind": "structural",
-      "may": [
-        "knowledgeInformation"
-      ],
+      "may": ["knowledgeInformation"],
       "must": [],
       "name": "dSA",
-      "names": [
-        "dSA"
-      ],
+      "names": ["dSA"],
       "obsolete": false,
       "oid": "2.5.6.13",
-      "sup": [
-        "applicationEntity"
-      ]
+      "sup": ["applicationEntity"]
     },
     "dynamicobject": {
       "desc": "RFC2589: Dynamic Object",
@@ -6449,14 +5555,10 @@
       "may": [],
       "must": [],
       "name": "dynamicObject",
-      "names": [
-        "dynamicObject"
-      ],
+      "names": ["dynamicObject"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.1466.101.119.2",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "extensibleobject": {
       "desc": "RFC4512: extensible object",
@@ -6464,98 +5566,54 @@
       "may": [],
       "must": [],
       "name": "extensibleObject",
-      "names": [
-        "extensibleObject"
-      ],
+      "names": ["extensibleObject"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.1466.101.120.111",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "friendlycountry": {
       "desc": null,
       "kind": "structural",
       "may": [],
-      "must": [
-        "friendlyCountryName"
-      ],
+      "must": ["friendlyCountryName"],
       "name": "friendlyCountry",
-      "names": [
-        "friendlyCountry"
-      ],
+      "names": ["friendlyCountry"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.18",
-      "sup": [
-        "country"
-      ]
+      "sup": ["country"]
     },
     "groupofnames": {
       "desc": "RFC2256: a group of names (DNs)",
       "kind": "structural",
-      "may": [
-        "businessCategory",
-        "description",
-        "o",
-        "ou",
-        "owner",
-        "seeAlso"
-      ],
-      "must": [
-        "cn",
-        "member"
-      ],
+      "may": ["businessCategory", "description", "o", "ou", "owner", "seeAlso"],
+      "must": ["cn", "member"],
       "name": "groupOfNames",
-      "names": [
-        "groupOfNames"
-      ],
+      "names": ["groupOfNames"],
       "obsolete": false,
       "oid": "2.5.6.9",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "groupofuniquenames": {
       "desc": "RFC2256: a group of unique names (DN and Unique Identifier)",
       "kind": "structural",
-      "may": [
-        "businessCategory",
-        "description",
-        "o",
-        "ou",
-        "owner",
-        "seeAlso"
-      ],
-      "must": [
-        "cn",
-        "uniqueMember"
-      ],
+      "may": ["businessCategory", "description", "o", "ou", "owner", "seeAlso"],
+      "must": ["cn", "uniqueMember"],
       "name": "groupOfUniqueNames",
-      "names": [
-        "groupOfUniqueNames"
-      ],
+      "names": ["groupOfUniqueNames"],
       "obsolete": false,
       "oid": "2.5.6.17",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "ieee802device": {
       "desc": "A device with a MAC address",
       "kind": "auxiliary",
-      "may": [
-        "macAddress"
-      ],
+      "may": ["macAddress"],
       "must": [],
       "name": "ieee802Device",
-      "names": [
-        "ieee802Device"
-      ],
+      "names": ["ieee802Device"],
       "obsolete": false,
       "oid": "1.3.6.1.1.1.2.11",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "inetorgperson": {
       "desc": "RFC2798: Internet Organizational Person",
@@ -6591,218 +5649,120 @@
       ],
       "must": [],
       "name": "inetOrgPerson",
-      "names": [
-        "inetOrgPerson"
-      ],
+      "names": ["inetOrgPerson"],
       "obsolete": false,
       "oid": "2.16.840.1.113730.3.2.2",
-      "sup": [
-        "organizationalPerson"
-      ]
+      "sup": ["organizationalPerson"]
     },
     "iphost": {
       "desc": "Abstraction of a host, an IP device",
       "kind": "auxiliary",
-      "may": [
-        "description",
-        "l",
-        "manager"
-      ],
-      "must": [
-        "cn",
-        "ipHostNumber"
-      ],
+      "may": ["description", "l", "manager"],
+      "must": ["cn", "ipHostNumber"],
       "name": "ipHost",
-      "names": [
-        "ipHost"
-      ],
+      "names": ["ipHost"],
       "obsolete": false,
       "oid": "1.3.6.1.1.1.2.6",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "ipnetwork": {
       "desc": "Abstraction of an IP network",
       "kind": "structural",
-      "may": [
-        "description",
-        "ipNetmaskNumber",
-        "l",
-        "manager"
-      ],
-      "must": [
-        "cn",
-        "ipNetworkNumber"
-      ],
+      "may": ["description", "ipNetmaskNumber", "l", "manager"],
+      "must": ["cn", "ipNetworkNumber"],
       "name": "ipNetwork",
-      "names": [
-        "ipNetwork"
-      ],
+      "names": ["ipNetwork"],
       "obsolete": false,
       "oid": "1.3.6.1.1.1.2.7",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "ipprotocol": {
       "desc": "Abstraction of an IP protocol",
       "kind": "structural",
-      "may": [
-        "description"
-      ],
-      "must": [
-        "cn",
-        "description",
-        "ipProtocolNumber"
-      ],
+      "may": ["description"],
+      "must": ["cn", "description", "ipProtocolNumber"],
       "name": "ipProtocol",
-      "names": [
-        "ipProtocol"
-      ],
+      "names": ["ipProtocol"],
       "obsolete": false,
       "oid": "1.3.6.1.1.1.2.4",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "ipservice": {
       "desc": "Abstraction an Internet Protocol service",
       "kind": "structural",
-      "may": [
-        "description"
-      ],
-      "must": [
-        "cn",
-        "ipServicePort",
-        "ipServiceProtocol"
-      ],
+      "may": ["description"],
+      "must": ["cn", "ipServicePort", "ipServiceProtocol"],
       "name": "ipService",
-      "names": [
-        "ipService"
-      ],
+      "names": ["ipService"],
       "obsolete": false,
       "oid": "1.3.6.1.1.1.2.3",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "labeleduriobject": {
       "desc": "RFC2079: object that contains the URI attribute type",
       "kind": "auxiliary",
-      "may": [
-        "labeledURI"
-      ],
+      "may": ["labeledURI"],
       "must": [],
       "name": "labeledURIObject",
-      "names": [
-        "labeledURIObject"
-      ],
+      "names": ["labeledURIObject"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.250.3.15",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "locality": {
       "desc": "RFC2256: a locality",
       "kind": "structural",
-      "may": [
-        "description",
-        "l",
-        "searchGuide",
-        "seeAlso",
-        "st",
-        "street"
-      ],
+      "may": ["description", "l", "searchGuide", "seeAlso", "st", "street"],
       "must": [],
       "name": "locality",
-      "names": [
-        "locality"
-      ],
+      "names": ["locality"],
       "obsolete": false,
       "oid": "2.5.6.3",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "nismap": {
       "desc": "A generic abstraction of a NIS map",
       "kind": "structural",
-      "may": [
-        "description"
-      ],
-      "must": [
-        "nisMapName"
-      ],
+      "may": ["description"],
+      "must": ["nisMapName"],
       "name": "nisMap",
-      "names": [
-        "nisMap"
-      ],
+      "names": ["nisMap"],
       "obsolete": false,
       "oid": "1.3.6.1.1.1.2.9",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "nisnetgroup": {
       "desc": "Abstraction of a netgroup",
       "kind": "structural",
-      "may": [
-        "description",
-        "memberNisNetgroup",
-        "nisNetgroupTriple"
-      ],
-      "must": [
-        "cn"
-      ],
+      "may": ["description", "memberNisNetgroup", "nisNetgroupTriple"],
+      "must": ["cn"],
       "name": "nisNetgroup",
-      "names": [
-        "nisNetgroup"
-      ],
+      "names": ["nisNetgroup"],
       "obsolete": false,
       "oid": "1.3.6.1.1.1.2.8",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "nisobject": {
       "desc": "An entry in a NIS map",
       "kind": "structural",
-      "may": [
-        "description"
-      ],
-      "must": [
-        "cn",
-        "nisMapEntry",
-        "nisMapName"
-      ],
+      "may": ["description"],
+      "must": ["cn", "nisMapEntry", "nisMapName"],
       "name": "nisObject",
-      "names": [
-        "nisObject"
-      ],
+      "names": ["nisObject"],
       "obsolete": false,
       "oid": "1.3.6.1.1.1.2.10",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "olcbackendconfig": {
       "desc": "OpenLDAP Backend-specific options",
       "kind": "structural",
       "may": [],
-      "must": [
-        "olcBackend"
-      ],
+      "must": ["olcBackend"],
       "name": "olcBackendConfig",
-      "names": [
-        "olcBackendConfig"
-      ],
+      "names": ["olcBackendConfig"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.4.0.3",
-      "sup": [
-        "olcConfig"
-      ]
+      "sup": ["olcConfig"]
     },
     "olcconfig": {
       "desc": "OpenLDAP configuration object",
@@ -6810,14 +5770,10 @@
       "may": [],
       "must": [],
       "name": "olcConfig",
-      "names": [
-        "olcConfig"
-      ],
+      "names": ["olcConfig"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.4.0.0",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "olcdatabaseconfig": {
       "desc": "OpenLDAP Database-specific options",
@@ -6857,32 +5813,20 @@
         "olcUpdateDN",
         "olcUpdateRef"
       ],
-      "must": [
-        "olcDatabase"
-      ],
+      "must": ["olcDatabase"],
       "name": "olcDatabaseConfig",
-      "names": [
-        "olcDatabaseConfig"
-      ],
+      "names": ["olcDatabaseConfig"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.4.0.4",
-      "sup": [
-        "olcConfig"
-      ]
+      "sup": ["olcConfig"]
     },
     "olcfrontendconfig": {
       "desc": "OpenLDAP frontend configuration",
       "kind": "auxiliary",
-      "may": [
-        "olcDefaultSearchBase",
-        "olcPasswordHash",
-        "olcSortVals"
-      ],
+      "may": ["olcDefaultSearchBase", "olcPasswordHash", "olcSortVals"],
       "must": [],
       "name": "olcFrontendConfig",
-      "names": [
-        "olcFrontendConfig"
-      ],
+      "names": ["olcFrontendConfig"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.4.0.7",
       "sup": []
@@ -6972,68 +5916,43 @@
       ],
       "must": [],
       "name": "olcGlobal",
-      "names": [
-        "olcGlobal"
-      ],
+      "names": ["olcGlobal"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.4.0.1",
-      "sup": [
-        "olcConfig"
-      ]
+      "sup": ["olcConfig"]
     },
     "olcincludefile": {
       "desc": "OpenLDAP configuration include file",
       "kind": "structural",
-      "may": [
-        "cn",
-        "olcRootDSE"
-      ],
-      "must": [
-        "olcInclude"
-      ],
+      "may": ["cn", "olcRootDSE"],
+      "must": ["olcInclude"],
       "name": "olcIncludeFile",
-      "names": [
-        "olcIncludeFile"
-      ],
+      "names": ["olcIncludeFile"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.4.0.6",
-      "sup": [
-        "olcConfig"
-      ]
+      "sup": ["olcConfig"]
     },
     "olcldifconfig": {
       "desc": "LDIF backend configuration",
       "kind": "structural",
       "may": [],
-      "must": [
-        "olcDbDirectory"
-      ],
+      "must": ["olcDbDirectory"],
       "name": "olcLdifConfig",
-      "names": [
-        "olcLdifConfig"
-      ],
+      "names": ["olcLdifConfig"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.4.2.2.1",
-      "sup": [
-        "olcDatabaseConfig"
-      ]
+      "sup": ["olcDatabaseConfig"]
     },
     "olcmdbbkconfig": {
       "desc": "MDB backend configuration",
       "kind": "structural",
-      "may": [
-        "olcBkMdbIdlExp"
-      ],
+      "may": ["olcBkMdbIdlExp"],
       "must": [],
       "name": "olcMdbBkConfig",
-      "names": [
-        "olcMdbBkConfig"
-      ],
+      "names": ["olcMdbBkConfig"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.4.1.12.1",
-      "sup": [
-        "olcBackendConfig"
-      ]
+      "sup": ["olcBackendConfig"]
     },
     "olcmdbconfig": {
       "desc": "MDB database configuration",
@@ -7051,37 +5970,23 @@
         "olcDbRtxnSize",
         "olcDbSearchStack"
       ],
-      "must": [
-        "olcDbDirectory"
-      ],
+      "must": ["olcDbDirectory"],
       "name": "olcMdbConfig",
-      "names": [
-        "olcMdbConfig"
-      ],
+      "names": ["olcMdbConfig"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.4.2.12.1",
-      "sup": [
-        "olcDatabaseConfig"
-      ]
+      "sup": ["olcDatabaseConfig"]
     },
     "olcmodulelist": {
       "desc": "OpenLDAP dynamic module info",
       "kind": "structural",
-      "may": [
-        "cn",
-        "olcModuleLoad",
-        "olcModulePath"
-      ],
+      "may": ["cn", "olcModuleLoad", "olcModulePath"],
       "must": [],
       "name": "olcModuleList",
-      "names": [
-        "olcModuleList"
-      ],
+      "names": ["olcModuleList"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.4.0.8",
-      "sup": [
-        "olcConfig"
-      ]
+      "sup": ["olcConfig"]
     },
     "olcmonitorconfig": {
       "desc": "Monitor backend configuration",
@@ -7089,33 +5994,21 @@
       "may": [],
       "must": [],
       "name": "olcMonitorConfig",
-      "names": [
-        "olcMonitorConfig"
-      ],
+      "names": ["olcMonitorConfig"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.4.2.4.1",
-      "sup": [
-        "olcDatabaseConfig"
-      ]
+      "sup": ["olcDatabaseConfig"]
     },
     "olcoverlayconfig": {
       "desc": "OpenLDAP Overlay-specific options",
       "kind": "structural",
-      "may": [
-        "olcDisabled"
-      ],
-      "must": [
-        "olcOverlay"
-      ],
+      "may": ["olcDisabled"],
+      "must": ["olcOverlay"],
       "name": "olcOverlayConfig",
-      "names": [
-        "olcOverlayConfig"
-      ],
+      "names": ["olcOverlayConfig"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.4.0.5",
-      "sup": [
-        "olcConfig"
-      ]
+      "sup": ["olcConfig"]
     },
     "olcschemaconfig": {
       "desc": "OpenLDAP schema object",
@@ -7130,53 +6023,32 @@
       ],
       "must": [],
       "name": "olcSchemaConfig",
-      "names": [
-        "olcSchemaConfig"
-      ],
+      "names": ["olcSchemaConfig"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.12.2.4.0.2",
-      "sup": [
-        "olcConfig"
-      ]
+      "sup": ["olcConfig"]
     },
     "oncrpc": {
       "desc": "Abstraction of an ONC/RPC binding",
       "kind": "structural",
-      "may": [
-        "description"
-      ],
-      "must": [
-        "cn",
-        "description",
-        "oncRpcNumber"
-      ],
+      "may": ["description"],
+      "must": ["cn", "description", "oncRpcNumber"],
       "name": "oncRpc",
-      "names": [
-        "oncRpc"
-      ],
+      "names": ["oncRpc"],
       "obsolete": false,
       "oid": "1.3.6.1.1.1.2.5",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "openldaprootdse": {
       "desc": "OpenLDAP Root DSE object",
       "kind": "structural",
-      "may": [
-        "cn"
-      ],
+      "may": ["cn"],
       "must": [],
       "name": "openLDAProotDSE",
-      "names": [
-        "OpenLDAProotDSE",
-        "LDAProotDSE"
-      ],
+      "names": ["OpenLDAProotDSE", "LDAProotDSE"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.4203.1.4.1",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "organization": {
       "desc": "RFC2256: an organization",
@@ -7204,18 +6076,12 @@
         "userPassword",
         "x121Address"
       ],
-      "must": [
-        "o"
-      ],
+      "must": ["o"],
       "name": "organization",
-      "names": [
-        "organization"
-      ],
+      "names": ["organization"],
       "obsolete": false,
       "oid": "2.5.6.4",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "organizationalperson": {
       "desc": "RFC2256: an organizational person",
@@ -7242,14 +6108,10 @@
       ],
       "must": [],
       "name": "organizationalPerson",
-      "names": [
-        "organizationalPerson"
-      ],
+      "names": ["organizationalPerson"],
       "obsolete": false,
       "oid": "2.5.6.7",
-      "sup": [
-        "person"
-      ]
+      "sup": ["person"]
     },
     "organizationalrole": {
       "desc": "RFC2256: an organizational role",
@@ -7277,18 +6139,12 @@
         "telexNumber",
         "x121Address"
       ],
-      "must": [
-        "cn"
-      ],
+      "must": ["cn"],
       "name": "organizationalRole",
-      "names": [
-        "organizationalRole"
-      ],
+      "names": ["organizationalRole"],
       "obsolete": false,
       "oid": "2.5.6.8",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "organizationalunit": {
       "desc": "RFC2256: an organizational unit",
@@ -7316,76 +6172,45 @@
         "userPassword",
         "x121Address"
       ],
-      "must": [
-        "ou"
-      ],
+      "must": ["ou"],
       "name": "organizationalUnit",
-      "names": [
-        "organizationalUnit"
-      ],
+      "names": ["organizationalUnit"],
       "obsolete": false,
       "oid": "2.5.6.5",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "person": {
       "desc": "RFC2256: a person",
       "kind": "structural",
-      "may": [
-        "description",
-        "seeAlso",
-        "telephoneNumber",
-        "userPassword"
-      ],
-      "must": [
-        "cn",
-        "sn"
-      ],
+      "may": ["description", "seeAlso", "telephoneNumber", "userPassword"],
+      "must": ["cn", "sn"],
       "name": "person",
-      "names": [
-        "person"
-      ],
+      "names": ["person"],
       "obsolete": false,
       "oid": "2.5.6.6",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "pilotdsa": {
       "desc": null,
       "kind": "structural",
-      "may": [
-        "dSAQuality"
-      ],
+      "may": ["dSAQuality"],
       "must": [],
       "name": "pilotDSA",
-      "names": [
-        "pilotDSA"
-      ],
+      "names": ["pilotDSA"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.21",
-      "sup": [
-        "dsa"
-      ]
+      "sup": ["dsa"]
     },
     "pilotorganization": {
       "desc": null,
       "kind": "structural",
-      "may": [
-        "buildingName"
-      ],
+      "may": ["buildingName"],
       "must": [],
       "name": "pilotOrganization",
-      "names": [
-        "pilotOrganization"
-      ],
+      "names": ["pilotOrganization"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.20",
-      "sup": [
-        "organization",
-        "organizationalUnit"
-      ]
+      "sup": ["organization", "organizationalUnit"]
     },
     "pilotperson": {
       "desc": null,
@@ -7413,15 +6238,10 @@
       ],
       "must": [],
       "name": "pilotPerson",
-      "names": [
-        "pilotPerson",
-        "newPilotPerson"
-      ],
+      "names": ["pilotPerson", "newPilotPerson"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.4",
-      "sup": [
-        "person"
-      ]
+      "sup": ["person"]
     },
     "pkica": {
       "desc": "RFC2587: PKI certificate authority",
@@ -7434,116 +6254,65 @@
       ],
       "must": [],
       "name": "pkiCA",
-      "names": [
-        "pkiCA"
-      ],
+      "names": ["pkiCA"],
       "obsolete": false,
       "oid": "2.5.6.22",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "pkiuser": {
       "desc": "RFC2587: a PKI user",
       "kind": "auxiliary",
-      "may": [
-        "userCertificate"
-      ],
+      "may": ["userCertificate"],
       "must": [],
       "name": "pkiUser",
-      "names": [
-        "pkiUser"
-      ],
+      "names": ["pkiUser"],
       "obsolete": false,
       "oid": "2.5.6.21",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "posixaccount": {
       "desc": "Abstraction of an account with POSIX attributes",
       "kind": "auxiliary",
-      "may": [
-        "description",
-        "gecos",
-        "loginShell",
-        "userPassword"
-      ],
-      "must": [
-        "cn",
-        "gidNumber",
-        "homeDirectory",
-        "uid",
-        "uidNumber"
-      ],
+      "may": ["description", "gecos", "loginShell", "userPassword"],
+      "must": ["cn", "gidNumber", "homeDirectory", "uid", "uidNumber"],
       "name": "posixAccount",
-      "names": [
-        "posixAccount"
-      ],
+      "names": ["posixAccount"],
       "obsolete": false,
       "oid": "1.3.6.1.1.1.2.0",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "posixgroup": {
       "desc": "Abstraction of a group of accounts",
       "kind": "structural",
-      "may": [
-        "description",
-        "memberUid",
-        "userPassword"
-      ],
-      "must": [
-        "cn",
-        "gidNumber"
-      ],
+      "may": ["description", "memberUid", "userPassword"],
+      "must": ["cn", "gidNumber"],
       "name": "posixGroup",
-      "names": [
-        "posixGroup"
-      ],
+      "names": ["posixGroup"],
       "obsolete": false,
       "oid": "1.3.6.1.1.1.2.2",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "qualitylabelleddata": {
       "desc": null,
       "kind": "auxiliary",
-      "may": [
-        "subtreeMaximumQuality",
-        "subtreeMinimumQuality"
-      ],
-      "must": [
-        "dsaQuality"
-      ],
+      "may": ["subtreeMaximumQuality", "subtreeMinimumQuality"],
+      "must": ["dsaQuality"],
       "name": "qualityLabelledData",
-      "names": [
-        "qualityLabelledData"
-      ],
+      "names": ["qualityLabelledData"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.22",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "referral": {
       "desc": "namedref: named subordinate referral",
       "kind": "structural",
       "may": [],
-      "must": [
-        "ref"
-      ],
+      "must": ["ref"],
       "name": "referral",
-      "names": [
-        "referral"
-      ],
+      "names": ["referral"],
       "obsolete": false,
       "oid": "2.16.840.1.113730.3.2.6",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "residentialperson": {
       "desc": "RFC2256: an residential person",
@@ -7568,18 +6337,12 @@
         "telexNumber",
         "x121Address"
       ],
-      "must": [
-        "l"
-      ],
+      "must": ["l"],
       "name": "residentialPerson",
-      "names": [
-        "residentialPerson"
-      ],
+      "names": ["residentialPerson"],
       "obsolete": false,
       "oid": "2.5.6.10",
-      "sup": [
-        "person"
-      ]
+      "sup": ["person"]
     },
     "rfc822localpart": {
       "desc": null,
@@ -7607,53 +6370,32 @@
       ],
       "must": [],
       "name": "rFC822localPart",
-      "names": [
-        "RFC822localPart"
-      ],
+      "names": ["RFC822localPart"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.14",
-      "sup": [
-        "domain"
-      ]
+      "sup": ["domain"]
     },
     "room": {
       "desc": null,
       "kind": "structural",
-      "may": [
-        "description",
-        "roomNumber",
-        "seeAlso",
-        "telephoneNumber"
-      ],
-      "must": [
-        "commonName"
-      ],
+      "may": ["description", "roomNumber", "seeAlso", "telephoneNumber"],
+      "must": ["commonName"],
       "name": "room",
-      "names": [
-        "room"
-      ],
+      "names": ["room"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.7",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "sambaconfig": {
       "desc": "Samba Configuration Section",
       "kind": "auxiliary",
-      "may": [
-        "description"
-      ],
+      "may": ["description"],
       "must": [],
       "name": "sambaConfig",
-      "names": [
-        "sambaConfig"
-      ],
+      "names": ["sambaConfig"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.2.10",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "sambaconfigoption": {
       "desc": "Samba Configuration Option",
@@ -7665,18 +6407,12 @@
         "sambaStringListoption",
         "sambaStringOption"
       ],
-      "must": [
-        "sambaOptionName"
-      ],
+      "must": ["sambaOptionName"],
       "name": "sambaConfigOption",
-      "names": [
-        "sambaConfigOption"
-      ],
+      "names": ["sambaConfigOption"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.2.12",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "sambadomain": {
       "desc": "Samba Domain Information",
@@ -7697,62 +6433,34 @@
         "sambaPwdHistoryLength",
         "sambaRefuseMachinePwdChange"
       ],
-      "must": [
-        "sambaDomainName",
-        "sambaSID"
-      ],
+      "must": ["sambaDomainName", "sambaSID"],
       "name": "sambaDomain",
-      "names": [
-        "sambaDomain"
-      ],
+      "names": ["sambaDomain"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.2.5",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "sambagroupmapping": {
       "desc": "Samba Group Mapping",
       "kind": "auxiliary",
-      "may": [
-        "description",
-        "displayName",
-        "sambaSIDList"
-      ],
-      "must": [
-        "gidNumber",
-        "sambaGroupType",
-        "sambaSID"
-      ],
+      "may": ["description", "displayName", "sambaSIDList"],
+      "must": ["gidNumber", "sambaGroupType", "sambaSID"],
       "name": "sambaGroupMapping",
-      "names": [
-        "sambaGroupMapping"
-      ],
+      "names": ["sambaGroupMapping"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.2.4",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "sambaidmapentry": {
       "desc": "Mapping from a SID to an ID",
       "kind": "auxiliary",
-      "may": [
-        "gidNumber",
-        "uidNumber"
-      ],
-      "must": [
-        "sambaSID"
-      ],
+      "may": ["gidNumber", "uidNumber"],
+      "must": ["sambaSID"],
       "name": "sambaIdmapEntry",
-      "names": [
-        "sambaIdmapEntry"
-      ],
+      "names": ["sambaIdmapEntry"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.2.8",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "sambasamaccount": {
       "desc": "Samba 3.0 Auxilary SAM Account",
@@ -7783,55 +6491,34 @@
         "sambaPwdMustChange",
         "sambaUserWorkstations"
       ],
-      "must": [
-        "sambaSID",
-        "uid"
-      ],
+      "must": ["sambaSID", "uid"],
       "name": "sambaSamAccount",
-      "names": [
-        "sambaSamAccount"
-      ],
+      "names": ["sambaSamAccount"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.2.6",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "sambashare": {
       "desc": "Samba Share Section",
       "kind": "structural",
-      "may": [
-        "description"
-      ],
-      "must": [
-        "sambaShareName"
-      ],
+      "may": ["description"],
+      "must": ["sambaShareName"],
       "name": "sambaShare",
-      "names": [
-        "sambaShare"
-      ],
+      "names": ["sambaShare"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.2.11",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "sambasidentry": {
       "desc": "Structural Class for a SID",
       "kind": "structural",
       "may": [],
-      "must": [
-        "sambaSID"
-      ],
+      "must": ["sambaSID"],
       "name": "sambaSidEntry",
-      "names": [
-        "sambaSidEntry"
-      ],
+      "names": ["sambaSidEntry"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.2.9",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "sambatrusteddomain": {
       "desc": "Samba Trusted Domain Object",
@@ -7847,25 +6534,17 @@
         "sambaTrustPartner",
         "sambaTrustType"
       ],
-      "must": [
-        "cn"
-      ],
+      "must": ["cn"],
       "name": "sambaTrustedDomain",
-      "names": [
-        "sambaTrustedDomain"
-      ],
+      "names": ["sambaTrustedDomain"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.2.16",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "sambatrusteddomainpassword": {
       "desc": "Samba Trusted Domain Password",
       "kind": "structural",
-      "may": [
-        "sambaPreviousClearTextPassword"
-      ],
+      "may": ["sambaPreviousClearTextPassword"],
       "must": [
         "sambaClearTextPassword",
         "sambaDomainName",
@@ -7873,54 +6552,32 @@
         "sambaSID"
       ],
       "name": "sambaTrustedDomainPassword",
-      "names": [
-        "sambaTrustedDomainPassword"
-      ],
+      "names": ["sambaTrustedDomainPassword"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.2.15",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "sambatrustpassword": {
       "desc": "Samba Trust Password",
       "kind": "structural",
-      "may": [
-        "sambaPwdLastSet",
-        "sambaSID"
-      ],
-      "must": [
-        "sambaDomainName",
-        "sambaNTPassword",
-        "sambaTrustFlags"
-      ],
+      "may": ["sambaPwdLastSet", "sambaSID"],
+      "must": ["sambaDomainName", "sambaNTPassword", "sambaTrustFlags"],
       "name": "sambaTrustPassword",
-      "names": [
-        "sambaTrustPassword"
-      ],
+      "names": ["sambaTrustPassword"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.2.14",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "sambaunixidpool": {
       "desc": "Pool for allocating UNIX uids/gids",
       "kind": "auxiliary",
       "may": [],
-      "must": [
-        "gidNumber",
-        "uidNumber"
-      ],
+      "must": ["gidNumber", "uidNumber"],
       "name": "sambaUnixIdPool",
-      "names": [
-        "sambaUnixIdPool"
-      ],
+      "names": ["sambaUnixIdPool"],
       "obsolete": false,
       "oid": "1.3.6.1.4.1.7165.2.2.7",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "shadowaccount": {
       "desc": "Additional attributes for shadow passwords",
@@ -7936,70 +6593,45 @@
         "shadowWarning",
         "userPassword"
       ],
-      "must": [
-        "uid"
-      ],
+      "must": ["uid"],
       "name": "shadowAccount",
-      "names": [
-        "shadowAccount"
-      ],
+      "names": ["shadowAccount"],
       "obsolete": false,
       "oid": "1.3.6.1.1.1.2.1",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "simplesecurityobject": {
       "desc": "RFC1274: simple security object",
       "kind": "auxiliary",
       "may": [],
-      "must": [
-        "userPassword"
-      ],
+      "must": ["userPassword"],
       "name": "simpleSecurityObject",
-      "names": [
-        "simpleSecurityObject"
-      ],
+      "names": ["simpleSecurityObject"],
       "obsolete": false,
       "oid": "0.9.2342.19200300.100.4.19",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "strongauthenticationuser": {
       "desc": "RFC2256: a strong authentication user",
       "kind": "auxiliary",
       "may": [],
-      "must": [
-        "userCertificate"
-      ],
+      "must": ["userCertificate"],
       "name": "strongAuthenticationUser",
-      "names": [
-        "strongAuthenticationUser"
-      ],
+      "names": ["strongAuthenticationUser"],
       "obsolete": false,
       "oid": "2.5.6.15",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "subentry": {
       "desc": "RFC3672: subentry",
       "kind": "structural",
       "may": [],
-      "must": [
-        "cn",
-        "subtreeSpecification"
-      ],
+      "must": ["cn", "subtreeSpecification"],
       "name": "subentry",
-      "names": [
-        "subentry"
-      ],
+      "names": ["subentry"],
       "obsolete": false,
       "oid": "2.5.17.0",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "subschema": {
       "desc": "RFC4512: controlling subschema (sub)entry",
@@ -8015,9 +6647,7 @@
       ],
       "must": [],
       "name": "subschema",
-      "names": [
-        "subschema"
-      ],
+      "names": ["subschema"],
       "obsolete": false,
       "oid": "2.5.20.1",
       "sup": []
@@ -8026,13 +6656,9 @@
       "desc": "top of the superclass chain",
       "kind": "abstract",
       "may": [],
-      "must": [
-        "objectClass"
-      ],
+      "must": ["objectClass"],
       "name": "top",
-      "names": [
-        "top"
-      ],
+      "names": ["top"],
       "obsolete": false,
       "oid": "2.5.6.0",
       "sup": []
@@ -8041,35 +6667,23 @@
       "desc": "RFC2377: uid object",
       "kind": "auxiliary",
       "may": [],
-      "must": [
-        "uid"
-      ],
+      "must": ["uid"],
       "name": "uidObject",
-      "names": [
-        "uidObject"
-      ],
+      "names": ["uidObject"],
       "obsolete": false,
       "oid": "1.3.6.1.1.3.1",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     },
     "usersecurityinformation": {
       "desc": "RFC2256: a user security information",
       "kind": "auxiliary",
-      "may": [
-        "supportedAlgorithms"
-      ],
+      "may": ["supportedAlgorithms"],
       "must": [],
       "name": "userSecurityInformation",
-      "names": [
-        "userSecurityInformation"
-      ],
+      "names": ["userSecurityInformation"],
       "obsolete": false,
       "oid": "2.5.6.18",
-      "sup": [
-        "top"
-      ]
+      "sup": ["top"]
     }
   },
   "syntaxes": {

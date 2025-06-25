@@ -58,6 +58,11 @@ def print_version(ctx: click.Context, param: click.Parameter, value: bool) -> No
     show_default=True,
 )
 @click.option(
+    "--reload",
+    is_flag=True,
+    help="Watch for changes and reload?",
+)
+@click.option(
     "--version",
     is_flag=True,
     callback=print_version,
@@ -65,7 +70,7 @@ def print_version(ctx: click.Context, param: click.Parameter, value: bool) -> No
     is_eager=True,
     help="Display the current version and exit.",
 )
-def main(base_dn, host, port, ldap_url, log_level):
+def main(base_dn, host, port, ldap_url, log_level, reload):
     logging.basicConfig(level=LOG_LEVELS[log_level])
     rootHandler = logging.getLogger().handlers[0]
     rootHandler.setFormatter(ColourizedFormatter(fmt="%(levelprefix)s %(message)s"))
@@ -76,11 +81,7 @@ def main(base_dn, host, port, ldap_url, log_level):
     if ldap_url is not None:
         settings.LDAP_URL = ldap_url
 
-    uvicorn.run(
-        "ldap_ui.app:app",
-        host=host,
-        port=port,
-    )
+    uvicorn.run("ldap_ui.app:app", host=host, port=port, reload=reload)
 
 
 if __name__ == "__main__":

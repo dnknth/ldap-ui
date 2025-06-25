@@ -20,8 +20,11 @@
         <span v-else class="mr-5"></span>
 
         <span v-if="attr.name == 'jpegPhoto' || attr.name == 'thumbnailPhoto'">
-          <img v-if="val" :src="'data:image/' + ((attr.name == 'jpegPhoto') ? 'jpeg' : '*') + ';base64,' + val"
-            class="max-w-[120px] max-h-[120px] border p-[1px] inline mx-1" />
+          <img v-if="val" :src="'data:image/' +
+            (attr.name == 'jpegPhoto' ? 'jpeg' : '*') +
+            ';base64,' +
+            val
+            " class="max-w-[120px] max-h-[120px] border p-px inline mx-1" />
           <span v-if="val" class="control remove-btn align-top ml-1" @click="doDeleteBlob(index)"
             title="Remove photo">⊖</span>
         </span>
@@ -35,8 +38,11 @@
         </span>
         <input v-else :value="values[index]" :id="attr + '-' + index" :type="type" autocomplete="off"
           class="w-[90%] glyph outline-none bg-back border-x-0 border-t-0 border-b border-solid border-front/20 focus:border-primary px-1"
-          :class="{ structural: isStructural(val), auto: defaultValue, illegal: (illegal && !empty) || duplicate(index) }"
-          :placeholder="placeholder" :disabled="disabled" :title="time ? dateString(val) : ''" @input="update"
+          :class="{
+            structural: isStructural(val),
+            auto: defaultValue,
+            illegal: (illegal && !empty) || duplicate(index),
+          }" :placeholder="placeholder" :disabled="disabled" :title="time ? dateString(val) : ''" @input="update"
           @focusin="query = ''" @keyup="search" @keyup.esc="query = ''" />
 
         <i v-if="attr.name == 'objectClass'" class="cursor-pointer fa fa-info-circle" @click="emit('show-oc', val)"></i>
@@ -50,166 +56,172 @@
 </template>
 
 <script setup lang="ts">
-import { Attribute, generalizedTime } from '../schema/schema';
-import { computed, inject, onMounted, onUpdated, ref, watch } from 'vue';
-import AttributeSearch from './AttributeSearch.vue';
-import type { Provided } from '../Provided';
-import SearchResults from '../SearchResults.vue';
-import ToggleButton from '../ui/ToggleButton.vue';
-import { getRange, deleteBlob } from '../../generated/sdk.gen';
-import type { Meta } from '@/generated';
+import { Attribute, generalizedTime } from "../schema/schema";
+import { computed, inject, onMounted, onUpdated, ref, watch } from "vue";
+import AttributeSearch from "./AttributeSearch.vue";
+import type { Provided } from "../Provided";
+import SearchResults from "../SearchResults.vue";
+import ToggleButton from "../ui/ToggleButton.vue";
+import { getRange, deleteBlob } from "../../generated/sdk.gen";
+import type { Entry } from "@/generated";
 
-function unique(element: unknown, index: number, array: Array<unknown>): boolean {
-  return element == '' || array.indexOf(element) == index;
+function unique(
+  element: unknown,
+  index: number,
+  array: Array<unknown>,
+): boolean {
+  return element == "" || array.indexOf(element) == index;
 }
 
 const dateFormat: Intl.DateTimeFormatOptions = {
-  weekday: 'long',
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: 'numeric',
-  second: 'numeric'
+  weekday: "long",
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric",
 },
-
   syntaxes = {
-    boolean: '1.3.6.1.4.1.1466.115.121.1.7',
-    distinguishedName: '1.3.6.1.4.1.1466.115.121.1.12',
-    generalizedTime: '1.3.6.1.4.1.1466.115.121.1.24',
-    integer: '1.3.6.1.4.1.1466.115.121.1.27',
-    oid: '1.3.6.1.4.1.1466.115.121.1.38',
-    telephoneNumber: '1.3.6.1.4.1.1466.115.121.1.50',
+    boolean: "1.3.6.1.4.1.1466.115.121.1.7",
+    distinguishedName: "1.3.6.1.4.1.1466.115.121.1.12",
+    generalizedTime: "1.3.6.1.4.1.1466.115.121.1.24",
+    integer: "1.3.6.1.4.1.1466.115.121.1.27",
+    oid: "1.3.6.1.4.1.1466.115.121.1.38",
+    telephoneNumber: "1.3.6.1.4.1.1466.115.121.1.50",
   },
-
-  idRanges = ['uidNumber', 'gidNumber'], // Numeric ID ranges
-
+  idRanges = ["uidNumber", "gidNumber"], // Numeric ID ranges
   props = defineProps<{
-    attr: Attribute
-    baseDn?: string
-    values: string[]
-    meta: Meta
-    must: boolean
-    may: boolean
-    changed: boolean
+    entry: Entry;
+    attr: Attribute;
+    baseDn?: string;
+    values: string[];
+    must: boolean;
+    may: boolean;
+    changed: boolean;
   }>(),
-
-  app = inject<Provided>('app'),
-
+  app = inject<Provided>("app"),
   valid = ref(true),
-
   // Range auto-completion
   autoFilled = ref<string>(),
-  hint = ref(''),
-
+  hint = ref(""),
   // DN search
-  query = ref(''),
+  query = ref(""),
   elementId = ref<string>(),
-
   boolean = computed(() => props.attr.syntax == syntaxes.boolean),
   completable = computed(() => props.attr.syntax == syntaxes.distinguishedName),
-  defaultValue = computed(() => props.values.length == 1 && props.values[0] == autoFilled.value),
-  empty = computed(() => props.values.every(value => !value.trim())),
+  defaultValue = computed(
+    () => props.values.length == 1 && props.values[0] == autoFilled.value,
+  ),
+  empty = computed(() => props.values.every((value) => !value.trim())),
   illegal = computed(() => !props.must && !props.may),
-  isRdn = computed(() => props.attr.name == props.meta.dn.split('=')[0]),
+  isRdn = computed(() => props.attr.name == props.entry.dn.split("=")[0]),
   oid = computed(() => props.attr.syntax == syntaxes.oid),
   missing = computed(() => empty.value && props.must),
-  password = computed(() => props.attr.name == 'userPassword'),
+  password = computed(() => props.attr.name == "userPassword"),
   time = computed(() => props.attr.syntax == syntaxes.generalizedTime),
-
   binary = computed<boolean>(() =>
-    password.value ? false // Corner case with octetStringMatch
-      : props.meta.binary.includes(props.attr.name!)),
-
-  disabled = computed(() => isRdn.value
-    || props.attr.name == 'objectClass'
-    || (illegal.value && empty.value)
-    || (!props.meta.isNew && (password.value || binary.value))),
-
+    password.value
+      ? false // Corner case with octetStringMatch
+      : props.entry.binary.includes(props.attr.name!),
+  ),
+  disabled = computed(
+    () =>
+      isRdn.value ||
+      props.attr.name == "objectClass" ||
+      (illegal.value && empty.value) ||
+      (!props.entry.isNew && (password.value || binary.value)),
+  ),
   placeholder = computed(() => {
-    if (missing.value) return ' \uf071 ';     // fa-warning
-    if (empty.value) return ' \uf1f8 ';       // fa-trash
-    if (completable.value) return ' \uf002 '; // fa-search
-    return '';
+    if (missing.value) return " \uf071 "; // fa-warning
+    if (empty.value) return " \uf1f8 "; // fa-trash
+    if (completable.value) return " \uf002 "; // fa-search
+    return "";
   }),
-
-  shown = computed(() =>
-    props.attr.name == 'jpegPhoto'
-    || props.attr.name == 'thumbnailPhoto'
-    || (!props.attr.no_user_mod && !binary.value)),
-
+  shown = computed(
+    () =>
+      props.attr.name == "jpegPhoto" ||
+      props.attr.name == "thumbnailPhoto" ||
+      (!props.attr.no_user_mod && !binary.value),
+  ),
   type = computed(() => {
     // Guess the <input> type for an attribute
-    if (password.value) return 'password';
-    if (props.attr.syntax == syntaxes.telephoneNumber) return 'tel';
-    return props.attr.syntax == syntaxes.integer ? 'number' : 'text';
+    if (password.value) return "password";
+    if (props.attr.syntax == syntaxes.telephoneNumber) return "tel";
+    return props.attr.syntax == syntaxes.integer ? "number" : "text";
   }),
-
   emit = defineEmits<{
-    'show-attr': [name?: string]
-    'show-modal': [name: string]
-    'show-oc': [name: string]
-    'reload-form': [dn?: string, values?: string[], focused?: string]
-    'update': [attr: string, values: string[], index?: number]
-    'valid': [ok: boolean]
+    "show-attr": [name?: string];
+    "show-modal": [name: string];
+    "show-oc": [name: string];
+    "reload-form": [dn?: string, values?: string[], focused?: string];
+    update: [attr: string, values: string[], index?: number];
+    valid: [ok: boolean];
   }>();
 
-watch(valid, (ok) => emit('valid', ok));
+watch(valid, (ok) => emit("valid", ok));
 
 onMounted(async () => {
   // Auto-fill ranges
-  if (disabled.value
-    || !idRanges.includes(props.attr.name!)
-    || props.values.length != 1
-    || props.values[0]) return;
+  if (
+    disabled.value ||
+    !idRanges.includes(props.attr.name!) ||
+    props.values.length != 1 ||
+    props.values[0]
+  )
+    return;
 
   const response = await getRange({
     path: { attribute: props.attr.name! },
-    client: app?.client
+    client: app?.client,
   });
   if (!response.data) return;
 
   const range = response.data;
-  hint.value = range.min == range.max
-    ? '> ' + range.min
-    : '\u2209 (' + range.min + " - " + range.max + ')';
-  autoFilled.value = '' + range.next;
-  emit('update', props.attr.name!, [autoFilled.value], 0);
+  hint.value =
+    range.min == range.max
+      ? "> " + range.min
+      : "\u2209 (" + range.min + " - " + range.max + ")";
+  autoFilled.value = "" + range.next;
+  emit("update", props.attr.name!, [autoFilled.value], 0);
   validate();
 });
 
 onUpdated(validate);
 
 function validate() {
-  valid.value = !missing.value
-    && (!illegal.value || empty.value)
-    && props.values.every(unique);
+  valid.value =
+    !missing.value &&
+    (!illegal.value || empty.value) &&
+    props.values.every(unique);
 }
 
 function update(evt: Event) {
   const target = evt.target as HTMLInputElement;
   const value = target.value,
-    index = +target.id.split('-').slice(-1).pop()!;
+    index = +target.id.split("-").slice(-1).pop()!;
   updateValue(index, value);
 }
 
 function updateValue(index: number, value: string) {
   const values = props.values.slice();
   values[index] = value;
-  emit('update', props.attr.name!, values);
+  emit("update", props.attr.name!, values);
 }
 
 // Add an empty row in the entry form
 function addRow() {
   const values = props.values.slice();
-  if (!values.includes('')) values.push('');
-  emit('update', props.attr.name!, values, values.length - 1);
+  if (!values.includes("")) values.push("");
+  emit("update", props.attr.name!, values, values.length - 1);
 }
 
 // Remove a row from the entry form
 function removeObjectClass(index: number) {
-  const values = props.values.slice(0, index).concat(props.values.slice(index + 1));
-  emit('update', 'objectClass', values);
+  const values = props.values
+    .slice(0, index)
+    .concat(props.values.slice(index + 1));
+  emit("update", "objectClass", values);
 }
 
 // human-readable dates
@@ -219,13 +231,13 @@ function dateString(dt: string) {
 
 // Is the given value a structural object class?
 function isStructural(val: string) {
-  return props.attr.name == 'objectClass' && app?.schema?.oc(val)?.structural;
+  return props.attr.name == "objectClass" && app?.schema.oc(val)?.structural;
 }
 
 // Is the given value an auxillary object class?
 function isAux(val: string) {
-  const oc = app?.schema?.oc(val);
-  return props.attr.name == 'objectClass' && oc && !oc.structural;
+  const oc = app?.schema.oc(val);
+  return props.attr.name == "objectClass" && oc && !oc.structural;
 }
 
 function duplicate(index: number) {
@@ -233,10 +245,12 @@ function duplicate(index: number) {
 }
 
 function multiple(index: number) {
-  return index == 0
-    && !props.attr.single_value
-    && !disabled.value
-    && !props.values.includes('');
+  return (
+    index == 0 &&
+    !props.attr.single_value &&
+    !disabled.value &&
+    !props.values.includes("")
+  );
 }
 
 // auto-complete form values
@@ -244,25 +258,25 @@ function search(evt: Event) {
   const target = evt.target as HTMLInputElement;
   elementId.value = target.id;
   const q = target.value;
-  query.value = q.length >= 2 && !q.includes(',') ? q : '';
+  query.value = q.length >= 2 && !q.includes(",") ? q : "";
 }
 
 // use an auto-completion choice
 function complete(dn: string) {
-  const index = +elementId.value!.split('-').slice(-1).pop()!;
+  const index = +elementId.value!.split("-").slice(-1).pop()!;
   const values = props.values.slice();
   values[index] = dn;
-  query.value = '';
-  emit('update', props.attr.name!, values);
+  query.value = "";
+  emit("update", props.attr.name!, values);
 }
 
 // remove an image
 async function doDeleteBlob(index: number) {
   const response = await deleteBlob({
-    path: { attr: props.attr.name!, index, dn: props.meta.dn },
-    client: app?.client
+    path: { attr: props.attr.name!, index, dn: props.entry.dn },
+    client: app?.client,
   });
-  if (!response.error) emit('reload-form', props.meta.dn, [props.attr.name!]);
+  if (!response.error) emit("reload-form", props.entry.dn, [props.attr.name!]);
 }
 </script>
 
@@ -298,7 +312,7 @@ input.auto {
 }
 
 div.rdn span.oc::after {
-  content: ' (rdn)';
+  content: " (rdn)";
   font-weight: 200;
 }
 </style>

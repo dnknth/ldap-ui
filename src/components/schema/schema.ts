@@ -1,21 +1,32 @@
-import type {Schema} from '../../generated/types.gen';
+import type { Schema } from "../../generated/types.gen";
 
-function unique(element: unknown, index: number, array: Array<unknown>): boolean {
+function unique(
+  element: unknown,
+  index: number,
+  array: Array<unknown>,
+): boolean {
   return array.indexOf(element) == index;
 }
 
 export function generalizedTime(dt: string): Date {
   let tz = dt.substring(14);
-  if (tz != 'Z') {
-    tz = tz.substring(0, 3) + ':'
-      + (tz.length > 3 ? tz.substring(3, 5) : '00');
+  if (tz != "Z") {
+    tz = tz.substring(0, 3) + ":" + (tz.length > 3 ? tz.substring(3, 5) : "00");
   }
-  return new Date(dt.substring(0, 4) + '-'
-    + dt.substring( 4,  6) + '-'
-    + dt.substring( 6,  8) + 'T'
-    + dt.substring( 8, 10) + ':'
-    + dt.substring(10, 12) + ':'
-    + dt.substring(12, 14) + tz);
+  return new Date(
+    dt.substring(0, 4) +
+      "-" +
+      dt.substring(4, 6) +
+      "-" +
+      dt.substring(6, 8) +
+      "T" +
+      dt.substring(8, 10) +
+      ":" +
+      dt.substring(10, 12) +
+      ":" +
+      dt.substring(12, 14) +
+      tz,
+  );
 }
 
 let schema: LdapSchema;
@@ -27,18 +38,22 @@ export class RDN {
 
   constructor(value: string) {
     this.text = value;
-    const parts = value.split('=');
+    const parts = value.split("=");
     this.attrName = parts[0].trim();
     this.value = parts[1].trim();
   }
 
-  toString() { return this.text; }
+  toString() {
+    return this.text;
+  }
 
-  eq(other: RDN | undefined) {
-    return other !== undefined
-      && this.attr !== undefined
-      && this.attr.eq(other.attr)
-      && this.attr.matcher(this.value, other.value);
+  eq(other?: RDN) {
+    return (
+      other !== undefined &&
+      this.attr !== undefined &&
+      this.attr.eq(other.attr) &&
+      this.attr.matcher(this.value, other.value)
+    );
   }
 
   get attr() {
@@ -49,19 +64,21 @@ export class RDN {
 export class DN {
   readonly text: string;
   readonly rdn: RDN;
-  readonly parent: DN | undefined;
+  readonly parent?: DN;
 
   constructor(value: string) {
     this.text = value;
-    const parts = value.split(',');
+    const parts = value.split(",");
     this.rdn = new RDN(parts[0]);
-    this.parent = parts.length == 1 ? undefined
-      : new DN(value.slice(parts[0].length + 1));
+    this.parent =
+      parts.length == 1 ? undefined : new DN(value.slice(parts[0].length + 1));
   }
 
-  toString() { return this.text; }
+  toString() {
+    return this.text;
+  }
 
-  eq(other: DN | undefined) : boolean {
+  eq(other?: DN): boolean {
     if (!other || !this.rdn.eq(other.rdn)) return false;
     if (!this.parent && !other.parent) return true;
     return !!this.parent && this.parent.eq(other.parent!);
@@ -87,7 +104,12 @@ export class ObjectClass extends Element {
     Object.assign(this, json);
   }
 
-  get structural() { return this.kind == 'structural'; }
+  get structural() {
+    return this.kind == "structural";
+  }
+  get aux() {
+    return this.kind == "auxiliary";
+  }
 
   // gather values from a field across all superclasses
   $collect(name: "must" | "may"): string[] {
@@ -98,15 +120,18 @@ export class ObjectClass extends Element {
       if (attrs) attributes.push(attrs);
     }
 
-    const result = attributes.flat()
-      .map(attr => schema.attr(attr))
-      .map(obj => obj?.name)
+    const result = attributes
+      .flat()
+      .map((attr) => schema.attr(attr))
+      .map((obj) => obj?.name)
       .filter(unique) as string[];
     result.sort();
     return result;
   }
 
-  toString() { return this.name!; }
+  toString() {
+    return this.name!;
+  }
 
   get $super(): ObjectClass | undefined {
     const parent = Object.getPrototypeOf(this) as ObjectClass;
@@ -114,10 +139,11 @@ export class ObjectClass extends Element {
   }
 }
 
-const matchRules: {[key: string]: (a: string, b: string) => boolean} = {
+const matchRules: { [key: string]: (a: string, b: string) => boolean } = {
   // See: https://ldap.com/matching-rules/
   distinguishedNameMatch: (a: string, b: string) => new DN(a).eq(new DN(b)),
-  caseIgnoreIA5Match: (a: string, b: string) => a.toLowerCase() == b.toLowerCase(),
+  caseIgnoreIA5Match: (a: string, b: string) =>
+    a.toLowerCase() == b.toLowerCase(),
   caseIgnoreMatch: (a: string, b: string) => a.toLowerCase() == b.toLowerCase(),
   // generalizedTimeMatch: ...
   integerMatch: (a: string, b: string) => +a == +b,
@@ -147,27 +173,37 @@ export class Attribute extends Element {
     delete this.syntax;
     // End of hack
 
-    Object.assign(this, Object.fromEntries(Object.entries(json)
-      .filter(([_prop, value]) => value != null)));
+    Object.assign(
+      this,
+      Object.fromEntries(
+        Object.entries(json).filter(([_prop, value]) => value != null),
+      ),
+    );
   }
 
-  toString() { return this.name!; }
+  toString() {
+    return this.name!;
+  }
 
   get matcher() {
-    return (this.equality ? matchRules[this.equality] : undefined)
-      || matchRules.octetStringMatch;
+    return (
+      (this.equality ? matchRules[this.equality] : undefined) ||
+      matchRules.octetStringMatch
+    );
   }
 
-  eq(other: Attribute | undefined) {
+  eq(other?: Attribute) {
     return other && this.oid == other.oid;
   }
 
   get binary() {
-    if (this.equality == 'octetStringMatch') return undefined;
-    return this.$syntax?.not_human_readable;
+    if (this.equality == "octetStringMatch") return undefined;
+    return !!this.$syntax?.not_human_readable;
   }
 
-  get $syntax() { return schema.syntaxes.get(this.syntax!); }
+  get $syntax() {
+    return schema.syntaxes.get(this.syntax!);
+  }
 
   get $super() {
     const parent = Object.getPrototypeOf(this);
@@ -184,7 +220,9 @@ class Syntax {
     Object.assign(this, json);
   }
 
-  toString() { return this.desc!; }
+  toString() {
+    return this.desc!;
+  }
 }
 
 export class LdapSchema extends Object {
@@ -195,16 +233,25 @@ export class LdapSchema extends Object {
 
   constructor(json: Schema) {
     super();
-    this.syntaxes = new Map(Object.entries(json.syntaxes)
-      .map(([oid, obj]) => [oid, new Syntax(obj)]));
-    this.attributes = Object.values(json.attributes)
-      .map(obj => new Attribute(obj));
-    this.objectClasses = new Map(Object.entries(json.objectClasses)
-      .map(([key, obj]) => [key.toLowerCase(), new ObjectClass(obj)]));
+    this.syntaxes = new Map(
+      Object.entries(json.syntaxes).map(([oid, obj]) => [oid, new Syntax(obj)]),
+    );
+    this.attributes = Object.values(json.attributes).map(
+      (obj) => new Attribute(obj),
+    );
+    this.objectClasses = new Map(
+      Object.entries(json.objectClasses).map(([key, obj]) => [
+        key.toLowerCase(),
+        new ObjectClass(obj),
+      ]),
+    );
     this.buildPrototypeChain(this.objectClasses);
-    
-    this.attributesByName = new Map(this.attributes.flatMap(
-      attr => (attr.names || []).map(name => [name.toLowerCase(), attr])));
+
+    this.attributesByName = new Map(
+      this.attributes.flatMap((attr) =>
+        (attr.names || []).map((name) => [name.toLowerCase(), attr]),
+      ),
+    );
     this.buildPrototypeChain(this.attributesByName);
     schema = this as LdapSchema;
   }
@@ -217,11 +264,18 @@ export class LdapSchema extends Object {
     }
   }
 
-  attr(name: string | undefined) { return this.attributesByName.get(name?.toLowerCase() || ''); }
-  oc(name: string | undefined) { return this.objectClasses.get(name?.toLowerCase() || ''); }
+  attr(name?: string): Attribute | undefined {
+    return this.attributesByName.get(name?.toLowerCase() || "");
+  }
+  oc(name?: string): ObjectClass | undefined {
+    return this.objectClasses.get(name?.toLowerCase() || "");
+  }
 
   search(q: string) {
-    return this.attributes.filter(
-      attr => attr.names?.some(name => name.toLowerCase().startsWith(q.toLowerCase())));
+    return this.attributes.filter((attr) =>
+      attr.names?.some((name) =>
+        name.toLowerCase().startsWith(q.toLowerCase()),
+      ),
+    );
   }
 }

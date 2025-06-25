@@ -161,6 +161,20 @@
             "title": "Attrs",
             "type": "object"
           },
+          "autoFilled": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Autofilled",
+            "type": "array"
+          },
+          "binary": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Binary",
+            "type": "array"
+          },
           "changed": {
             "items": {
               "type": "string"
@@ -168,13 +182,22 @@
             "title": "Changed",
             "type": "array"
           },
-          "meta": {
-            "$ref": "#/components/schemas/Meta"
+          "dn": {
+            "title": "Dn",
+            "type": "string"
+          },
+          "isNew": {
+            "default": false,
+            "title": "Isnew",
+            "type": "boolean"
           }
         },
         "required": [
+          "dn",
           "attrs",
-          "meta"
+          "binary",
+          "autoFilled",
+          "changed"
         ],
         "title": "Entry",
         "type": "object"
@@ -200,57 +223,6 @@
         ],
         "title": "Kind",
         "type": "integer"
-      },
-      "Meta": {
-        "description": "Attribute classification for an entry",
-        "properties": {
-          "autoFilled": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Autofilled",
-            "type": "array"
-          },
-          "aux": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Aux",
-            "type": "array"
-          },
-          "binary": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Binary",
-            "type": "array"
-          },
-          "dn": {
-            "title": "Dn",
-            "type": "string"
-          },
-          "isNew": {
-            "default": false,
-            "title": "Isnew",
-            "type": "boolean"
-          },
-          "required": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Required",
-            "type": "array"
-          }
-        },
-        "required": [
-          "dn",
-          "required",
-          "aux",
-          "binary",
-          "autoFilled"
-        ],
-        "title": "Meta",
-        "type": "object"
       },
       "ObjectClass": {
         "properties": {
@@ -504,7 +476,7 @@
   },
   "info": {
     "title": "LDAP UI",
-    "version": "0.10.2"
+    "version": "0.10.3"
   },
   "openapi": "3.1.0",
   "paths": {

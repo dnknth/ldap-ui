@@ -2,20 +2,21 @@
 
 SITE = backend/ldap_ui/statics
 VERSION = $(shell fgrep __version__ backend/ldap_ui/__init__.py | cut -d'"' -f2)
-TAG = $(VERSION)-$(subst aarch64,arm64,$(shell uname -m))
+ARCH = $(shell docker run --rm alpine uname -m)
+TAG = $(VERSION)-$(subst aarch64,arm64,$(ARCH))
 IMAGE = dnknth/ldap-ui
 
-debug: $(SITE)
-	DEBUG=true uv run uvicorn --reload --port 5000 ldap_ui.app:app
+debug: $(SITE) .env
+	DEBUG=true uv run ldap-ui --reload --port 5000
 
-.env: env.example
+.env: env.demo
 	cp $< $@
 
 dist: clean $(SITE)
-	uv run python -m build --wheel
+	uv build
 
 pypi: dist
-	- uv run twine upload dist/*
+	- uv publish dist/*
 
 deploy: clean $(SITE)
 	rsync -a --delete $(SITE)/ mx:/opt/ldap-ui/venv/lib/python3.12/site-packages/ldap_ui/statics/
@@ -42,8 +43,7 @@ push: image
 	- docker pushrm $(IMAGE)
 
 manifest:
-	docker manifest create \
-		$(IMAGE) \
+	docker manifest create $(IMAGE) \
 		--amend $(IMAGE):$(VERSION)-x86_64 \
 		--amend $(IMAGE):$(VERSION)-arm64
 	docker manifest push --purge $(IMAGE)

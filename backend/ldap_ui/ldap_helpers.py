@@ -12,7 +12,7 @@ operation to complete without results.
 
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import AsyncGenerator, Generator
+from typing import AsyncGenerator
 
 from anyio import sleep
 from fastapi import HTTPException
@@ -54,7 +54,7 @@ class LdapEntry:
 sub_schema: SubSchema | None = None
 
 
-def ldap_connect() -> Generator[LDAPObject, None, None]:
+def ldap_connect() -> LDAPObject:
     "Open an LDAP connection"
 
     url = settings.LDAP_URL
@@ -69,8 +69,7 @@ def ldap_connect() -> Generator[LDAPObject, None, None]:
         connection.set_option(OPT_X_TLS_NEWCTX, 0)
         if not url.startswith("ldaps://"):
             connection.start_tls_s()
-    yield connection
-    connection.unbind_s()
+    return connection
 
 
 async def anonymous_user_search(connection: LDAPObject, username: str) -> str | None:
