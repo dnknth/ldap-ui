@@ -8,11 +8,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, nextTick, ref, watch } from 'vue';
-import Popover from './ui/Popover.vue';
-import type { Provided } from './Provided';
-import { search } from '../generated/sdk.gen'
-import type { SearchResult } from '../generated/types.gen'
+import { computed, inject, nextTick, ref, watch } from "vue";
+import Popover from "./ui/Popover.vue";
+import type { Provided } from "./Provided";
+import { search } from "../generated/sdk.gen";
+import type { SearchResult } from "../generated/types.gen";
 
 interface Result {
   dn: string;
@@ -22,13 +22,13 @@ interface Result {
 const props = defineProps({
   query: {
     type: String,
-    default: '',
+    default: "",
   },
   for: String,
   label: {
     type: String,
-    default: 'name',
-    validator: (value: string) => ['name', 'dn'].includes(value)
+    default: "name",
+    validator: (value: string) => ["name", "dn"].includes(value),
   },
   shorten: String,
   silent: {
@@ -36,43 +36,49 @@ const props = defineProps({
     default: false,
   },
 }),
-
-  app = inject<Provided>('app'),
+  app = inject<Provided>("app"),
   results = ref<SearchResult[]>([]),
-  show = computed(() => props.query.trim() != ''
-    && results.value && results.value.length > 1),
-  emit = defineEmits<{ 'select-dn': [dn: string] }>();
+  show = computed(
+    () => props.query.trim() != "" && results.value && results.value.length > 1,
+  ),
+  emit = defineEmits<{ "select-dn": [dn: string] }>();
 
-watch(() => props.query, async (q) => {
-  if (!q) return;
+watch(
+  () => props.query,
+  async (q) => {
+    if (!q) return;
 
-  const response = await search({ path: { query: q }, client: app?.client });
-  if (!response.data) return;
-  results.value = await response.data
+    const response = await search({ path: { query: q }, client: app?.client });
+    if (!response.data) return;
+    results.value = await response.data;
 
-  if (results.value.length == 0 && !props.silent) {
-    app?.showWarning('No search results');
-    return;
-  }
+    if (results.value.length == 0 && !props.silent) {
+      app?.showWarning("No search results");
+      return;
+    }
 
-  if (results.value.length == 1) {
-    done(results.value[0].dn);
-    return;
-  }
+    if (results.value.length == 1) {
+      done(results.value[0].dn);
+      return;
+    }
 
-  results.value.sort((a: Result, b: Result) =>
-    a[props.label as keyof Result].toLowerCase().localeCompare(
-      b[props.label as keyof Result].toLowerCase()));
-});
+    results.value.sort((a: Result, b: Result) =>
+      a[props.label as keyof Result]
+        .toLowerCase()
+        .localeCompare(b[props.label as keyof Result].toLowerCase()),
+    );
+  },
+);
 
 function trim(dn: string) {
   return props.shorten && props.shorten != dn
-    ? dn.replace(props.shorten, '…') : dn;
+    ? dn.replace(props.shorten, "…")
+    : dn;
 }
 
 // use an auto-completion choice
 function done(dn: string) {
-  emit('select-dn', dn);
+  emit("select-dn", dn);
   results.value = [];
 
   nextTick(() => {

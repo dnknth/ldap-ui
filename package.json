@@ -10,9 +10,7 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
-    "format": "prettier --write src/",
-    "test": "vitest",
-    "tw-config": "tailwind-config-viewer -o",
+    "test": "vitest --run",
     "generate": "openapi-ts -i tests/resources/openapi.json -o ./src/generated"
   },
   "dependencies": {

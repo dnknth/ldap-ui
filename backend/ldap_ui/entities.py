@@ -1,6 +1,6 @@
 "Data types for ReST endpoints"
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class TreeItem(BaseModel):
@@ -12,27 +12,20 @@ class TreeItem(BaseModel):
     level: int
 
 
-class Meta(BaseModel):
-    "Attribute classification for an entry"
-
-    dn: str
-    aux: list[str]
-    binary: list[str]
-    autoFilled: list[str]
-    isNew: bool = False
-
-
 Attributes = dict[str, list[str]]
 
-ChangedAttributes = list[str]  # Names of modified attributes
+AttributeNames = list[str]  # Names of modified attributes
 
 
 class Entry(BaseModel):
     "Directory entry"
 
+    dn: str
     attrs: Attributes
-    meta: Meta
-    changed: ChangedAttributes = Field(default_factory=list)
+    binary: AttributeNames
+    autoFilled: AttributeNames
+    changed: AttributeNames
+    isNew: bool = False
 
 
 class ChangePasswordRequest(BaseModel):

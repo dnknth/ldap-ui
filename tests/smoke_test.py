@@ -84,7 +84,7 @@ class BackendSmokeTest(unittest.TestCase):
                 content='{"objectClass":["inetOrgPerson"],"cn":["foo"],"sn":["bar"]}',
             )
             self.assertEqual(result.status_code, HTTPStatus.OK)
-            self.assertEqual(result.json(), {"changed": ["dn"]})
+            self.assertEqual(result.json(), ["dn"])
 
     def test_050_put_entry_again(self):
         with self.client:
@@ -104,7 +104,7 @@ class BackendSmokeTest(unittest.TestCase):
                 content='{"objectClass":["inetOrgPerson"],"cn":["foo"],"sn":["baz"]}',
             )
             self.assertEqual(result.status_code, HTTPStatus.OK)
-            self.assertEqual(result.json(), {"changed": ["sn"]})
+            self.assertEqual(result.json(), ["sn"])
 
     def test_070_put_image_to_entry(self):
         with self.client:

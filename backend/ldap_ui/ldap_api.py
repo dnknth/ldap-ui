@@ -34,15 +34,14 @@ from ldap import (
 from ldap.ldapobject import LDAPObject
 from ldap.modlist import addModlist, modifyModlist
 from ldap.schema import SubSchema
-from ldap.schema.models import AttributeType, LDAPSyntax, ObjectClass
+from ldap.schema.models import AttributeType, LDAPSyntax
 
 from . import settings
 from .entities import (
+    AttributeNames,
     Attributes,
-    ChangedAttributes,
     ChangePasswordRequest,
     Entry,
-    Meta,
     Range,
     SearchResult,
     TreeItem,
@@ -58,7 +57,6 @@ from .ldap_helpers import (
     results,
     unique,
 )
-from .schema import ObjectClass as OC
 from .schema import Schema, frontend_schema
 
 NO_CONTENT = Response(status_code=HTTPStatus.NO_CONTENT)
@@ -188,42 +186,23 @@ async def get_entry(dn: str, connection: AuthenticatedConnection) -> Entry:
 def _entry(entry: LdapEntry, schema: SubSchema) -> Entry:
     "Decode an LDAP entry for transmission"
 
-    meta = _meta(entry, schema)
-    attrs = {
-        k: ["*****"]  # 23 suppress userPassword
-        if k == "userPassword"
-        else [base64.b64encode(val).decode() for val in entry.attrs[k]]
-        if k in meta.binary
-        else entry.attr(k)
-        for k in sorted(entry.attrs)
-    }
-    return Entry(attrs=attrs, meta=meta)
-
-
-def _meta(entry: LdapEntry, schema: SubSchema) -> Meta:
-    "Classify entry attributes"
-
-    object_classes = set(entry.attr("objectClass"))
-    structural = [
-        oc.names[0]  # type: ignore
-        for oc in map(lambda o: schema.get_obj(ObjectClass, o), object_classes)
-        if oc.kind == OC.Kind.structural  # type: ignore
-    ]
-    aux = set(
-        schema.get_obj(ObjectClass, a).names[0]  # type: ignore
-        for a in schema.get_applicable_aux_classes(structural[0])
+    binary = sorted(
+        set(attr for attr in entry.attrs if _is_binary(entry, attr, schema))
     )
-
-    return Meta(
+    return Entry(
+        attrs={
+            k: ["*****"]  # 23 suppress userPassword
+            if k == "userPassword"
+            else [base64.b64encode(val).decode() for val in entry.attrs[k]]
+            if k in binary
+            else entry.attr(k)
+            for k in sorted(entry.attrs)
+        },
         dn=entry.dn,
-        aux=sorted(aux - object_classes),
-        binary=sorted(_binary_attributes(entry, schema)),
+        binary=binary,
         autoFilled=[],
+        changed=[],
     )
-
-
-def _binary_attributes(entry: LdapEntry, schema: SubSchema) -> set[str]:
-    return set(attr for attr in entry.attrs if _is_binary(entry, attr, schema))
 
 
 def _is_binary(entry: LdapEntry, attr: str, schema: SubSchema) -> bool:
@@ -266,7 +245,7 @@ async def delete_entry(dn: str, connection: AuthenticatedConnection) -> None:
 @api.post("/entry/{dn:path}", tags=[Tag.EDITING], operation_id="post_entry")
 async def post_entry(
     dn: str, attributes: Attributes, connection: AuthenticatedConnection
-) -> ChangedAttributes:
+) -> AttributeNames:
     entry = await get_entry_by_dn(connection, dn)
     schema = await get_schema(connection)
 
@@ -274,9 +253,12 @@ async def post_entry(
         attr: _nonempty_byte_strings(attributes, attr)
         for attr in attributes
         if attr not in PASSWORDS
-        and not _is_binary(
-            entry, attr, schema
-        )  # FIXME Handle binary attributes properly
+        and (
+            attr not in entry.attrs
+            or not _is_binary(
+                entry, attr, schema
+            )  # FIXME Handle binary attributes properly
+        )
     }
 
     actual = {attr: v for attr, v in entry.attrs.items() if attr in expected}
@@ -293,7 +275,7 @@ def _nonempty_byte_strings(attributes: Attributes, attr: str) -> list[bytes]:
 @api.put("/entry/{dn:path}", tags=[Tag.EDITING], operation_id="put_entry")
 async def put_entry(
     dn: str, attributes: Attributes, connection: AuthenticatedConnection
-) -> ChangedAttributes:
+) -> AttributeNames:
     modlist = addModlist(
         {
             attr: _nonempty_byte_strings(attributes, attr)
