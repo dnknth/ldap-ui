@@ -21,15 +21,14 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[dependency-groups]
+dev = ["httpx>=0.28.1"]
+
 [project.scripts]
 ldap-ui = "ldap_ui.__main__:main"
 
 [project.urls]
 Repository = "https://github.com/dnknth/ldap-ui"
-
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 package-dir = { "" = "backend" }
@@ -43,5 +42,5 @@ where = ["backend"]
 [tool.setuptools.package-data]
 ldap_ui = ["statics/*", "statics/assets/*"]
 
-[dependency-groups]
-dev = ["build>=1.1.1", "httpx>=0.28.1", "twine>=4.0.2"]
+[tool.uv]
+package = true

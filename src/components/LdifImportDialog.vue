@@ -7,21 +7,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import Modal from './ui/Modal.vue';
-import { postLdif } from '../generated/sdk.gen'
+import { ref } from "vue";
+import Modal from "./ui/Modal.vue";
+import { postLdif } from "../generated/sdk.gen";
 
-const
-  ldifData = ref(''),
+const ldifData = ref(""),
   emit = defineEmits<{
-    ok: []
-    'update:modal': []
+    ok: [];
+    "update:modal": [];
   }>();
 
 defineProps<{ modal?: string }>();
 
 function init() {
-  ldifData.value = '';
+  ldifData.value = "";
 }
 
 // Load LDIF from file
@@ -33,8 +32,8 @@ function upload(evt: Event) {
 
   reader.onload = function () {
     ldifData.value = reader.result as string;
-    target.value = '';
-  }
+    target.value = "";
+  };
   reader.readAsText(file);
 }
 
@@ -42,8 +41,8 @@ function upload(evt: Event) {
 async function onOk() {
   if (!ldifData.value) return;
 
-  emit('update:modal');
+  emit("update:modal");
   const response = await postLdif({ body: ldifData.value });
-  if (!response.error) emit('ok');
+  if (!response.error) emit("ok");
 }
 </script>

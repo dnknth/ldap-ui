@@ -30,17 +30,11 @@ BASE_DN = config("BASE_DN", default=None)
 SCHEMA_DN = config("SCHEMA_DN", default=None)
 
 USE_TLS = config(
-    "USE_TLS",
-    cast=lambda x: bool(x),
-    default=LDAP_URL.startswith("ldaps://"),
+    "USE_TLS", cast=lambda x: bool(x), default=LDAP_URL.startswith("ldaps://")
 )
 
 # DANGEROUS: Disable TLS host name verification.
-INSECURE_TLS = config(
-    "INSECURE_TLS",
-    cast=lambda x: bool(x),
-    default=False,
-)
+INSECURE_TLS = config("INSECURE_TLS", cast=lambda x: bool(x), default=False)
 
 #
 # Binding
@@ -54,8 +48,7 @@ def GET_BIND_DN() -> Optional[str]:
     the UI will NOT ask for a login.
     You need to secure it otherwise!
     """
-    if config("BIND_DN", default=None):
-        return config("BIND_DN")
+    return config("BIND_DN", default=None)
 
 
 def GET_BIND_PATTERN(username) -> Optional[str]:

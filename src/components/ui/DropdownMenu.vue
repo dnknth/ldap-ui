@@ -18,8 +18,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import Popover from './Popover.vue';
+import { ref } from "vue";
+import Popover from "./Popover.vue";
 
 const open = ref(false);
 defineProps<{ title?: string }>();
