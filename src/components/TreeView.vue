@@ -2,14 +2,14 @@
   <div class="rounded-md bg-front/[.07] p-4 shadow-md shadow-front/20">
     <ul v-if="tree" class="list-unstyled">
       <li v-for="item in tree.visible()" :key="item.dn" :id="item.dn" :class="item.structuralObjectClass">
-        <span v-for="i in item.level! - tree.level!" class="ml-6" :key="i"></span>
+        <span v-for="i in item.level - tree.level" class="ml-6" :key="i"></span>
         <span v-if="item.hasSubordinates" class="control" @click="toggle(item)"><i :class="'control p-0 fa fa-chevron-circle-' +
           (item.open ? 'down' : 'right')
           "></i></span>
         <span v-else class="mr-4"></span>
 
         <node-label :dn="item.dn" :oc="item.structuralObjectClass" class="tree-link whitespace-nowrap text-front/80"
-          @select-dn="clicked" :class="{ active: activeDn == item.dn }">
+          @select-dn="clicked(item.distinguishedName)" :class="{ active: activeDn == item.dn }">
           <span v-if="!item.level">{{ item.dn }}</span>
         </node-label>
       </li>
@@ -33,6 +33,7 @@ class Node implements TreeItem {
   structuralObjectClass: string;
   open: boolean = false;
   subordinates: Node[] = [];
+  distinguishedName: DN;
 
   constructor(json: TreeItem) {
     this.dn = json.dn;
@@ -43,17 +44,15 @@ class Node implements TreeItem {
       this.subordinates = [];
       this.open = false;
     }
+    this.distinguishedName = new DN(this.dn);
   }
 
-  find(dn: string): Node | undefined {
-    // Primitive recursive search for a DN.
-    // Compares DNs a strings, without any regard for
-    // distinguishedNameMatch rules.
-    // See: https://ldapwiki.com/wiki/DistinguishedNameMatch
-
-    if (this.dn == dn) return this;
-    const suffix = "," + this.dn;
-    if (!dn.endsWith(suffix) || !this.hasSubordinates) return undefined;
+  find(dn?: DN): Node | undefined {
+    // Recursive search for a subordinate DN.
+    // Matching rules are partially supported.
+    if (!dn) return undefined;
+    if (this.distinguishedName.matches(dn)) return this;
+    if (!dn.isSubordinate(this.distinguishedName) || !this.hasSubordinates) return undefined;
     return this.subordinates
       .map((node) => node.find(dn))
       .filter((node) => node)[0];
@@ -61,17 +60,6 @@ class Node implements TreeItem {
 
   get loaded(): boolean {
     return !this.hasSubordinates || this.subordinates.length > 0;
-  }
-
-  parentDns(baseDn: string): string[] {
-    const dns = [];
-    for (let dn = this.dn; ;) {
-      dns.push(dn);
-      const idx = dn.indexOf(",");
-      if (idx == -1 || dn == baseDn) break;
-      dn = dn.substring(idx + 1);
-    }
-    return dns;
   }
 
   visible(): Node[] {
@@ -101,51 +89,52 @@ watch(
     if (!selected) return;
 
     // Special case: Full tree reload
-    if (selected == "-" || selected == "base") {
+    if (selected == "base") {
       await reload("base");
       return;
     }
 
-    // Get all parents of the selected entry in the tree
-    const dn = new DN(selected || tree.value!.dn);
-    const hierarchy = [];
-    for (let node: DN | undefined = dn; node; node = node.parent) {
-      hierarchy.push(node);
-      if (node.toString() == tree.value?.dn) break;
+    let newDn = selected;
+    if (selected.startsWith('-')) {
+      newDn = selected.split(',').slice(1).join(',');
+      await reload(newDn);
     }
 
     // Reveal the selected entry by opening all parents
+    let dn = new DN(newDn);
+    const hierarchy = [dn].concat(dn.parents(tree.value?.distinguishedName));
     hierarchy.reverse();
-    for (let i = 0; i < hierarchy.length; ++i) {
-      const p = hierarchy[i].toString(),
-        node = tree.value?.find(p);
+    for (let p of hierarchy) {
+      const node = tree.value?.find(p);
       if (!node) break;
-      if (!node.loaded) await reload(p);
+      if (!node.loaded) await reload(p.toString());
       node.open = true;
     }
 
     // Reload parent if entry was added, renamed or deleted
-    if (!tree.value?.find(dn.toString())) {
-      await reload(dn.parent!.toString());
-      tree.value!.find(dn.parent!.toString())!.open = true;
+    if (!tree.value?.find(dn)) {
+      await reload(dn.parent?.toString());
+      tree.value!.find(dn.parent)!.open = true;
+      return;
     }
   },
 );
 
-async function clicked(dn: string) {
-  emit("update:activeDn", dn);
+async function clicked(dn: DN) {
+  emit("update:activeDn", dn.toString());
   const item = tree.value?.find(dn);
   if (item && item.hasSubordinates && !item.open) await toggle(item);
 }
 
 // Reload the subtree at entry with given DN
-async function reload(dn: string) {
+async function reload(dn?: string) {
+  if (!dn) return;
   const response = await getTree({ path: { basedn: dn }, client: app?.client });
   if (!response.data) return;
 
   const data = response.data;
   data.sort((a: TreeItem, b: TreeItem) =>
-    a.dn.toLowerCase().localeCompare(b.dn.toLowerCase()),
+    a.dn.toLowerCase().localeCompare(b.dn.toLowerCase())
   );
 
   if (dn == "base") {
@@ -154,7 +143,7 @@ async function reload(dn: string) {
     return;
   }
 
-  const item = tree.value?.find(dn);
+  const item = tree.value?.find(new DN(dn));
   if (item) {
     item.subordinates = data.map((node) => new Node(node));
     item.hasSubordinates = item.subordinates.length > 0;

@@ -155,7 +155,7 @@ async def get_base_entry(connection: AuthenticatedConnection) -> list[TreeItem]:
             settings.BASE_DN, SCOPE_BASE, attrlist=WITH_OPERATIONAL_ATTRS
         ),
     )
-    return [_tree_item(result, settings.BASE_DN)]
+    return [TreeItem.from_entry(result)]
 
 
 @api.get("/tree/{basedn:path}", tags=[Tag.NAVIGATION], operation_id="get_tree")
@@ -163,25 +163,12 @@ async def get_tree(basedn: str, connection: AuthenticatedConnection) -> list[Tre
     "List directory entries below a DN"
 
     return [
-        _tree_item(entry, basedn)
+        TreeItem.from_entry(entry)
         async for entry in results(
             connection,
             connection.search(basedn, SCOPE_ONELEVEL, attrlist=WITH_OPERATIONAL_ATTRS),
         )
     ]
-
-
-def _tree_item(entry: LdapEntry, base_dn: str) -> TreeItem:
-    return TreeItem(
-        dn=entry.dn,
-        structuralObjectClass=entry.attr("structuralObjectClass")[0],
-        hasSubordinates=entry.hasSubordinates,
-        level=_level(entry.dn) - _level(base_dn),
-    )
-
-
-def _level(dn: str) -> int:
-    return len(dn.split(","))
 
 
 @api.get("/entry/{dn:path}", tags=[Tag.EDITING], operation_id="get_entry")
@@ -221,14 +208,17 @@ def _is_binary(entry: LdapEntry, attr: str, schema: SubSchema) -> bool:
     # Octet strings are not used consistently in schemata.
     # Try to decode as text and treat as binary on failure
     attr_type = schema.get_obj(AttributeType, attr)
-    if not attr_type.syntax or attr_type.syntax == OCTET_STRING:  # type: ignore
+    assert attr_type, f"Attribute '{attr}' not found in schema"
+    if not attr_type.syntax or attr_type.syntax == OCTET_STRING:
         try:
             return any(not val.isprintable() for val in entry.attr(attr))
         except UnicodeDecodeError:
             return True
 
     # Check human-readable flag
-    return schema.get_obj(LDAPSyntax, attr_type.syntax).not_human_readable  # type: ignore
+    syntax = schema.get_obj(LDAPSyntax, attr_type.syntax)
+    assert syntax, f"Syntax '{attr_type.syntax}' not found in schema"
+    return syntax.not_human_readable
 
 
 @api.delete(
@@ -429,7 +419,7 @@ async def export_ldif(dn: str, connection: AuthenticatedConnection) -> Response:
     writer = ldif.LDIFWriter(out)
 
     async for entry in results(connection, connection.search(dn, SCOPE_SUBTREE)):
-        writer.unparse(dn, entry.attrs)
+        writer.unparse(entry.dn, entry.attrs)
 
     file_name = dn.split(",")[0].split("=")[1]
     return PlainTextResponse(
@@ -510,7 +500,7 @@ async def list_subtree(
 
     return sorted(
         [
-            _tree_item(entry, root_dn)
+            TreeItem.from_entry(entry)
             async for entry in results(
                 connection,
                 connection.search(
