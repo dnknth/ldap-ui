@@ -148,7 +148,7 @@ watch(
   },
 );
 
-function focus(focused?: string) {
+function focus(focused?: string): void {
   nextTick(() => {
     const input = focused
       ? document.getElementById(focused)
@@ -164,33 +164,33 @@ function focus(focused?: string) {
 }
 
 // Track focus changes
-function onFocus(evt: FocusEvent) {
+function onFocus(evt: FocusEvent): void {
   const el = evt.target as HTMLElement;
   if (el.id && inputTags.includes(el.tagName)) focused.value = el.id;
 }
 
-function newEntry(newEntry: Entry) {
+function newEntry(newEntry: Entry): void {
   entry.value = newEntry;
   emit("update:activeDn");
   focus(addMandatoryRows());
 }
 
-function discardEntry(dn?: string) {
+function discardEntry(dn?: string): void {
   entry.value = undefined;
   emit("update:activeDn", dn);
 }
 
-function addAttribute(attr: string) {
+function addAttribute(attr: string): void {
   entry.value!.attrs[attr] = [""];
   focus(attr + "-0");
 }
 
-function addObjectClass(oc: string) {
+function addObjectClass(oc: string): void {
   entry.value!.attrs.objectClass.push(oc);
   focus(addMandatoryRows() || focused.value);
 }
 
-function updateRow(attr: string, values: string[], index?: number) {
+function updateRow(attr: string, values: string[], index?: number): void {
   entry.value!.attrs[attr] = values;
   if (index !== undefined) focus(attr + "-" + index);
 }
@@ -200,7 +200,7 @@ function addMandatoryRows(): string | undefined {
   must.forEach((attr) => (entry.value!.attrs[attr] = [""]));
   return must.length ? must[0] + "-0" : undefined;
 }
-function showError(error: HttpValidationError) {
+function showError(error: HttpValidationError): void {
   app?.showError(error.detail?.join("\n") || "Operation failed");
 }
 
@@ -228,7 +228,7 @@ async function load(dn?: string, changed?: string[], focused?: string) {
   focus(focused);
 }
 
-function hasChanged(key: string) {
+function hasChanged(key: string): boolean {
   return (entry.value?.changed && entry.value.changed.includes(key)) || false;
 }
 
@@ -288,7 +288,7 @@ async function renameEntry(rdn: string) {
 }
 
 async function deleteEntryByDn(dn: string) {
-  const response = await deleteEntry({ path: { dn } });
+  const response = await deleteEntry({ path: { dn }, client: app?.client });
   if (response.error) {
     showError(response.error);
     return;
@@ -311,7 +311,7 @@ async function changePassword(oldPass: string, newPass: string) {
   }
 }
 
-function attributes(kind: "must" | "may") {
+function attributes(kind: "must" | "may"): string[] {
   const attrs = entry
     .value!.attrs.objectClass.filter((oc) => oc && oc != "top")
     .map((oc) => app?.schema.oc(oc))
@@ -321,7 +321,7 @@ function attributes(kind: "must" | "may") {
   return attrs;
 }
 
-function valid(key: string, valid: boolean) {
+function valid(key: string, valid: boolean): void {
   if (valid) {
     const pos = invalid.value.indexOf(key);
     if (pos >= 0) invalid.value.splice(pos, 1);

@@ -2,15 +2,7 @@
 
 from pydantic import BaseModel
 
-
-class TreeItem(BaseModel):
-    "Entry in the navigation tree"
-
-    dn: str
-    structuralObjectClass: str
-    hasSubordinates: bool
-    level: int
-
+from .ldap_helpers import LdapEntry
 
 Attributes = dict[str, list[str]]
 
@@ -48,3 +40,19 @@ class Range(BaseModel):
     min: int
     max: int
     next: int
+
+
+class TreeItem(BaseModel):
+    "Entry in the navigation tree"
+
+    dn: str
+    structuralObjectClass: str
+    hasSubordinates: bool
+
+    @classmethod
+    def from_entry(cls, entry: LdapEntry):
+        return cls(
+            dn=entry.dn,
+            structuralObjectClass=entry.attr("structuralObjectClass")[0],
+            hasSubordinates=entry.hasSubordinates,
+        )
