@@ -8,7 +8,7 @@
         The following child nodes will be also deleted:
       </p>
       <div v-for="node in subtree" :key="node.dn">
-        <span v-for="i in node.level" class="ml-6" :key="i"></span>
+        <span v-for="i in level(node)" class="ml-6" :key="i"></span>
         <node-label dn="" :oc="node.structuralObjectClass">
           {{ node.dn.split(",")[0] }}
         </node-label>
@@ -20,12 +20,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject } from "vue";
+import { computed, inject, ref } from "vue";
 import Modal from "../ui/Modal.vue";
 import NodeLabel from "../NodeLabel.vue";
 import type { TreeItem } from "../../generated/types.gen";
 import { getSubtree } from "../../generated/sdk.gen";
 import type { Provided } from "../Provided";
+import { DN } from "../schema/schema";
 
 const props = defineProps<{
   dn: string;
@@ -37,6 +38,7 @@ const props = defineProps<{
     ok: [dn: string];
     "update:modal": [];
   }>(),
+  rootDn = computed(() => new DN(props.dn)),
   app = inject<Provided>("app");
 
 // List subordinate elements to be deleted
@@ -48,6 +50,10 @@ async function init() {
   if (response.data) {
     subtree.value = response.data;
   }
+}
+
+function level(item: TreeItem): number {
+  return new DN(item.dn).level - rootDn.value.level - 1;
 }
 
 function onShown() {

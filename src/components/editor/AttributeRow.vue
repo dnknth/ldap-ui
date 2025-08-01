@@ -189,35 +189,35 @@ onMounted(async () => {
 
 onUpdated(validate);
 
-function validate() {
+function validate(): void {
   valid.value =
     !missing.value &&
     (!illegal.value || empty.value) &&
     props.values.every(unique);
 }
 
-function update(evt: Event) {
+function update(evt: Event): void {
   const target = evt.target as HTMLInputElement;
   const value = target.value,
     index = +target.id.split("-").slice(-1).pop()!;
   updateValue(index, value);
 }
 
-function updateValue(index: number, value: string) {
+function updateValue(index: number, value: string): void {
   const values = props.values.slice();
   values[index] = value;
   emit("update", props.attr.name!, values);
 }
 
 // Add an empty row in the entry form
-function addRow() {
+function addRow(): void {
   const values = props.values.slice();
   if (!values.includes("")) values.push("");
   emit("update", props.attr.name!, values, values.length - 1);
 }
 
 // Remove a row from the entry form
-function removeObjectClass(index: number) {
+function removeObjectClass(index: number): void {
   const values = props.values
     .slice(0, index)
     .concat(props.values.slice(index + 1));
@@ -225,26 +225,26 @@ function removeObjectClass(index: number) {
 }
 
 // human-readable dates
-function dateString(dt: string) {
+function dateString(dt: string): string {
   return generalizedTime(dt).toLocaleString(undefined, dateFormat);
 }
 
 // Is the given value a structural object class?
-function isStructural(val: string) {
-  return props.attr.name == "objectClass" && app?.schema.oc(val)?.structural;
+function isStructural(val: string): boolean {
+  return props.attr.name == "objectClass" && (app?.schema.oc(val)?.structural || false);
 }
 
 // Is the given value an auxillary object class?
-function isAux(val: string) {
+function isAux(val: string): boolean {
   const oc = app?.schema.oc(val);
-  return props.attr.name == "objectClass" && oc && !oc.structural;
+  return props.attr.name == "objectClass" && (!!oc && !oc.structural);
 }
 
-function duplicate(index: number) {
+function duplicate(index: number): boolean {
   return !unique(props.values[index], index, props.values);
 }
 
-function multiple(index: number) {
+function multiple(index: number): boolean {
   return (
     index == 0 &&
     !props.attr.single_value &&
@@ -254,7 +254,7 @@ function multiple(index: number) {
 }
 
 // auto-complete form values
-function search(evt: Event) {
+function search(evt: Event): void {
   const target = evt.target as HTMLInputElement;
   elementId.value = target.id;
   const q = target.value;
@@ -262,7 +262,7 @@ function search(evt: Event) {
 }
 
 // use an auto-completion choice
-function complete(dn: string) {
+function complete(dn: string): void {
   const index = +elementId.value!.split("-").slice(-1).pop()!;
   const values = props.values.slice();
   values[index] = dn;

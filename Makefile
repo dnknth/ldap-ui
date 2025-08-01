@@ -30,7 +30,8 @@ node_modules: package.json
 	touch $@
 
 clean:
-	rm -rf build dist $(SITE) __pycache__
+	rm -rf build dist $(SITE) backend/ldap_ui.egg-info
+	find backend -name __pycache__ -exec rm -rf {} \;
 
 tidy: clean
 	rm -rf .venv node_modules

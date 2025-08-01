@@ -32,56 +32,69 @@ export function generalizedTime(dt: string): Date {
 let schema: LdapSchema;
 
 export class RDN {
-  readonly text: string;
-  readonly attrName: string;
+  readonly attr: Attribute;
   readonly value: string;
 
   constructor(value: string) {
-    this.text = value;
     const parts = value.split("=");
-    this.attrName = parts[0].trim();
+    this.attr = schema.attr(parts[0].trim())!;
     this.value = parts[1].trim();
   }
 
-  toString() {
-    return this.text;
+  /// Normalize the RDN representaion
+  toString(): string {
+    return this.attr.name + "=" + this.attr.normalizer(this.value);
   }
 
-  eq(other?: RDN) {
-    return (
-      other !== undefined &&
-      this.attr !== undefined &&
-      this.attr.eq(other.attr) &&
-      this.attr.matcher(this.value, other.value)
-    );
-  }
-
-  get attr() {
-    return schema.attr(this.attrName);
+  matches(other?: RDN): boolean {
+    return other !== undefined && this.toString() == other.toString();
   }
 }
 
 export class DN {
-  readonly text: string;
   readonly rdn: RDN;
   readonly parent?: DN;
 
   constructor(value: string) {
-    this.text = value;
     const parts = value.split(",");
     this.rdn = new RDN(parts[0]);
     this.parent =
       parts.length == 1 ? undefined : new DN(value.slice(parts[0].length + 1));
   }
 
-  toString() {
-    return this.text;
+  /// Normalize the DN representaion
+  toString(): string {
+    const rdnString = this.rdn.toString();
+    return this.parent ? rdnString + "," + this.parent.toString() : rdnString;
   }
 
-  eq(other?: DN): boolean {
-    if (!other || !this.rdn.eq(other.rdn)) return false;
+  get level(): number {
+    return this.parent ? this.parent.level + 1 : 0;
+  }
+
+  // See: https://ldapwiki.com/wiki/Wiki.jsp?page=DistinguishedNameMatch
+  matches(other?: DN): boolean {
+    if (!other || !this.rdn.matches(other.rdn)) return false;
     if (!this.parent && !other.parent) return true;
-    return !!this.parent && this.parent.eq(other.parent!);
+    return !!this.parent && this.parent.matches(other.parent!);
+  }
+
+  isSubordinate(ancestor: DN): boolean {
+    let dn: DN | undefined = this.parent;
+    while (dn) {
+      if (dn.matches(ancestor)) return true;
+      dn = dn.parent;
+    }
+    return false;
+  }
+
+  parents(base?: DN): DN[] {
+    const dns = [];
+    for (let dn = this.parent; dn; dn = dn.parent) {
+      dns.push(dn);
+      if (!dn.parent || dn.matches(base)) break;
+    }
+    return dns;
   }
 }
 
@@ -104,10 +117,10 @@ export class ObjectClass extends Element {
     Object.assign(this, json);
   }
 
-  get structural() {
+  get structural(): boolean {
     return this.kind == "structural";
   }
-  get aux() {
+  get aux(): boolean {
     return this.kind == "auxiliary";
   }
 
@@ -129,7 +142,7 @@ export class ObjectClass extends Element {
     return result;
   }
 
-  toString() {
+  toString(): string {
     return this.name!;
   }
 
@@ -138,18 +151,6 @@ export class ObjectClass extends Element {
     return parent.sup ? parent : undefined;
   }
 }
-
-const matchRules: { [key: string]: (a: string, b: string) => boolean } = {
-  // See: https://ldap.com/matching-rules/
-  distinguishedNameMatch: (a: string, b: string) => new DN(a).eq(new DN(b)),
-  caseIgnoreIA5Match: (a: string, b: string) =>
-    a.toLowerCase() == b.toLowerCase(),
-  caseIgnoreMatch: (a: string, b: string) => a.toLowerCase() == b.toLowerCase(),
-  // generalizedTimeMatch: ...
-  integerMatch: (a: string, b: string) => +a == +b,
-  numericStringMatch: (a: string, b: string) => +a == +b,
-  octetStringMatch: (a: string, b: string) => a == b,
-};
 
 export class Attribute extends Element {
   desc?: string;
@@ -161,6 +162,17 @@ export class Attribute extends Element {
   substr?: string; // possibly null in JSON
   syntax?: string; // possibly null in JSON
   usage?: string;
+
+  normalizers: { [key: string]: (a: string) => string | number } = {
+    // See: https://ldap.com/matching-rules/
+    distinguishedNameMatch: (a) => new DN(a).toString(),
+    caseIgnoreIA5Match: (a) => a.toLowerCase(),
+    caseIgnoreMatch: (a) => a.toLowerCase(),
+    generalizedTimeMatch: (a) => generalizedTime(a).toISOString(),
+    integerMatch: (a) => +a,
+    numericStringMatch: (a) => +a,
+    octetStringMatch: (a) => a,
+  };
 
   constructor(json: object) {
     super();
@@ -181,31 +193,28 @@ export class Attribute extends Element {
     );
   }
 
-  toString() {
+  toString(): string {
     return this.name!;
   }
 
-  get matcher() {
+  get normalizer(): (a: string) => string | number {
     return (
-      (this.equality ? matchRules[this.equality] : undefined) ||
-      matchRules.octetStringMatch
+      this.normalizers[this.equality || "octetStringMatch"] ||
+      this.normalizers.octetStringMatch
     );
   }
 
-  eq(other?: Attribute) {
-    return other && this.oid == other.oid;
-  }
-
-  get binary() {
+  get binary(): boolean | undefined {
     if (this.equality == "octetStringMatch") return undefined;
     return !!this.$syntax?.not_human_readable;
   }
 
-  get $syntax() {
-    return schema.syntaxes.get(this.syntax!);
+  get $syntax(): Syntax | undefined {
+    if (!this.syntax) return undefined;
+    return schema.syntaxes.get(this.syntax);
   }
 
-  get $super() {
+  get $super(): Attribute | undefined {
     const parent = Object.getPrototypeOf(this);
     return parent.sup ? parent : undefined;
   }
@@ -220,19 +229,18 @@ class Syntax {
     Object.assign(this, json);
   }
 
-  toString() {
+  toString(): string {
     return this.desc!;
   }
 }
 
-export class LdapSchema extends Object {
+export class LdapSchema {
   readonly attributes: Array<Attribute>;
   readonly objectClasses: Map<string, ObjectClass>;
   readonly syntaxes: Map<string, Syntax>;
   readonly attributesByName: Map<string, Attribute>;
 
   constructor(json: Schema) {
-    super();
     this.syntaxes = new Map(
       Object.entries(json.syntaxes).map(([oid, obj]) => [oid, new Syntax(obj)]),
     );
@@ -271,7 +279,7 @@ export class LdapSchema extends Object {
     return this.objectClasses.get(name?.toLowerCase() || "");
   }
 
-  search(q: string) {
+  search(q: string): Attribute[] {
     return this.attributes.filter((attr) =>
       attr.names?.some((name) =>
         name.toLowerCase().startsWith(q.toLowerCase()),

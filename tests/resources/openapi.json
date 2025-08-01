@@ -405,10 +405,6 @@
             "title": "Hassubordinates",
             "type": "boolean"
           },
-          "level": {
-            "title": "Level",
-            "type": "integer"
-          },
           "structuralObjectClass": {
             "title": "Structuralobjectclass",
             "type": "string"
@@ -417,8 +413,7 @@
         "required": [
           "dn",
           "structuralObjectClass",
-          "hasSubordinates",
-          "level"
+          "hasSubordinates"
         ],
         "title": "TreeItem",
         "type": "object"
@@ -466,17 +461,11 @@
         "title": "ValidationError",
         "type": "object"
       }
-    },
-    "securitySchemes": {
-      "HTTPBasic": {
-        "scheme": "basic",
-        "type": "http"
-      }
     }
   },
   "info": {
     "title": "LDAP UI",
-    "version": "0.10.3"
+    "version": "0.11.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -511,6 +500,22 @@
               "title": "Dn",
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
           }
         ],
         "responses": {
@@ -528,11 +533,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Delete Blob",
         "tags": [
           "Editing"
@@ -568,6 +568,22 @@
               "title": "Dn",
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
           }
         ],
         "requestBody": {
@@ -595,11 +611,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Put Blob",
         "tags": [
           "Editing"
@@ -618,6 +629,22 @@
             "schema": {
               "title": "Dn",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -646,11 +673,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Change Password",
         "tags": [
           "Editing"
@@ -669,6 +691,22 @@
             "schema": {
               "title": "Dn",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -706,11 +744,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Check Password",
         "tags": [
           "Editing"
@@ -729,6 +762,22 @@
               "title": "Dn",
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
           }
         ],
         "responses": {
@@ -746,11 +795,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Delete Entry",
         "tags": [
           "Editing"
@@ -767,6 +811,22 @@
             "schema": {
               "title": "Dn",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -792,11 +852,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Get Entry",
         "tags": [
           "Editing"
@@ -812,6 +867,22 @@
             "schema": {
               "title": "Dn",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -858,11 +929,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Post Entry",
         "tags": [
           "Editing"
@@ -878,6 +944,22 @@
             "schema": {
               "title": "Dn",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -924,11 +1006,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Put Entry",
         "tags": [
           "Editing"
@@ -939,6 +1016,24 @@
       "post": {
         "description": "Import LDIF",
         "operationId": "post_ldif",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -965,11 +1060,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Upload Ldif",
         "tags": [
           "Editing"
@@ -988,6 +1078,22 @@
             "schema": {
               "title": "Attribute",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -1013,11 +1119,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Attribute Range",
         "tags": [
           "Misc"
@@ -1036,6 +1137,22 @@
             "schema": {
               "title": "Dn",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -1065,11 +1182,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Rename Entry",
         "tags": [
           "Editing"
@@ -1080,6 +1192,24 @@
       "get": {
         "description": "Dump the LDAP schema as JSON",
         "operationId": "get_schema",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -1090,13 +1220,18 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Ldap Schema",
         "tags": [
           "Misc"
@@ -1115,6 +1250,22 @@
             "schema": {
               "title": "Query",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -1144,11 +1295,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Search",
         "tags": [
           "Navigation"
@@ -1167,6 +1313,22 @@
             "schema": {
               "title": "Root Dn",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -1196,11 +1358,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "List Subtree",
         "tags": [
           "Misc"
@@ -1219,6 +1376,22 @@
             "schema": {
               "title": "Basedn",
               "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -1248,11 +1421,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Get Tree",
         "tags": [
           "Navigation"
@@ -1263,6 +1431,24 @@
       "get": {
         "description": "DN of the current user",
         "operationId": "get_who_am_i",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -1274,13 +1460,18 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBasic": []
-          }
-        ],
         "summary": "Whoami",
         "tags": [
           "Misc"
