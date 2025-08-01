@@ -136,14 +136,14 @@ function showException(msg: string) {
   const span = document.createElement("span");
   span.innerHTML = msg.replace("\n", " ");
   const titles = span.getElementsByTagName("title");
-  for (let i = 0; i < titles.length; ++i) {
-    span.removeChild(titles[i]);
+  for (let title of titles) {
+    span.removeChild(title);
   }
   let text = "";
   const headlines = span.getElementsByTagName("h1");
-  for (let i = 0; i < headlines.length; ++i) {
-    text = text + headlines[i].textContent + ": ";
-    span.removeChild(headlines[i]);
+  for (let headline of headlines) {
+    text = text + headline.textContent + ": ";
+    span.removeChild(headline);
   }
   showError(text + " " + span.textContent);
 }
