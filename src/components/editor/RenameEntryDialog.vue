@@ -41,6 +41,6 @@ function onOk() {
 
 function ok(key: string) {
   const rdn = props.entry.dn.split("=")[0];
-  return key != rdn && !props.entry.attrs[key].every((val: unknown) => !val);
+  return key != rdn && !props.entry.attrs[key]!.every((val: unknown) => !val);
 }
 </script>

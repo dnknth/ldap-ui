@@ -49,7 +49,7 @@
     <form id="entry" class="space-y-4 my-4" @submit.prevent="save" @reset="load(entry!.dn, undefined, undefined)"
       @focusin="onFocus">
       <attribute-row v-for="key in keys" :key="key" :base-dn="props.baseDn" :attr="app?.schema.attr(key)!"
-        :entry="entry" :values="entry.attrs[key]" :changed="hasChanged(key)" :may="attributes('may').includes(key)"
+        :entry="entry" :values="entry.attrs[key]!" :changed="hasChanged(key)" :may="attributes('may').includes(key)"
         :must="attributes('must').includes(key)" @update="updateRow" @reload-form="load" @valid="valid(key, $event)"
         @show-modal="modal = $event" @show-attr="emit('show-attr', $event)" @show-oc="emit('show-oc', $event)" />
 
@@ -125,7 +125,7 @@ const inputTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"],
     return keys;
   }),
   structural = computed(() => {
-    const oc = entry.value?.attrs.objectClass
+    const oc = entry.value?.attrs.objectClass!
       .map((oc) => app?.schema.oc(oc as string))
       .filter((oc) => oc && oc.structural)[0];
     return oc ? oc.name! : "";
@@ -186,7 +186,7 @@ function addAttribute(attr: string): void {
 }
 
 function addObjectClass(oc: string): void {
-  entry.value!.attrs.objectClass.push(oc);
+  entry.value!.attrs.objectClass!.push(oc);
   focus(addMandatoryRows() || focused.value);
 }
 
@@ -224,7 +224,7 @@ async function load(dn?: string, changed?: string[], focused?: string) {
   entry.value!.changed = changed || [];
   entry.value!.isNew = false;
 
-  document.title = dn.split(",")[0];
+  document.title = dn.split(",")[0]!;
   focus(focused);
 }
 
@@ -312,8 +312,8 @@ async function changePassword(oldPass: string, newPass: string) {
 }
 
 function attributes(kind: "must" | "may"): string[] {
-  const attrs = entry
-    .value!.attrs.objectClass.filter((oc) => oc && oc != "top")
+  const attrs = entry.value!.attrs.objectClass!
+    .filter((oc) => oc && oc != "top")
     .map((oc) => app?.schema.oc(oc))
     .flatMap((oc) => (oc ? oc.$collect(kind) : []))
     .filter(unique);

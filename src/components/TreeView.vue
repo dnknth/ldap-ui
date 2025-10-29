@@ -138,7 +138,7 @@ async function reload(dn?: string) {
   );
 
   if (dn == "base") {
-    tree.value = new Node(data[0]);
+    tree.value = new Node(data[0]!);
     await toggle(tree.value);
     return;
   }

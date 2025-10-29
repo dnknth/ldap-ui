@@ -58,7 +58,7 @@ watch(
     }
 
     if (results.value.length == 1) {
-      done(results.value[0].dn);
+      done(results.value[0]!.dn);
       return;
     }
 

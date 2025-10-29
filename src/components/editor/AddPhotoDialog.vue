@@ -36,7 +36,7 @@ async function onOk(evt: Event) {
 
   const response = await putBlob({
     path: { attr: props.attr!, index: 0, dn: props.dn },
-    body: { blob: target.files[0] },
+    body: { blob: target.files[0]! },
     client: app?.client,
   });
 
