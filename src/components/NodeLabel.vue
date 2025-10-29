@@ -33,8 +33,8 @@ const props = defineProps<{
   ),
   // Shorten a DN for readability
   label = computed(() =>
-    (props.dn || "")
-      .split(",")[0]
+    props.dn
+      .split(",")[0]!
       .replace(/^cn=/, "")
       .replace(/^krbPrincipalName=/, ""),
   ),

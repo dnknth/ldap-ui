@@ -39,7 +39,7 @@ function onOk() {
   }
 
   const parts = dn.value.split(","),
-    rdnpart = parts[0].split("="),
+    rdnpart = parts[0]?.split("=") ?? [],
     rdn = rdnpart[0];
 
   if (rdnpart.length != 2) {
@@ -49,7 +49,7 @@ function onOk() {
 
   emit("update:modal");
   const entry = JSON.parse(JSON.stringify(props.entry));
-  entry.attrs[rdn] = [rdnpart[1]];
+  entry.attrs[rdn!] = [rdnpart[1]];
   entry.dn = dn.value;
   entry.isNew = true;
   emit("ok", entry);

@@ -78,7 +78,7 @@ function onOk() {
 function rdns() {
   if (!objectClass.value) return [];
   const ocs = oc.value?.$collect("must") || [];
-  if (ocs.length == 1) rdn.value = ocs[0];
+  if (ocs.length == 1) rdn.value = ocs[0]!;
   return ocs;
 }
 </script>
