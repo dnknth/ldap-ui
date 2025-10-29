@@ -73,7 +73,7 @@ watch(selected, (pos) => {
   for (const child of items.value.children) {
     child.classList.remove("selected");
   }
-  if (pos != undefined) items.value.children[pos].classList.add("selected");
+  if (pos != undefined) items.value.children[pos]!.classList.add("selected");
 });
 
 watch(isOutside, (outside) => {

@@ -27,7 +27,7 @@ const props = defineProps<{
   available = computed(() =>
     Array.from(app?.schema.objectClasses.values() || [])
       .filter(
-        (oc) => oc.aux && !props.entry.attrs.objectClass.includes(oc.name!),
+        (oc) => oc.aux && !props.entry.attrs.objectClass?.includes(oc.name!),
       )
       .map((oc) => oc.name),
   );

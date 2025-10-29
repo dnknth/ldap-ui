@@ -36,7 +36,7 @@ function upload(evt: Event) {
     ldifData.value = reader.result as string;
     target.value = "";
   };
-  reader.readAsText(file);
+  reader.readAsText(file!);
 }
 
 // Import LDIF

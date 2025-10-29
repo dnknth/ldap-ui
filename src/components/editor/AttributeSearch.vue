@@ -23,7 +23,7 @@ const props = defineProps<{
       (props.query ?? "").trim() != "" &&
       results.value &&
       results.value.length > 0 &&
-      !(results.value.length == 1 && props.query == results.value[0].name),
+      !(results.value.length == 1 && props.query == results.value[0]?.name),
   ),
   emit = defineEmits<{ done: [attr: string] }>();
 
