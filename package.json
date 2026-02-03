@@ -19,7 +19,7 @@
     "vue": "latest"
   },
   "devDependencies": {
-    "@hey-api/openapi-ts": "latest",
+    "@hey-api/openapi-ts": "^0.88.2",
     "@tsconfig/node24": "latest",
     "@types/node": "latest",
     "@vitejs/plugin-vue": "latest",
@@ -31,7 +31,7 @@
     "eslint-plugin-vue": "latest",
     "npm-run-all2": "latest",
     "prettier": "latest",
-    "tailwindcss": "^3.4",
+    "tailwindcss": "^3.4.19",
     "typescript": "latest",
     "vite": "latest",
     "vite-plugin-compression": "latest",

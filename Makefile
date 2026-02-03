@@ -22,11 +22,11 @@ deploy: clean $(SITE)
 	rsync -a --delete $(SITE)/ mx:/opt/ldap-ui/venv/lib/python3.12/site-packages/ldap_ui/statics/
 
 $(SITE): node_modules
-	npm audit
-	npm run build
+	pnpm audit
+	pnpm run build
 
 node_modules: package.json
-	npm install
+	pnpm install
 	touch $@
 
 clean:
