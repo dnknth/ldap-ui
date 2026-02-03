@@ -2,8 +2,6 @@
 
 SITE = backend/ldap_ui/statics
 VERSION = $(shell fgrep __version__ backend/ldap_ui/__init__.py | cut -d'"' -f2)
-ARCH = $(shell docker run --rm alpine uname -m)
-TAG = $(VERSION)-$(subst aarch64,arm64,$(ARCH))
 IMAGE = dnknth/ldap-ui
 
 debug: $(SITE) .env
@@ -31,21 +29,14 @@ node_modules: package.json
 
 clean:
 	rm -rf build dist $(SITE) backend/ldap_ui.egg-info
-	find backend -name __pycache__ -exec rm -rf {} \;
+	-find backend -name __pycache__ -exec rm -rf {} \;
 
 tidy: clean
 	rm -rf .venv node_modules
 
-image:
-	docker build --no-cache -t $(IMAGE):$(TAG) .
-
-push: image
-	docker push $(IMAGE):$(TAG)
-	- docker pushrm $(IMAGE)
-
-manifest:
-	docker manifest create $(IMAGE) \
-		--amend $(IMAGE):$(VERSION)-x86_64 \
-		--amend $(IMAGE):$(VERSION)-arm64
-	docker manifest push --purge $(IMAGE)
-	docker compose pull
+# See: https://docs.docker.com/build/building/multi-platform/#multiple-native-nodes
+push:
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		-t $(IMAGE):$(VERSION) -t $(IMAGE):latest .
+	# docker pushrm $(IMAGE)
