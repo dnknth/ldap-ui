@@ -19,7 +19,7 @@
     "vue": "latest"
   },
   "devDependencies": {
-    "@hey-api/openapi-ts": "^0.88.2",
+    "@hey-api/openapi-ts": "^0.92.3",
     "@tsconfig/node24": "latest",
     "@types/node": "latest",
     "@vitejs/plugin-vue": "latest",
