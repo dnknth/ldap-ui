@@ -31,7 +31,7 @@
     "eslint-plugin-vue": "latest",
     "npm-run-all2": "latest",
     "prettier": "latest",
-    "tailwindcss": "^3.4.19",
+    "tailwindcss": "^4.1.18",
     "typescript": "latest",
     "vite": "latest",
     "vite-plugin-compression": "latest",
