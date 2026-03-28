@@ -118,7 +118,7 @@
       "Body_put_blob": {
         "properties": {
           "blob": {
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "Blob",
             "type": "string"
           }
@@ -430,6 +430,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [
@@ -465,7 +472,7 @@
   },
   "info": {
     "title": "LDAP UI",
-    "version": "0.11.0"
+    "version": "0.12.6"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -1034,17 +1041,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "title": "Ldif",
-                "type": "string"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "204": {
             "description": "Successful Response"

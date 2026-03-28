@@ -8,7 +8,7 @@
     <div class="w-3/4">
       <div v-for="(val, index) in values" :key="index">
         <span v-if="isStructural(val)" @click="emit('show-modal', 'add-object-class')" tabindex="-1"
-          class="add-btn control font-bold" title="Add object class…">⊕</span>
+          class="add-btn control font-bold" title="Add object class…" accesskey="o">⊕</span>
         <span v-else-if="isAux(val)" @click="removeObjectClass(index)" class="remove-btn control"
           :title="'Remove ' + val">⊖</span>
         <span v-else-if="password" class="fa fa-question-circle control" @click="emit('show-modal', 'change-password')"
@@ -38,13 +38,13 @@
         </span>
         <input v-else :value="values[index]" :id="attr + '-' + index" :type="type" autocomplete="off"
           class="w-[90%] glyph outline-none bg-back border-x-0 border-t-0 border-b border-solid border-front/20 focus:border-primary px-1"
+          :placeholder="placeholder" :disabled="disabled" :title="time ? dateString(val) : ''" @input="update"
           :class="{
             structural: isStructural(val),
             auto: defaultValue,
             illegal: (illegal && !empty) || duplicate(index),
-          }" :placeholder="placeholder" :disabled="disabled" :title="time ? dateString(val) : ''" @input="update"
+          }"
           @focusin="query = ''" @keyup="search" @keyup.esc="query = ''" />
-
         <i v-if="attr.name == 'objectClass'" class="cursor-pointer fa fa-info-circle" @click="emit('show-oc', val)"></i>
       </div>
       <search-results silent v-if="completable && elementId" @select-dn="complete" :for="elementId" :query="query"
@@ -57,11 +57,11 @@
 
 <script setup lang="ts">
 import { Attribute, generalizedTime } from "../schema/schema";
-import { computed, inject, onMounted, onUpdated, ref, watch } from "vue";
+import { computed, onMounted, onUpdated, ref, watch } from "vue";
 import AttributeSearch from "./AttributeSearch.vue";
-import type { Provided } from "../Provided";
 import SearchResults from "../SearchResults.vue";
 import ToggleButton from "../ui/ToggleButton.vue";
+import { state } from "../../state";
 import { getRange, deleteBlob } from "../../generated/sdk.gen";
 import type { Entry } from "@/generated";
 
@@ -100,7 +100,6 @@ const dateFormat: Intl.DateTimeFormatOptions = {
     may: boolean;
     changed: boolean;
   }>(),
-  app = inject<Provided>("app"),
   valid = ref(true),
   // Range auto-completion
   autoFilled = ref<string>(),
@@ -171,10 +170,7 @@ onMounted(async () => {
   )
     return;
 
-  const response = await getRange({
-    path: { attribute: props.attr.name! },
-    client: app?.client,
-  });
+  const response = await getRange({ path: { attribute: props.attr.name! }});
   if (!response.data) return;
 
   const range = response.data;
@@ -231,12 +227,12 @@ function dateString(dt: string): string {
 
 // Is the given value a structural object class?
 function isStructural(val: string): boolean {
-  return props.attr.name == "objectClass" && (app?.schema.oc(val)?.structural || false);
+  return props.attr.name == "objectClass" && (state.schema?.oc(val)?.structural || false);
 }
 
 // Is the given value an auxillary object class?
 function isAux(val: string): boolean {
-  const oc = app?.schema.oc(val);
+  const oc = state.schema?.oc(val);
   return props.attr.name == "objectClass" && (!!oc && !oc.structural);
 }
 
@@ -266,15 +262,15 @@ function complete(dn: string): void {
   const index = +elementId.value!.split("-").slice(-1).pop()!;
   const values = props.values.slice();
   values[index] = dn;
+  values.push("");
   query.value = "";
-  emit("update", props.attr.name!, values);
+  emit("update", props.attr.name!, values, index + 1);
 }
 
 // remove an image
 async function doDeleteBlob(index: number) {
   const response = await deleteBlob({
     path: { attr: props.attr.name!, index, dn: props.entry.dn },
-    client: app?.client,
   });
   if (!response.error) emit("reload-form", props.entry.dn, [props.attr.name!]);
 }

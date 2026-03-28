@@ -2,15 +2,15 @@
   <div class="rounded-md bg-front/[.07] p-4 shadow-md shadow-front/20">
     <ul v-if="tree" class="list-unstyled">
       <li v-for="item in tree.visible()" :key="item.dn" :id="item.dn" :class="item.structuralObjectClass">
-        <span v-for="i in item.level - tree.level" class="ml-6" :key="i"></span>
-        <span v-if="item.hasSubordinates" class="control" @click="toggle(item)"><i :class="'control p-0 fa fa-chevron-circle-' +
-          (item.open ? 'down' : 'right')
-          "></i></span>
+        <span v-for="i in item.distinguishedName.level - tree.distinguishedName.level" class="ml-6" :key="i"></span>
+        <span v-if="item.hasSubordinates" class="control" @click="toggle(item)">
+          <i :class="'control p-0 fa fa-chevron-circle-' + (item.open ? 'down' : 'right')"></i>
+        </span>
         <span v-else class="mr-4"></span>
 
-        <node-label :dn="item.dn" :oc="item.structuralObjectClass" class="tree-link whitespace-nowrap text-front/80"
+        <node-label :dn="item.dn" :key="item.dn" :oc="item.structuralObjectClass" class="tree-link whitespace-nowrap text-front/80"
           @select-dn="clicked(item.distinguishedName)" :class="{ active: activeDn == item.dn }">
-          <span v-if="!item.level">{{ item.dn }}</span>
+          <span v-if="!item.distinguishedName.level">{{ item.dn }}</span>
         </node-label>
       </li>
     </ul>
@@ -18,17 +18,15 @@
 </template>
 
 <script setup lang="ts">
-import { inject } from "vue";
 import { DN } from "./schema/schema";
 import { onMounted, ref, watch } from "vue";
 import NodeLabel from "./NodeLabel.vue";
+import { state } from "../state";
 import type { TreeItem } from "../generated/types.gen";
 import { getTree } from "../generated/sdk.gen";
-import type { Provided } from "./Provided";
 
 class Node implements TreeItem {
   dn: string;
-  level: number;
   hasSubordinates: boolean;
   structuralObjectClass: string;
   open: boolean = false;
@@ -37,7 +35,6 @@ class Node implements TreeItem {
 
   constructor(json: TreeItem) {
     this.dn = json.dn;
-    this.level = this.dn.split(",").length;
     this.hasSubordinates = json.hasSubordinates;
     this.structuralObjectClass = json.structuralObjectClass;
     if (this.hasSubordinates) {
@@ -73,23 +70,21 @@ class Node implements TreeItem {
 const props = defineProps<{ activeDn?: string }>(),
   tree = ref<Node>(),
   emit = defineEmits<{
-    "base-dn": [dn?: string];
     "update:activeDn": [dn: string];
-  }>(),
-  app = inject<Provided>("app");
+  }>();
 
 onMounted(async () => {
   await reload("base");
-  emit("base-dn", tree.value?.dn);
+  state.baseDn = tree.value?.dn;
 });
 
 watch(
   () => props.activeDn,
   async (selected) => {
-    if (!selected) return;
+    if (!selected || !state.schema) return;
 
     // Special case: Full tree reload
-    if (selected == "base") {
+    if (selected == "base" || selected == "-") {
       await reload("base");
       return;
     }
@@ -129,7 +124,7 @@ async function clicked(dn: DN) {
 // Reload the subtree at entry with given DN
 async function reload(dn?: string) {
   if (!dn) return;
-  const response = await getTree({ path: { basedn: dn }, client: app?.client });
+  const response = await getTree({ path: { basedn: dn }});
   if (!response.data) return;
 
   const data = response.data;
