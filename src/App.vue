@@ -1,34 +1,24 @@
 <template>
-  <div id="app" v-if="user">
-    <nav-bar v-model:treeOpen="treeOpen" :dn="activeDn" :base-dn="baseDn" :user="user" @show-modal="modal = $event"
-      @select-dn="activeDn = $event" @show-oc="oc = $event" />
-
+  <div id="app">
+    <nav-bar v-model:treeOpen="treeOpen" v-model:modal="modal" v-model:oc="oc" v-model:activeDn="activeDn" />
     <ldif-import-dialog v-model:modal="modal" @ok="activeDn = '-'" />
 
     <div class="flex container">
+      <!-- left column -->
       <div class="space-y-4">
-        <!-- left column -->
-        <tree-view v-model:activeDn="activeDn" v-show="treeOpen" @base-dn="baseDn = $event" />
-        <object-class-card v-model="oc" @show-attr="attr = $event" @show-oc="oc = $event" />
-        <attribute-card v-model="attr" @show-attr="attr = $event" />
+        <tree-view v-model:activeDn="activeDn" v-show="treeOpen" />
+        <object-class-card v-model="oc" @show-attr="attr = $event" />
+        <attribute-card v-model="attr" />
       </div>
 
+      <!-- main editor -->
       <div class="flex-auto mt-4">
-        <!-- main editing area -->
-        <transition name="fade"><!-- Notifications -->
-          <div v-if="error" :class="error.cssClass"
-            class="rounded mx-4 mb-4 p-3 border border-front/70 text-front/70 dark:text-back/70">
-            {{ error.msg }}
-            <span class="float-right control" @click="error = undefined">✖</span>
-          </div>
-        </transition>
-
-        <entry-editor v-model:activeDn="activeDn" :user="user" @show-attr="attr = $event" @show-oc="oc = $event" />
+        <notification v-model:alert="state.alert" />
+        <entry-editor v-model:activeDn="activeDn" @show-attr="attr = $event" @show-oc="oc = $event" />
       </div>
     </div>
 
-    <div v-if="false">
-      <!-- Not rendered, prevents color pruning -->
+    <div v-if="false"><!-- Not rendered, prevents color pruning -->
       <span class="text-primary bg-primary"></span>
       <span class="text-back bg-back"></span>
       <span class="text-danger bg-danger"></span>
@@ -39,67 +29,22 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, provide, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import AttributeCard from "./components/schema/AttributeCard.vue";
 import EntryEditor from "./components/editor/EntryEditor.vue";
-import { LdapSchema } from "./components/schema/schema";
 import LdifImportDialog from "./components/LdifImportDialog.vue";
 import NavBar from "./components/NavBar.vue";
+import Notification from "./components/Notification.vue";
 import ObjectClassCard from "./components/schema/ObjectClassCard.vue";
-import type { Provided } from "./components/Provided";
 import TreeView from "./components/TreeView.vue";
-import { getSchema, getWhoAmI } from "./generated/sdk.gen";
-import { createClient } from "./generated/client";
+import { state } from "./state";
 
-interface Error {
-  counter: number;
-  cssClass: string;
-  msg: string;
-}
-
-const // Authentication
-  user = ref<string>(), // logged in user
-  baseDn = ref<string>(),
-  // Components
+const
   treeOpen = ref(true), // Is the tree visible?
   activeDn = ref<string>(), // currently active DN in the editor
-  modal = ref<string>(), // modal popup
-  // Alerts
-  error = ref<Error>(), // status alert
-  // LDAP schema
-  schema = ref<LdapSchema>(),
   oc = ref<string>(), // objectClass info in side panel
   attr = ref<string>(), // attribute info in side panel
-  // Adjust the base URL of the API client for relative mounts like /ldap
-  client = createClient({ baseUrl: window.location.href }),
-  // Helpers for components
-  provided: Provided = {
-    get schema() {
-      return schema.value!;
-    },
-    showInfo,
-    showError,
-    showException,
-    showWarning,
-    client,
-  };
-
-provide("app", provided);
-
-onMounted(async () => {
-  // Runs on page load
-  // Get the DN of the current user
-  const whoamiResponse = await getWhoAmI({ client });
-  if (whoamiResponse.data) {
-    user.value = whoamiResponse.data;
-
-    // Load the schema
-    const schemaResponse = await getSchema({ client });
-    if (schemaResponse.data) {
-      schema.value = new LdapSchema(schemaResponse.data);
-    }
-  }
-});
+  modal = ref<string>(); // modal popup ID
 
 watch(attr, (a) => {
   if (a) oc.value = undefined;
@@ -107,46 +52,6 @@ watch(attr, (a) => {
 watch(oc, (o) => {
   if (o) attr.value = undefined;
 });
-
-// Display an info popup
-function showInfo(msg: string) {
-  error.value = { counter: 5, cssClass: "bg-emerald-300", msg: "" + msg };
-  setTimeout(() => {
-    error.value = undefined;
-  }, 5000);
-}
-
-// Flash a warning popup
-function showWarning(msg: string) {
-  error.value = { counter: 10, cssClass: "bg-amber-200", msg: "⚠️ " + msg };
-  setTimeout(() => {
-    error.value = undefined;
-  }, 10000);
-}
-
-// Report an error
-function showError(msg: string) {
-  error.value = { counter: 60, cssClass: "bg-red-300", msg: "⛔ " + msg };
-  setTimeout(() => {
-    error.value = undefined;
-  }, 60000);
-}
-
-function showException(msg: string) {
-  const span = document.createElement("span");
-  span.innerHTML = msg.replace("\n", " ");
-  const titles = span.getElementsByTagName("title");
-  for (let title of titles) {
-    span.removeChild(title);
-  }
-  let text = "";
-  const headlines = span.getElementsByTagName("h1");
-  for (let headline of headlines) {
-    text = text + headline.textContent + ": ";
-    span.removeChild(headline);
-  }
-  showError(text + " " + span.textContent);
-}
 </script>
 
 <style>

@@ -19,25 +19,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, ref } from "vue";
+import { computed, ref } from "vue";
 import Modal from "../ui/Modal.vue";
 import { postCheckPassword } from "../../generated/sdk.gen";
-import type { Provided } from "../Provided";
+import { getWhoAmI } from "../../generated/sdk.gen";
 import type { Entry } from "../../generated/types.gen";
 
 const props = defineProps<{
   entry: Entry;
   modal?: string;
   returnTo?: string;
-  user?: string;
 }>(),
   oldPassword = ref(""),
   newPassword = ref(""),
   repeated = ref(""),
   passwordOk = ref<boolean>(),
+  user = ref<string | null>(null),
   old = ref<HTMLInputElement | null>(null),
   changed = ref<HTMLInputElement | null>(null),
-  currentUser = computed(() => props.user == props.entry.dn),
+  currentUser = computed(() => user.value == props.entry.dn),
   passwordsMatch = computed(
     () => newPassword.value && newPassword.value == repeated.value,
   ),
@@ -50,12 +50,17 @@ const props = defineProps<{
     ok: [oldPw: string, newPw: string];
     "update-form": [];
     "update:modal": [];
-  }>(),
-  app = inject<Provided>("app");
+  }>();
 
-function init() {
+async function init() {
   oldPassword.value = newPassword.value = repeated.value = "";
   passwordOk.value = undefined;
+
+  // Get the DN of the current user
+  const response = await getWhoAmI();
+  if (response.data) {
+    user.value = response.data;
+  }
 }
 
 function focus() {
@@ -74,7 +79,6 @@ async function check() {
   const response = await postCheckPassword({
     path: { dn: props.entry.dn },
     body: oldPassword.value,
-    client: app?.client,
   });
 
   passwordOk.value = response.data;
