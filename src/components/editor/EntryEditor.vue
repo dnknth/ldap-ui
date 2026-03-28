@@ -9,8 +9,7 @@
       @shown="emit('update:activeDn')" />
 
     <!-- Modals for main editing area -->
-    <password-change-dialog v-model:modal="modal" :entry="entry" :return-to="focused" :user="user"
-      @ok="changePassword" />
+    <password-change-dialog v-model:modal="modal" :entry="entry" :return-to="focused" @ok="changePassword" />
     <add-photo-dialog v-model:modal="modal" attr="jpegPhoto" :dn="entry.dn" :return-to="focused" @ok="load" />
     <add-photo-dialog v-model:modal="modal" attr="thumbnailPhoto" :dn="entry.dn" :return-to="focused" @ok="load" />
     <add-object-class-dialog v-model:modal="modal" :entry="entry" :return-to="focused" @ok="addObjectClass" />
@@ -38,17 +37,13 @@
         </dropdown-menu>
       </div>
 
-      <div v-if="entry.isNew" class="control text-2xl mr-2" @click="modal = 'discard-entry'" title="close">
-        ⊗
-      </div>
-      <div v-else class="control text-xl mr-2" title="close" @click="emit('update:activeDn')">
-        ⊗
-      </div>
+      <div v-if="entry.isNew" class="control text-2xl mr-2" @click="modal = 'discard-entry'" title="close">⊗</div>
+      <div v-else class="control text-xl mr-2" title="close" @click="emit('update:activeDn')">⊗</div>
     </nav>
 
     <form id="entry" class="space-y-4 my-4" @submit.prevent="save" @reset="load(entry!.dn, undefined, undefined)"
       @focusin="onFocus">
-      <attribute-row v-for="key in keys" :key="key" :base-dn="props.baseDn" :attr="app?.schema.attr(key)!"
+      <attribute-row v-for="key in keys" :key="key" :base-dn="props.baseDn" :attr="state.schema?.attr(key)!"
         :entry="entry" :values="entry.attrs[key]!" :changed="hasChanged(key)" :may="attributes('may').includes(key)"
         :must="attributes('must').includes(key)" @update="updateRow" @reload-form="load" @valid="valid(key, $event)"
         @show-modal="modal = $event" @show-attr="emit('show-attr', $event)" @show-oc="emit('show-oc', $event)" />
@@ -76,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import AddAttributeDialog from "./AddAttributeDialog.vue";
 import AddObjectClassDialog from "./AddObjectClassDialog.vue";
 import AddPhotoDialog from "./AddPhotoDialog.vue";
@@ -89,8 +84,8 @@ import type { Entry, HttpValidationError } from "../../generated/types.gen";
 import NewEntryDialog from "./NewEntryDialog.vue";
 import NodeLabel from "../NodeLabel.vue";
 import PasswordChangeDialog from "./PasswordChangeDialog.vue";
-import type { Provided } from "../Provided";
 import RenameEntryDialog from "./RenameEntryDialog.vue";
+import { state } from "../../state";
 import {
   getEntry,
   postEntry,
@@ -112,9 +107,7 @@ const inputTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"],
   props = defineProps<{
     activeDn?: string;
     baseDn?: string;
-    user: string;
   }>(),
-  app = inject<Provided>("app"),
   entry = ref<Entry>(), // entry in editor
   focused = ref<string>(), // currently focused input
   invalid = ref<string[]>([]), // field IDs with validation errors
@@ -126,7 +119,7 @@ const inputTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"],
   }),
   structural = computed(() => {
     const oc = entry.value?.attrs.objectClass!
-      .map((oc) => app?.schema.oc(oc as string))
+      .map((oc) => state.schema?.oc(oc as string))
       .filter((oc) => oc && oc.structural)[0];
     return oc ? oc.name! : "";
   }),
@@ -158,7 +151,7 @@ function focus(focused?: string): void {
 
     if (input) {
       // work around annoying focus jump in OS X Safari
-      window.setTimeout(() => input.focus(), 100);
+      window.setTimeout(() => input.focus(), 50);
     }
   });
 }
@@ -201,7 +194,7 @@ function addMandatoryRows(): string | undefined {
   return must.length ? must[0] + "-0" : undefined;
 }
 function showError(error: HttpValidationError): void {
-  app?.showError(error.detail?.join("\n") || "Operation failed");
+  state.showError(error.detail?.join("\n") || "Operation failed");
 }
 
 // Load an entry into the editing form
@@ -212,10 +205,7 @@ async function load(dn?: string, changed?: string[], focused?: string) {
     entry.value = undefined;
     return;
   }
-  const response = await getEntry({
-    path: { dn },
-    client: app?.client,
-  });
+  const response = await getEntry({ path: { dn }});
   if (response.error) {
     showError(response.error);
     return;
@@ -245,7 +235,6 @@ async function save() {
     const response = await putEntry({
       path: { dn: entry.value!.dn },
       body: entry.value!.attrs,
-      client: app?.client,
     });
     if (response.error) {
       showError(response.error);
@@ -256,7 +245,6 @@ async function save() {
     const response = await postEntry({
       path: { dn: entry.value!.dn },
       body: entry.value!.attrs,
-      client: app?.client,
     });
     if (response.error) {
       showError(response.error);
@@ -275,7 +263,6 @@ async function renameEntry(rdn: string) {
   const response = await postRenameEntry({
     path: { dn: entry.value!.dn },
     body: rdn,
-    client: app?.client,
   });
   if (response.error) {
     showError(response.error);
@@ -288,12 +275,13 @@ async function renameEntry(rdn: string) {
 }
 
 async function deleteEntryByDn(dn: string) {
-  const response = await deleteEntry({ path: { dn }, client: app?.client });
+  const response = await deleteEntry({ path: { dn }});
   if (response.error) {
     showError(response.error);
     return;
   }
-  app?.showInfo("👍 Deleted: " + dn);
+  document.title = "Directory";
+  state.showInfo("👍 Deleted: " + dn);
   emit("update:activeDn", "-" + dn);
 }
 
@@ -301,20 +289,19 @@ async function changePassword(oldPass: string, newPass: string) {
   const response = await postChangePassword({
     path: { dn: entry.value!.dn },
     body: { old: oldPass, new1: newPass },
-    client: app?.client,
   });
   if (response.error) {
     showError(response.error);
   } else {
     entry.value!.attrs.userPassword = [newPass];
-    entry.value!.changed?.push("userPassword");
+    entry.value!.changed = ["userPassword"];
   }
 }
 
 function attributes(kind: "must" | "may"): string[] {
   const attrs = entry.value!.attrs.objectClass!
     .filter((oc) => oc && oc != "top")
-    .map((oc) => app?.schema.oc(oc))
+    .map((oc) => state.schema?.oc(oc))
     .flatMap((oc) => (oc ? oc.$collect(kind) : []))
     .filter(unique);
   attrs.sort();

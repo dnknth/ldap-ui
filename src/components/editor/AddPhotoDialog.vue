@@ -7,10 +7,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject } from "vue";
+import { ref } from "vue";
 import Modal from "../ui/Modal.vue";
 import { putBlob } from "../../generated/sdk.gen";
-import type { Provided } from "../Provided";
 
 const props = defineProps({
   dn: { type: String, required: true },
@@ -26,8 +25,7 @@ const props = defineProps({
   emit = defineEmits<{
     ok: [dn: string, attrs: string[]];
     "update:modal": [];
-  }>(),
-  app = inject<Provided>("app");
+  }>();
 
 // add an image
 async function onOk(evt: Event) {
@@ -37,7 +35,6 @@ async function onOk(evt: Event) {
   const response = await putBlob({
     path: { attr: props.attr!, index: 0, dn: props.dn },
     body: { blob: target.files[0]! },
-    client: app?.client,
   });
 
   if (!response.error) {
