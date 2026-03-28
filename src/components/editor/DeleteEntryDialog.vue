@@ -20,13 +20,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, ref } from "vue";
+import { computed, ref } from "vue";
+import { DN } from "../schema/schema";
 import Modal from "../ui/Modal.vue";
 import NodeLabel from "../NodeLabel.vue";
 import type { TreeItem } from "../../generated/types.gen";
 import { getSubtree } from "../../generated/sdk.gen";
-import type { Provided } from "../Provided";
-import { DN } from "../schema/schema";
 
 const props = defineProps<{
   dn: string;
@@ -38,15 +37,11 @@ const props = defineProps<{
     ok: [dn: string];
     "update:modal": [];
   }>(),
-  rootDn = computed(() => new DN(props.dn)),
-  app = inject<Provided>("app");
+  rootDn = computed(() => new DN(props.dn));
 
 // List subordinate elements to be deleted
 async function init() {
-  const response = await getSubtree({
-    path: { root_dn: props.dn },
-    client: app?.client,
-  });
+  const response = await getSubtree({ path: { root_dn: props.dn } });
   if (response.data) {
     subtree.value = response.data;
   }

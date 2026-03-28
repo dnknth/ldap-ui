@@ -14,7 +14,7 @@ dist: clean $(SITE)
 	uv build
 
 pypi: dist
-	- uv publish dist/*
+	uv publish --token `pass token/pypi.org` dist/*
 
 deploy: clean $(SITE)
 	rsync -a --delete $(SITE)/ mx:/opt/ldap-ui/venv/lib/python3.12/site-packages/ldap_ui/statics/

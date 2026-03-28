@@ -3,7 +3,7 @@
     @show="init" @shown="select?.focus()">
     <label>Object class:
       <select ref="select" v-model="objectClass">
-        <template v-for="cls in app?.schema.objectClasses.values()" :key="cls.name">
+        <template v-for="cls in state.schema?.objectClasses.values()" :key="cls.name">
           <option v-if="cls.structural">{{ cls }}</option>
         </template>
       </select>
@@ -22,9 +22,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, ref } from "vue";
+import { computed, ref } from "vue";
 import Modal from "../ui/Modal.vue";
-import type { Provided } from "../Provided";
+import { state } from "../../state"
 import type { Entry } from "../../generated/types.gen";
 
 const props = defineProps<{
@@ -32,12 +32,11 @@ const props = defineProps<{
   modal?: string;
   returnTo?: string;
 }>(),
-  app = inject<Provided>("app"),
   objectClass = ref(""),
   rdn = ref(""),
   name = ref(""),
   select = ref<HTMLSelectElement | null>(null),
-  oc = computed(() => app?.schema.oc(objectClass.value)),
+  oc = computed(() => state.schema?.oc(objectClass.value)),
   emit = defineEmits<{
     ok: [entry: Entry];
     "update:modal": [];
