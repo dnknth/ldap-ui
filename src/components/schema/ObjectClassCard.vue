@@ -36,13 +36,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from "vue";
+import { computed } from "vue";
 import Card from "../ui/Card.vue";
-import type { Provided } from "../Provided";
+import { state } from "../../state"
 
 const props = defineProps<{ modelValue?: string }>(),
-  app = inject<Provided>("app"),
-  oc = computed(() => app?.schema.oc(props.modelValue)),
+  oc = computed(() => state.schema?.oc(props.modelValue)),
   emit = defineEmits<{
     "show-attr": [name: string];
     "update:modelValue": [name?: string];

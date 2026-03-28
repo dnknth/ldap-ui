@@ -7,13 +7,11 @@
 </template>
 
 <script setup lang="ts">
-import { inject, ref } from "vue";
+import { ref } from "vue";
 import Modal from "./ui/Modal.vue";
 import { postLdif } from "../generated/sdk.gen";
-import type { Provided } from "./Provided";
 
 const ldifData = ref(""),
-  app = inject<Provided>("app"),
   emit = defineEmits<{
     ok: [];
     "update:modal": [];
@@ -44,7 +42,7 @@ async function onOk() {
   if (!ldifData.value) return;
 
   emit("update:modal");
-  const response = await postLdif({ body: ldifData.value, client: app?.client });
+  const response = await postLdif({ body: ldifData.value });
   if (!response.error) emit("ok");
 }
 </script>
