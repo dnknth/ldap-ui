@@ -8,10 +8,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, ref } from "vue";
+import { computed, ref } from "vue";
 import Modal from "../ui/Modal.vue";
 import type { Entry } from "../../generated/types.gen";
-import type { Provided } from "../Provided";
+import { state } from "../../state"
 
 const props = defineProps<{
   entry: Entry;
@@ -21,11 +21,10 @@ const props = defineProps<{
     ok: [oc: string];
     "update:modal": [];
   }>(),
-  app = inject<Provided>("app"),
   oc = ref<string>(),
   select = ref<HTMLSelectElement | null>(),
   available = computed(() =>
-    Array.from(app?.schema.objectClasses.values() || [])
+    Array.from(state.schema?.objectClasses.values() || [])
       .filter(
         (oc) => oc.aux && !props.entry.attrs.objectClass?.includes(oc.name!),
       )

@@ -444,6 +444,19 @@ class LDIFReader(ldif.LDIFParser):
     tags=[Tag.EDITING],
     operation_id="post_ldif",
     status_code=HTTPStatus.NO_CONTENT,
+    openapi_extra={
+        "requestBody": {
+            "content": {
+                "application/binary": {
+                    "schema": {
+                        "title": "LDIF data",
+                        "type": "string",
+                        "format": "binary",
+                    }
+                }
+            }
+        }
+    },
 )
 async def upload_ldif(
     ldif: Annotated[str, Body()], connection: AuthenticatedConnection

@@ -8,9 +8,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import Popover from "./ui/Popover.vue";
-import type { Provided } from "./Provided";
+import { state } from "../state";
 import { search } from "../generated/sdk.gen";
 import type { SearchResult } from "../generated/types.gen";
 
@@ -36,7 +36,6 @@ const props = defineProps({
     default: false,
   },
 }),
-  app = inject<Provided>("app"),
   results = ref<SearchResult[]>([]),
   show = computed(
     () => props.query.trim() != "" && results.value && results.value.length > 1,
@@ -48,12 +47,12 @@ watch(
   async (q) => {
     if (!q) return;
 
-    const response = await search({ path: { query: q }, client: app?.client });
+    const response = await search({ path: { query: q }});
     if (!response.data) return;
     results.value = await response.data;
 
     if (results.value.length == 0 && !props.silent) {
-      app?.showWarning("No search results");
+      state.showWarning("No search results");
       return;
     }
 

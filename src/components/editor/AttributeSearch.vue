@@ -8,15 +8,14 @@
 
 <script setup lang="ts">
 import type { Attribute } from "../schema/schema";
-import { computed, inject, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import Popover from "../ui/Popover.vue";
-import type { Provided } from "../Provided";
+import { state } from "../../state"
 
 const props = defineProps<{
   query?: string;
   for?: string;
 }>(),
-  app = inject<Provided>("app"),
   results = ref<Attribute[]>([]),
   show = computed(
     () =>
@@ -31,7 +30,7 @@ watch(
   () => props.query,
   (q) => {
     if (!q) return;
-    results.value = app?.schema.search(q) || [];
+    results.value = state.schema?.search(q) || [];
     results.value.sort((a: Attribute, b: Attribute) =>
       a.name!.toLowerCase().localeCompare(b.name!.toLowerCase()),
     );

@@ -18,13 +18,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from "vue";
+import { computed } from "vue";
 import Card from "../ui/Card.vue";
-import type { Provided } from "../Provided";
+import { state } from "../../state"
 
 const props = defineProps<{ modelValue?: string }>(),
-  app = inject<Provided>("app"),
-  attr = computed(() => app?.schema.attr(props.modelValue)),
+  attr = computed(() => state.schema?.attr(props.modelValue)),
   emit = defineEmits<{
     "update:modelValue": [name?: string];
   }>();

@@ -37,17 +37,18 @@ export class RDN {
 
   constructor(value: string) {
     const parts = value.split("=");
-    this.attr = schema.attr(parts[0]!.trim())!;
-    this.value = parts[1]!.trim();
+    this.attr = schema.attr(parts[0].trim())!;
+    this.value = parts[1].trim();
   }
 
-  /// Normalize the RDN representaion
   toString(): string {
-    return this.attr.name + "=" + this.attr.normalizer(this.value);
+    return this.attr.name + "=" + this.value;
   }
 
   matches(other?: RDN): boolean {
-    return other !== undefined && this.toString() == other.toString();
+    return other !== undefined
+    && this.attr.name == other.attr.name
+    && this.attr.normalizer(this.value) == this.attr.normalizer(other.value);
   }
 }
 
@@ -62,7 +63,6 @@ export class DN {
       parts.length == 1 ? undefined : new DN(value.slice(parts[0]!.length + 1));
   }
 
-  /// Normalize the DN representaion
   toString(): string {
     const rdnString = this.rdn.toString();
     return this.parent ? rdnString + "," + this.parent.toString() : rdnString;

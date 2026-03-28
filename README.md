@@ -93,19 +93,20 @@ Options:
 
 Prerequisites:
 
-* [GNU make](https://www.gnu.org/software/make/)
 * [node.js](https://nodejs.dev) LTS version with NPM
-* [Python3](https://www.python.org) ≥ 3.7
-* [pip3](https://packaging.python.org/tutorials/installing-packages/)
+* [pnpm](https://pnpm.io)
+* [Python](https://www.python.org) ≥ 3.12
+* [uv](https://docs.astral.sh/uv/)
 * [python-ldap](https://pypi.org/project/python-ldap/); To compile the Python module:
   * Debian / Ubuntu: `apt-get install libsasl2-dev python-dev libldap2-dev libssl-dev`
   * RedHat / CentOS: `yum install python-devel openldap-devel`
+* [GNU make](https://www.gnu.org/software/make/)
 
 `ldap-ui` consists of a Vue frontend and a Python backend that roughly translates a subset of the LDAP protocol to a stateless ReST API.
 
-For the frontend, `npm run build` assembles everything in `backend/ldap_ui/statics`.
+`pnpm build` assembles the frontend in `backend/ldap_ui/statics`.
 
-Review the configuration in [settings.py](settings.py). It is short and mostly self-explaining.
+Review the configuration in [settings.py](settings.py). It is short and mostly self-explaining (also see notes below).
 Most settings can (and should) be overridden by environment variables or settings in a `.env` file; see [env.demo](env.demo) or [env.example](env.example).
 
 The backend can be run locally with `make`, which will also install dependencies and build the frontend if needed.
@@ -122,9 +123,28 @@ The UI always uses a simple `bind` operation to authenticate with the LDAP direc
 
 ### Searching
 
-Search uses a (configurable) set of criteria (`cn`, `gn`, `sn`, and `uid`) if the query does not contain `=`.
+Search uses a (configurable) set of criteria#
+(default: `cn`, `gn`, `sn`, and `uid`) if the query does not contain `=`.
 Wildcards are supported, e.g. `f*` will match all `cn`, `gn`, `sn`, and `uid` starting with `f`.
 Additionally, arbitrary attributes can be searched with an LDAP filter specification, for example `sn=F*`.
+
+Apart from the search field in the navigation bar,
+searches are also performed in the entry editor for any DN-valued input field.
+
+### Keyboard navigation
+
+The editor and modal dialogs focus the first input when opening, so you can the ⇥ key to navigate the form.
+Save or dismiss with the ↩ key.
+
+The following [access keys](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/accesskey#try_it) are defined:
+
+| Access Key | UI Element                |
+|------------|---------------------------|
+| K          | Global search at page top |
+| A          | Add an atrribute          |
+| O          | Add an object class       |
+| R          | Reset entry modifications |
+| S          | Save an entry (same as ↩) |
 
 ### Caveats
 
@@ -138,7 +158,7 @@ Additionally, arbitrary attributes can be searched with an LDAP filter specifica
 * Q: Why are some fields not editable?
   * A: The RDN of an entry is read-only. To change it, rename the entry with a different RDN, then change the old RDN and rename back. To change passwords, click on the question mark icon on the right side. Binary fields (as per schema) are read-only. You do not want to modify them accidentally.
 * Q: Why did you write this?
-  * A: [PHPLdapAdmin](http://phpldapadmin.sf.net/) has not seen updates for ages. I needed a replacement, and wanted to try Vue.
+  * A: [PHPLdapAdmin](http://phpldapadmin.sf.net/) is no longer actively maintained. I needed a replacement, and wanted to try Vue.
 
 ## Acknowledgements
 
