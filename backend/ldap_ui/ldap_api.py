@@ -468,7 +468,12 @@ async def search(query: str, connection: AuthenticatedConnection) -> list[Search
         if "(" not in query:
             query = f"({query})"
     else:  # Build default query
-        query = "(|%s)" % "".join(p % query for p in settings.SEARCH_PATTERNS)
+        if "*" in query:  # disable implicit prefix searches
+            query = "(|%s)" % "".join(
+                p.replace("*", "") % query for p in settings.SEARCH_PATTERNS
+            )
+        else:
+            query = "(|%s)" % "".join(p % query for p in settings.SEARCH_PATTERNS)
 
     # Collect results
     res = []
