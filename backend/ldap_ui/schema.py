@@ -1,101 +1,116 @@
 """
-JSON-serializable representation of the LDAP directory schema.
+JSON representation of the LDAP directory schema.
 
 It is used by the frontend for consistency checks, and
 to determine how individual attributes should be presented
 to the user.
 """
 
-from enum import IntEnum
-from typing import Generator, TypeVar, cast
+from enum import StrEnum
+from typing import Any, Self
 
-from ldap.schema import SubSchema
-from ldap.schema.models import AttributeType
-from ldap.schema.models import LDAPSyntax as LDAPSyntaxType
-from ldap.schema.models import ObjectClass as ObjectClassType
-from pydantic import BaseModel, Field, field_serializer
+from ldap3.protocol.rfc4512 import (
+    AttributeTypeInfo,
+    BaseObjectInfo,
+    LdapSyntaxInfo,
+    ObjectClassInfo,
+    SchemaInfo,
+)
+from ldap3.utils.ciDict import CaseInsensitiveDict
+from pydantic import BaseModel, Field, computed_field
 
-T = TypeVar("T")
+OCTET_STRING = "1.3.6.1.4.1.1466.115.121.1.40"
 
 
-class Element(BaseModel):
-    "Common attributes od schema elements"
+class _Element(BaseModel):
+    "Common fields of attributes and object classes"
 
     oid: str
-    name: str
     names: list[str] = Field(min_length=1)
-    desc: str | None
+    desc: str | None = None
     obsolete: bool
     sup: list[str]  # TODO check
 
+    @computed_field
+    def name(self) -> str:
+        name = self.names[0]
+        return name[:1].lower() + name[1:]
 
-def element(obj: AttributeType | ObjectClassType) -> Element:
-    name = obj.names[0]
-    return Element(
-        oid=obj.oid,
-        name=name[:1].lower() + name[1:],
-        names=obj.names,
-        desc=obj.desc,
-        obsolete=bool(obj.obsolete),
-        sup=sorted(obj.sup),
-    )
-
-
-class ObjectClass(Element):
-    class Kind(IntEnum):
-        structural = 0
-        abstract = 1
-        auxiliary = 2
-
-    may: list[str]
-    must: list[str]
-    kind: Kind
-
-    @field_serializer("kind")
-    def serialize_kind(self, kind: Kind, _info) -> str:
-        return kind.name
+    @staticmethod
+    def args(info: BaseObjectInfo) -> dict[str, Any]:
+        return dict(
+            oid=info.oid,
+            names=info.name,
+            desc=info.description,
+            obsolete=info.obsolete,
+            sup=sorted(info.superior or []),
+        )
 
 
-class Attribute(Element):
-    class Usage(IntEnum):
-        userApplications = 0
-        directoryOperation = 1
-        distributedOperation = 2
-        dSAOperation = 3
+class Attribute(_Element):
+    class Usage(StrEnum):
+        DIRECTORY_OPERATION = "directoryOperation"
+        DISTRIBUTED_OPERATION = "distributedOperation"
+        DSA_OPERATION = "dSAOperation"
+        USER_APPLICATIONS = "userApplications"
 
     single_value: bool
     no_user_mod: bool
-    usage: Usage
-    equality: str | None
-    syntax: str | None
-    substr: str | None
-    ordering: str | None
+    usage: Usage = Usage.USER_APPLICATIONS
+    equality: str | None = None
+    syntax: str | None = None
+    substr: str | None = None
+    ordering: str | None = None
 
-    @field_serializer("usage")
-    def serialize_kind(self, usage: Usage, _info) -> str:
-        return usage.name
+    @classmethod
+    def of(cls, attr: AttributeTypeInfo) -> Self:
+        return cls(
+            single_value=attr.single_value,
+            no_user_mod=attr.no_user_modification,
+            usage=Attribute.Usage[attr.usage or "USER_APPLICATIONS"],
+            # FIXME avoid null values below
+            equality=attr.equality[0] if attr.equality else None,
+            syntax=attr.syntax,
+            substr=getattr(attr, "substr")[0] if hasattr(attr, "substr") else None,
+            ordering=attr.ordering[0] if attr.ordering else None,
+            **_Element.args(attr),
+        )
+
+
+class ObjectClass(_Element):
+    may: list[str]
+    must: list[str]
+    kind: str
+
+    @classmethod
+    def of(cls, oc: ObjectClassInfo) -> Self:
+        return cls(
+            may=sorted(oc.may_contain),
+            must=sorted(oc.must_contain),
+            kind=oc.kind.lower(),
+            **_Element.args(oc),
+        )
 
 
 class Syntax(BaseModel):
     oid: str
     desc: str
-    not_human_readable: bool
+    extensions: list | None = Field(default=None, exclude=True)
 
+    @computed_field
+    def not_human_readable(self) -> bool:
+        extensions = CaseInsensitiveDict(self.extensions or [])
+        return self.oid == OCTET_STRING or (  # FIXME why needs this hard-coding?
+            "TRUE" in extensions.get("X-NOT-HUMAN-READABLE", [])
+        )
 
-def lowercase_dict(attr: str, items: list[T]) -> dict[str, T]:
-    "Create an dictionary with lowercased keys extracted from a given attribute"
-    return {getattr(obj, attr).lower(): obj for obj in items}
-
-
-def extract_type(
-    sub_schema: SubSchema, schema_class: type[T]
-) -> Generator[T, None, None]:
-    "Get non-obsolete objects from the schema for a type"
-
-    for oid in sub_schema.listall(schema_class):
-        obj = sub_schema.get_obj(schema_class, oid)
-        if schema_class is LDAPSyntaxType or not obj.obsolete:  # type: ignore
-            yield cast(T, obj)
+    @classmethod
+    def of(cls, syntax: LdapSyntaxInfo) -> Self:
+        return cls(
+            oid=syntax.oid,
+            desc=syntax.description,
+            extensions=syntax.extensions,
+        )
 
 
 class Schema(BaseModel):
@@ -103,56 +118,23 @@ class Schema(BaseModel):
     objectClasses: dict[str, ObjectClass]
     syntaxes: dict[str, Syntax]
 
-
-# See: https://www.python-ldap.org/en/latest/reference/ldap-schema.html
-def frontend_schema(sub_schema: SubSchema) -> Schema:
-    "Dump an LDAP SubSchema"
-
-    return Schema(
-        attributes=lowercase_dict(
-            "name",
-            sorted(
-                (
-                    Attribute(
-                        single_value=bool(attr.single_value),
-                        no_user_mod=bool(attr.no_user_mod),
-                        usage=Attribute.Usage(attr.usage),
-                        # FIXME avoid null values below
-                        equality=attr.equality,
-                        syntax=attr.syntax,
-                        substr=attr.substr,
-                        ordering=attr.ordering,
-                        **element(attr).model_dump(),
-                    )
-                    for attr in extract_type(sub_schema, AttributeType)
-                ),
-                key=lambda x: x.name,
-            ),
-        ),
-        objectClasses=lowercase_dict(
-            "name",
-            sorted(
-                (
-                    ObjectClass(
-                        may=sorted(oc.may),
-                        must=sorted(oc.must),
-                        kind=ObjectClass.Kind(oc.kind),
-                        **element(oc).model_dump(),
-                    )
-                    for oc in extract_type(sub_schema, ObjectClassType)
-                ),
-                key=lambda x: x.name,
-            ),
-        ),
-        syntaxes=lowercase_dict(
-            "oid",
-            [
-                Syntax(
-                    oid=stx.oid,
-                    desc=stx.desc,
-                    not_human_readable=bool(stx.not_human_readable),
+    @classmethod
+    def of(cls, info: SchemaInfo) -> Self:
+        "Dump an LDAP schema"
+        return cls(
+            attributes={
+                attr.name[0].lower(): Attribute.of(attr)
+                for attr in sorted(
+                    info.attribute_types.values(), key=lambda x: x.name[0].lower()
                 )
-                for stx in extract_type(sub_schema, LDAPSyntaxType)
-            ],
-        ),
-    )
+            },
+            objectClasses={
+                oc.name[0].lower(): ObjectClass.of(oc)
+                for oc in sorted(
+                    info.object_classes.values(), key=lambda x: x.name[0].lower()
+                )
+            },
+            syntaxes={
+                syntax.oid: Syntax.of(syntax) for syntax in info.ldap_syntaxes.values()
+            },
+        )

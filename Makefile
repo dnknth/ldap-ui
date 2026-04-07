@@ -36,16 +36,9 @@ clean:
 tidy: clean
 	rm -rf .venv node_modules
 
-image:
-	docker build --no-cache -t $(IMAGE):$(TAG) .
-
-push: image
-	docker push $(IMAGE):$(TAG)
-	- docker pushrm $(IMAGE)
-
-manifest:
-	docker manifest create $(IMAGE) \
-		--amend $(IMAGE):$(VERSION)-x86_64 \
-		--amend $(IMAGE):$(VERSION)-arm64
-	docker manifest push --purge $(IMAGE)
-	docker compose pull
+# See: https://docs.docker.com/build/building/multi-platform/#multiple-native-nodes
+push: clean $(SITE)
+	docker buildx build --push \
+		--platform linux/amd64,linux/arm64 \
+		-t $(IMAGE):$(VERSION) -t $(IMAGE):latest .
+	docker pushrm $(IMAGE)
