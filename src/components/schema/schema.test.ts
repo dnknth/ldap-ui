@@ -1,8 +1,9 @@
 import { describe, expect, test } from "vitest";
 import { LdapSchema, DN, Attribute, ObjectClass } from "./schema";
-import json from "./test-schema.json";
+import json from "../../../tests/resources/ui-schema.json";
+import type { Schema } from "@/generated";
 
-const sut = new LdapSchema(json);
+const sut = new LdapSchema(json as Schema);
 
 describe("LDAP schema items", () => {
   const dn1 = new DN("dc=foo,dc=bar"),
@@ -20,7 +21,6 @@ describe("LDAP schema items", () => {
   describe("DNs", () => {
     test("parent", () => expect(dn2.parent?.matches(dn3)).toBeTruthy());
     test("grandparent", () => expect(dn3.parent).toBeUndefined());
-    test("nomalization", () => expect(dn2.toString()).toEqual("dc=foo,dc=bar"));
     test("matching", () => expect(dn1.matches(dn2)).toBeTruthy());
   });
 

@@ -15,14 +15,18 @@ classifiers = [
 ]
 dependencies = [
     "fastapi>=0.128.5",
-    "python-ldap>=3.4.4",
+    "ldap3>=2.9.1",
+    "ldif>=4.3.0",
     "python-multipart>=0.0.22",
     "uvicorn>=0.40.0",
 ]
 dynamic = ["version"]
 
 [dependency-groups]
-dev = ["httpx>=0.28.1"]
+dev = [
+    "httpx>=0.28.1",
+    "types-ldap3>=2.9.13.20260402",
+]
 
 [project.scripts]
 ldap-ui = "ldap_ui.__main__:main"

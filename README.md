@@ -1,4 +1,4 @@
-# Fast and versatile LDAP editor
+# A fast and versatile LDAP editor
 
 This is a *minimal* web interface for LDAP directories. Docker images for `linux/amd64` and `linux/arm64/v8` are [available](https://hub.docker.com/r/dnknth/ldap-ui).
 
@@ -23,16 +23,14 @@ The app always requires authentication, even if the directory permits anonymous 
 
 LDAP access is controlled by the following optional environment variables, possibly from a `.env` file:
 
-* `LDAP_URL`: Connection URL, defaults to `ldap:///`.
-* `BASE_DN`: Search base, e.g. `dc=example,dc=org`.
-* `SCHEMA_DN`: # DN to obtain the directory schema, e.g. `cn=subSchema`.
+* `LDAP_URL`: Connection URL in RFC 4516 format, defaults to `ldap:///`.
+* `BASE_DN`: Optional search base, e.g. `dc=example,dc=org`, can also be specified as part of the `LDAP_URL`.
+* `SCHEMA_DN`: Optional DN to obtain the directory schema, e.g. `cn=subSchema`.
 * `LOGIN_ATTR`: User name attribute, defaults to `uid`.
-
 * `USE_TLS`: Enable TLS, defaults to true for `ldaps` connections. Set it to a non-empty string to force `STARTTLS` on `ldap` connections.
-* `INSECURE_TLS`: Do not require a valid server TLS certificate, defaults to false, implies `USE_TLS`.
 
-if `BASE_DN` or `SCHEMA_DN` are not provided explicitly, auto-detection from the root DSE is attempted.
-For this to work, the root DSE must be readable anonymously, e.g. with the following ACL line for OpenLDAP:
+if `BASE_DN` or `SCHEMA_DN` are not provided explicitly, auto-detection from the root DSA is attempted.
+For this, the root DSA must be readable anonymously, e.g. with the following ACL line for OpenLDAP:
 
 ```text
 access to dn.base="" by * read
@@ -60,14 +58,11 @@ and go to <http://localhost:5000/>. You are automatically logged in as `Fred Fli
 
 ### Pip
 
-Install the `python-ldap` dependency with your system's package manager.
-Otherwise, Pip will try to compile it from source and this will likely fail because it lacks a development environment.
-
-Then install `ldap-ui` in a virtual environment:
+Install `ldap-ui` in a virtual environment:
 
 ```shell
-python3 -m venv --system-site-packages venv
-. venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip3 install ldap-ui
 ```
 
@@ -97,9 +92,6 @@ Prerequisites:
 * [pnpm](https://pnpm.io)
 * [Python](https://www.python.org) ≥ 3.12
 * [uv](https://docs.astral.sh/uv/)
-* [python-ldap](https://pypi.org/project/python-ldap/); To compile the Python module:
-  * Debian / Ubuntu: `apt-get install libsasl2-dev python-dev libldap2-dev libssl-dev`
-  * RedHat / CentOS: `yum install python-devel openldap-devel`
 * [GNU make](https://www.gnu.org/software/make/)
 
 `ldap-ui` consists of a Vue frontend and a Python backend that roughly translates a subset of the LDAP protocol to a stateless ReST API.

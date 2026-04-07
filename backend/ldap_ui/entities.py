@@ -1,8 +1,12 @@
 "Data types for ReST endpoints"
 
+from base64 import b64encode
+from typing import Self
+
+from ldap3 import SchemaInfo
 from pydantic import BaseModel
 
-from .ldap_helpers import LdapEntry
+from .ldap_helpers import ResponseEntry
 
 Attributes = dict[str, list[str]]
 
@@ -18,6 +22,28 @@ class Entry(BaseModel):
     autoFilled: AttributeNames
     changed: AttributeNames
     isNew: bool = False
+
+    @classmethod
+    def of(cls, entry: ResponseEntry, schema: SchemaInfo) -> Self:
+        "Decode an LDAP entry for transmission"
+
+        binary = sorted(
+            set(attr for attr in entry.raw_attributes if entry.is_binary(attr, schema))
+        )
+        return cls(
+            attrs={
+                k: ["*****"]  # 23 suppress userPassword
+                if k == "userPassword"
+                else [b64encode(val).decode() for val in entry.raw_attributes[k]]
+                if k in binary
+                else [val.decode() for val in entry.raw_attributes[k]]
+                for k in sorted(entry.raw_attributes)
+            },
+            dn=entry.dn,
+            binary=binary,
+            autoFilled=[],
+            changed=[],
+        )
 
 
 class ChangePasswordRequest(BaseModel):
@@ -50,9 +76,9 @@ class TreeItem(BaseModel):
     hasSubordinates: bool
 
     @classmethod
-    def from_entry(cls, entry: LdapEntry):
+    def of(cls, entry: ResponseEntry):
         return cls(
             dn=entry.dn,
-            structuralObjectClass=entry.attr("structuralObjectClass")[0],
+            structuralObjectClass=entry.attributes["structuralObjectClass"],
             hasSubordinates=entry.hasSubordinates,
         )
