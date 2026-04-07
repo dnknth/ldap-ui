@@ -9,7 +9,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import Modal from "./ui/Modal.vue";
-import { postLdif } from "../generated/sdk.gen";
+import { putLdif } from "../generated/sdk.gen";
 
 const ldifData = ref(""),
   emit = defineEmits<{
@@ -40,9 +40,8 @@ function upload(evt: Event) {
 // Import LDIF
 async function onOk() {
   if (!ldifData.value) return;
-
   emit("update:modal");
-  const response = await postLdif({ body: ldifData.value });
+  const response = await putLdif({ body: new Blob([ldifData.value]) });
   if (!response.error) emit("ok");
 }
 </script>

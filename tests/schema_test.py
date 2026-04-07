@@ -1,41 +1,32 @@
+import json
 import unittest
-from json import loads
 from pathlib import Path
 
-from ldap.schema import SubSchema
-from ldap.schema.models import AttributeType, LDAPSyntax, ObjectClass
-from ldap_ui.schema import frontend_schema
-from ldif import LDIFRecordList
+from ldap3 import SchemaInfo
+from ldap_ui.schema import Schema
 
-LDIF = Path(__file__).parent / "resources" / "schema.ldif"
-JSON = Path(__file__).parent / "resources" / "schema.json"
+SCHEMA_INFO = Path(__file__).parent / "resources" / "schema.json"
+UI_SCHEMA = Path(__file__).parent / "resources" / "ui-schema.json"
 
 
 class SchemaTest(unittest.TestCase):
     def test_schema(self):
-        # Read schema LDIF
-        with open(LDIF) as ldif:
-            parser = LDIFRecordList(ldif)
-            parser.parse()
-
-        # Sanity checks
-        self.assertEqual(1, len(parser.all_records))
-        dn, attrs = parser.all_records[0]
-        self.assertEqual("cn=subschema", dn.lower())
+        info_json = SCHEMA_INFO.read_text()
+        info_dict = json.loads(info_json)
 
         # Count number of entries for each attribute
-        count = {k: len(v) for k, v in attrs.items()}
+        count = {k: len(v) for k, v in info_dict["raw"].items()}
 
-        # Convert to LDAP SubSchema
-        sub_schema = SubSchema(attrs, check_uniqueness=2)
-        self.assertEqual(
-            count["attributeTypes"], len(sub_schema.listall(AttributeType))
-        )
-        self.assertEqual(count["objectClasses"], len(sub_schema.listall(ObjectClass)))
-        self.assertEqual(count["ldapSyntaxes"], len(sub_schema.listall(LDAPSyntax)))
+        # Read offline schema
+        schema_info = SchemaInfo.from_json(info_json)
+        self.assertTrue(schema_info.is_valid())
+
+        self.assertEqual(count["attributeTypes"], len(schema_info.attribute_types))
+        self.assertEqual(count["objectClasses"], len(schema_info.object_classes))
+        self.assertEqual(count["ldapSyntaxes"], len(schema_info.ldap_syntaxes))
 
         # Convert to JSON schema
-        ui_schema = frontend_schema(sub_schema)
+        ui_schema = Schema.of(schema_info)
         self.assertEqual(count["attributeTypes"], len(ui_schema.attributes))
         self.assertEqual(count["objectClasses"], len(ui_schema.objectClasses))
         self.assertEqual(count["ldapSyntaxes"], len(ui_schema.syntaxes))
@@ -44,7 +35,8 @@ class SchemaTest(unittest.TestCase):
         self.assertIn("posixaccount", ui_schema.objectClasses)
 
         # Dump JSON
-        self.assertEqual(ui_schema.model_dump(), loads(JSON.read_text()))
+        # UI_SCHEMA.write_text(json.dumps(ui_schema.model_dump(), indent=2, sort_keys=True))
+        self.assertEqual(ui_schema.model_dump(), json.loads(UI_SCHEMA.read_text()))
 
 
 if __name__ == "__main__":

@@ -35,7 +35,7 @@ tidy: clean
 	rm -rf .venv node_modules
 
 # See: https://docs.docker.com/build/building/multi-platform/#multiple-native-nodes
-push:
+push: clean $(SITE)
 	docker buildx build --push \
 		--platform linux/amd64,linux/arm64 \
 		-t $(IMAGE):$(VERSION) -t $(IMAGE):latest .

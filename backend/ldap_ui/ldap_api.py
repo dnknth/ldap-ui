@@ -9,11 +9,12 @@ Asynchronous LDAP operations are used as much as possible.
 
 import base64
 import io
+import re
 from enum import StrEnum
 from http import HTTPStatus
 from typing import Annotated, AsyncGenerator, cast
 
-import ldif
+from anyio import sleep
 from fastapi import (
     APIRouter,
     Body,
@@ -26,16 +27,26 @@ from fastapi import (
     UploadFile,
 )
 from fastapi.responses import PlainTextResponse
-from ldap import (
-    INVALID_CREDENTIALS,  # type: ignore
-    SCOPE_BASE,  # type: ignore
-    SCOPE_ONELEVEL,  # type: ignore
-    SCOPE_SUBTREE,  # type: ignore
+from ldap3 import (
+    ALL,
+    ALL_ATTRIBUTES,
+    ALL_OPERATIONAL_ATTRIBUTES,
+    ASYNC,
+    BASE,
+    LEVEL,
+    MODIFY_ADD,
+    MODIFY_DELETE,
+    MODIFY_REPLACE,
+    Connection,
+    SchemaInfo,
+    Server,
 )
-from ldap.ldapobject import LDAPObject
-from ldap.modlist import addModlist, modifyModlist
-from ldap.schema import SubSchema
-from ldap.schema.models import AttributeType, LDAPSyntax
+from ldap3.core.exceptions import (
+    LDAPInvalidCredentialsResult,
+    LDAPOperationResult,
+    LDAPResponseTimeoutError,
+)
+from ldif import LDIFParser
 
 from . import settings
 from .entities import (
@@ -47,18 +58,8 @@ from .entities import (
     SearchResult,
     TreeItem,
 )
-from .ldap_helpers import (
-    WITH_OPERATIONAL_ATTRS,
-    LdapEntry,
-    anonymous_user_search,
-    empty,
-    get_entry_by_dn,
-    get_schema,
-    ldap_connect,
-    results,
-    unique,
-)
-from .schema import Schema, frontend_schema
+from .ldap_helpers import ResponseEntry, empty, get_responses, unique
+from .schema import Schema
 
 NO_CONTENT = Response(status_code=HTTPStatus.NO_CONTENT)
 
@@ -67,42 +68,81 @@ PHOTOS = ("jpegPhoto", "thumbnailPhoto")
 PASSWORDS = ("userPassword",)
 
 # Special syntaxes
-OCTET_STRING = "1.3.6.1.4.1.1466.115.121.1.40"
 INTEGER = "1.3.6.1.4.1.1466.115.121.1.27"
+
+# Default search filter
+ANY = "(objectClass=*)"
+
+URL_PATTERN = re.compile(
+    r"""^(?P<scheme>ldap|ldapi|ldaps)://
+         (?P<host>[/A-Za-z0-9_.-]*)
+         (:(?P<port>[0-9]+))?
+         (/(?P<dn>[^?]+))?
+         .*""",
+    re.IGNORECASE | re.VERBOSE,
+)
 
 api = APIRouter(prefix="/api")
 
 
-async def get_root_dse(connection: LDAPObject):
-    "Auto-detect base DN and LDAP schema from root DSE"
-    result = await unique(
-        connection,
-        connection.search(
-            "",
-            SCOPE_BASE,
-            attrlist=WITH_OPERATIONAL_ATTRS,
-        ),
-    )
+def parse_url(url: str) -> tuple[str, str | None]:
+    "Extract a base URL and optional base DN from a RFC 4516 URL"
+    if match := URL_PATTERN.match(url):
+        parts = match.groupdict()
+        scheme = parts["scheme"]
+        host = parts["host"]
+        if not host or host == "/":
+            if scheme == "ldapi":
+                raise ValueError("Missing LDAPI domain socket path")
+            else:
+                host = "localhost"
+        while host.endswith("/"):
+            # ldap3 is not particularly smart with server URLs
+            host = host[:-1]
+        url = f"{scheme}://{host}"
+        if scheme != "ldapi" and parts["port"]:
+            url += f":{parts['port']}"
+        return url, parts["dn"]
+
+    raise ValueError(f"Invalid URL: {url}")
+
+
+async def ldap_connect() -> Connection:
+    "Open an anonymous LDAP connection"
+
+    url, base_dn = parse_url(settings.LDAP_URL)
+    server = Server(url, get_info=ALL)
+    connection = Connection(server, client_strategy=ASYNC, raise_exceptions=True)
+    connection.bind()
+    dsa_info = connection.server.info
+
     if not settings.BASE_DN:
-        base_dns = result.attr("namingContexts")
-        assert len(base_dns) == 1, f"No unique base DN: {base_dns}"
-        settings.BASE_DN = base_dns[0]
+        if base_dn:
+            settings.BASE_DN = base_dn
+        else:
+            base_dns = dsa_info.naming_contexts
+            assert len(base_dns) == 1, f"No unique base DN: {base_dns}"
+            settings.BASE_DN = base_dns[0]
+
+    elif base_dn and base_dn != settings.BASE_DN:
+        raise ValueError(f"Contradicting base DNs: {base_dn} vs. {settings.BASE_DN}")
 
     if not settings.SCHEMA_DN:
-        schema_dns = result.attr("subschemaSubentry")
-        assert schema_dns, "Cannot determine LDAP schema"
-        settings.SCHEMA_DN = schema_dns[0]
+        assert dsa_info.schema_entry, "Cannot determine LDAP schema"
+        settings.SCHEMA_DN = dsa_info.schema_entry[0]
+
+    if settings.USE_TLS and url.startswith("ldap://"):
+        connection.start_tls()
+
+    return connection
 
 
 async def authenticated(
     authorization: Annotated[str | None, Header()] = None,
-) -> AsyncGenerator[LDAPObject, None]:
+) -> AsyncGenerator[Connection, None]:
     "Authenticate against the directory"
 
-    connection = ldap_connect()
-
-    if not settings.BASE_DN or not settings.SCHEMA_DN:
-        await get_root_dse(connection)
+    connection = await ldap_connect()
 
     # Hard-wired credentials
     dn = settings.GET_BIND_DN()
@@ -116,11 +156,13 @@ async def authenticated(
         )
 
     if not dn:  # Log in
-        raise INVALID_CREDENTIALS([{"desc": f"Invalid credentials for DN: {dn}"}])
+        raise LDAPInvalidCredentialsResult(
+            [{"desc": f"Invalid credentials for DN: {dn}"}]
+        )
 
-    await empty(connection, connection.simple_bind(dn, password))
+    connection.rebind(user=dn, password=password)
     yield connection
-    connection.unbind_s()
+    connection.unbind()
 
 
 def get_basic_credentials(authorization: str) -> list[str]:
@@ -128,10 +170,26 @@ def get_basic_credentials(authorization: str) -> list[str]:
     if scheme.lower() == "basic":
         return base64.b64decode(credentials).decode().split(":", maxsplit=1)
 
-    raise INVALID_CREDENTIALS([{"desc": f"Unsupported authorization scheme: {scheme}"}])
+    raise LDAPInvalidCredentialsResult(
+        [{"desc": f"Unsupported authorization scheme: {scheme}"}]
+    )
 
 
-AuthenticatedConnection = Annotated[LDAPObject, Depends(authenticated)]
+async def anonymous_user_search(connection: Connection, username: str) -> str | None:
+    try:
+        bind_user = await unique(
+            connection,
+            connection.search(
+                settings.BASE_DN,
+                search_filter=settings.GET_BIND_DN_FILTER(username),
+            ),
+        )
+        return bind_user.dn
+    except HTTPException:
+        pass  # No unique result
+
+
+AuthenticatedConnection = Annotated[Connection, Depends(authenticated)]
 
 
 class Tag(StrEnum):
@@ -153,10 +211,30 @@ async def get_base_entry(connection: AuthenticatedConnection) -> list[TreeItem]:
     result = await unique(
         connection,
         connection.search(
-            settings.BASE_DN, SCOPE_BASE, attrlist=WITH_OPERATIONAL_ATTRS
+            settings.BASE_DN,
+            search_filter=ANY,
+            search_scope=BASE,
+            attributes=ALL_OPERATIONAL_ATTRIBUTES,
         ),
     )
-    return [TreeItem.from_entry(result)]
+    return [TreeItem.of(result)]
+
+
+async def get_entry_by_dn(
+    connection: Connection,
+    dn: str,
+) -> ResponseEntry:
+    "Asynchronously retrieve an LDAP entry by its DN"
+
+    return await unique(
+        connection,
+        connection.search(
+            dn,
+            search_filter=ANY,
+            search_scope=BASE,
+            attributes=ALL_ATTRIBUTES,
+        ),
+    )
 
 
 @api.get("/tree/{basedn:path}", tags=[Tag.NAVIGATION], operation_id="get_tree")
@@ -164,10 +242,15 @@ async def get_tree(basedn: str, connection: AuthenticatedConnection) -> list[Tre
     "List directory entries below a DN"
 
     return [
-        TreeItem.from_entry(entry)
-        async for entry in results(
+        TreeItem.of(entry)
+        async for entry in get_responses(
             connection,
-            connection.search(basedn, SCOPE_ONELEVEL, attrlist=WITH_OPERATIONAL_ATTRS),
+            connection.search(
+                basedn,
+                search_filter=ANY,
+                search_scope=LEVEL,
+                attributes=ALL_OPERATIONAL_ATTRIBUTES,
+            ),
         )
     ]
 
@@ -175,51 +258,10 @@ async def get_tree(basedn: str, connection: AuthenticatedConnection) -> list[Tre
 @api.get("/entry/{dn:path}", tags=[Tag.EDITING], operation_id="get_entry")
 async def get_entry(dn: str, connection: AuthenticatedConnection) -> Entry:
     "Retrieve a directory entry by DN"
-    return _entry(
+    return Entry.of(
         await get_entry_by_dn(connection, dn),
-        await get_schema(connection),
+        connection.server.schema,
     )
-
-
-def _entry(entry: LdapEntry, schema: SubSchema) -> Entry:
-    "Decode an LDAP entry for transmission"
-
-    binary = sorted(
-        set(attr for attr in entry.attrs if _is_binary(entry, attr, schema))
-    )
-    return Entry(
-        attrs={
-            k: ["*****"]  # 23 suppress userPassword
-            if k == "userPassword"
-            else [base64.b64encode(val).decode() for val in entry.attrs[k]]
-            if k in binary
-            else entry.attr(k)
-            for k in sorted(entry.attrs)
-        },
-        dn=entry.dn,
-        binary=binary,
-        autoFilled=[],
-        changed=[],
-    )
-
-
-def _is_binary(entry: LdapEntry, attr: str, schema: SubSchema) -> bool:
-    "Guess whether an attribute has binary content"
-
-    # Octet strings are not used consistently in schemata.
-    # Try to decode as text and treat as binary on failure
-    attr_type = schema.get_obj(AttributeType, attr)
-    assert attr_type, f"Attribute '{attr}' not found in schema"
-    if not attr_type.syntax or attr_type.syntax == OCTET_STRING:
-        try:
-            return any(not val.isprintable() for val in entry.attr(attr))
-        except UnicodeDecodeError:
-            return True
-
-    # Check human-readable flag
-    syntax = schema.get_obj(LDAPSyntax, attr_type.syntax)
-    assert syntax, f"Syntax '{attr_type.syntax}' not found in schema"
-    return syntax.not_human_readable
 
 
 @api.delete(
@@ -232,9 +274,9 @@ async def delete_entry(dn: str, connection: AuthenticatedConnection) -> None:
     for entry_dn in sorted(
         [
             entry.dn
-            async for entry in results(
+            async for entry in get_responses(
                 connection,
-                connection.search(dn, SCOPE_SUBTREE),
+                connection.search(dn, search_filter=ANY),
             )
         ],
         key=len,
@@ -248,44 +290,56 @@ async def post_entry(
     dn: str, attributes: Attributes, connection: AuthenticatedConnection
 ) -> AttributeNames:
     entry = await get_entry_by_dn(connection, dn)
-    schema = await get_schema(connection)
+    if modifications := get_modifications(entry, attributes, connection.server.schema):
+        # Apply changes and send changed keys back
+        await empty(connection, connection.modify(dn, modifications))
+    return sorted(modifications)
 
-    expected = {
-        attr: _nonempty_byte_strings(attributes, attr)
+
+Modification = tuple[str, list[str]]
+
+
+def get_modifications(
+    entry: ResponseEntry,
+    attributes: Attributes,
+    schema: SchemaInfo,
+) -> dict[str, list[Modification]]:
+    attributes = {
+        attr: list(filter(None, (attributes[attr])))
         for attr in attributes
         if attr not in PASSWORDS
         and (
-            attr not in entry.attrs
-            or not _is_binary(
-                entry, attr, schema
-            )  # FIXME Handle binary attributes properly
+            attr not in entry.raw_attributes
+            # FIXME Handle binary attributes properly
+            or not entry.is_binary(attr, schema)
         )
     }
 
-    actual = {attr: v for attr, v in entry.attrs.items() if attr in expected}
-    modlist = modifyModlist(actual, expected)
-    if modlist:  # Apply changes and send changed keys back
-        await empty(connection, connection.modify(dn, modlist))
-    return list(sorted(set(m[1] for m in modlist)))
-
-
-def _nonempty_byte_strings(attributes: Attributes, attr: str) -> list[bytes]:
-    return [s.encode() for s in filter(None, attributes[attr])]
+    modifications = {}
+    for attr, values in attributes.items():
+        if not values:
+            modifications[attr] = (MODIFY_DELETE, [])
+        elif attr not in entry.attributes:
+            modifications[attr] = (MODIFY_ADD, values)
+        else:
+            new_values = {s.encode("UTF-8") for s in values}
+            old_values = set(entry.raw_attributes[attr])
+            if new_values != old_values:
+                modifications[attr] = (MODIFY_REPLACE, values)
+    return modifications
 
 
 @api.put("/entry/{dn:path}", tags=[Tag.EDITING], operation_id="put_entry")
 async def put_entry(
     dn: str, attributes: Attributes, connection: AuthenticatedConnection
 ) -> AttributeNames:
-    modlist = addModlist(
-        {
-            attr: _nonempty_byte_strings(attributes, attr)
-            for attr in attributes
-            if attr not in PHOTOS
-        }
-    )
-    if modlist:
-        await empty(connection, connection.add(dn, modlist))
+
+    if attributes := {
+        attr: list(filter(None, attributes[attr]))
+        for attr in attributes
+        if attr not in PHOTOS
+    }:
+        await empty(connection, connection.add(dn, attributes=attributes))
     return ["dn"]  # Dummy
 
 
@@ -296,10 +350,22 @@ async def put_entry(
     operation_id="post_rename_entry",
 )
 async def rename_entry(
-    dn: str, rdn: Annotated[str, Body()], connection: AuthenticatedConnection
+    dn: str,
+    rdn: Annotated[str, Body()],
+    connection: AuthenticatedConnection,
 ) -> None:
     "Rename an entry"
-    await empty(connection, connection.rename(dn, rdn, delold=0))
+    entry = await get_entry_by_dn(connection, dn)
+
+    parent_dn = dn.split(",", 1)[1]
+    new_dn = f"{rdn},{parent_dn}"
+    await empty(connection, connection.add(new_dn, attributes=entry.raw_attributes))
+    try:
+        await empty(connection, connection.delete(dn))
+    except LDAPOperationResult:
+        # Cannot delete Entry with subordinates -> Undo
+        await empty(connection, connection.delete(new_dn))
+        raise
 
 
 @api.get(
@@ -315,13 +381,13 @@ async def get_blob(
 
     entry = await get_entry_by_dn(connection, dn)
 
-    if attr not in entry.attrs or len(entry.attrs[attr]) <= index:
+    if attr not in entry.raw_attributes or len(entry.raw_attributes[attr]) <= index:
         raise HTTPException(
             HTTPStatus.NOT_FOUND, f"Attribute {attr} not found for DN {dn}"
         )
 
     return Response(
-        entry.attrs[attr][index],
+        entry.raw_attributes[attr][index],
         media_type="application/octet-stream",
         headers={"Content-Disposition": f'attachment; filename="{attr}-{index:d}.bin"'},
     )
@@ -341,17 +407,11 @@ async def put_blob(
     connection: AuthenticatedConnection,
 ) -> None:
     "Upload a binary attribute"
-    entry = await get_entry_by_dn(connection, dn)
     data = await blob.read(cast(int, blob.size))
-    if attr in entry.attrs:
-        await empty(
-            connection,
-            connection.modify(
-                dn, [(1, attr, None), (0, attr, entry.attrs[attr] + [data])]
-            ),
-        )
-    else:
-        await empty(connection, connection.modify(dn, [(0, attr, [data])]))
+    await empty(
+        connection,
+        connection.modify(dn, {attr: (MODIFY_ADD, [data])}),
+    )
 
 
 @api.delete(
@@ -365,14 +425,12 @@ async def delete_blob(
 ) -> None:
     "Remove a binary attribute"
     entry = await get_entry_by_dn(connection, dn)
-    if attr not in entry.attrs or len(entry.attrs[attr]) <= index:
+    if attr not in entry.raw_attributes or len(entry.raw_attributes[attr]) <= index:
         raise HTTPException(
             HTTPStatus.NOT_FOUND, f"Attribute {attr} not found for DN {dn}"
         )
-    await empty(connection, connection.modify(dn, [(1, attr, None)]))
-    data = entry.attrs[attr][:index] + entry.attrs[attr][index + 1 :]
-    if data:
-        await empty(connection, connection.modify(dn, [(0, attr, data)]))
+    data = entry.raw_attributes[attr][:index] + entry.raw_attributes[attr][index + 1 :]
+    await empty(connection, connection.modify(dn, {attr: (MODIFY_REPLACE, data)}))
 
 
 @api.post(
@@ -384,9 +442,9 @@ async def check_password(
     "Verify a password"
 
     try:
-        connection.simple_bind_s(dn, check)
+        connection.rebind(user=dn, password=check)
         return True
-    except INVALID_CREDENTIALS:
+    except LDAPInvalidCredentialsResult:
         return False
 
 
@@ -401,12 +459,11 @@ async def change_password(
 ) -> None:
     "Update passwords"
     if args.new1:
-        await empty(
-            connection,
-            connection.passwd(dn, args.old or None, args.new1),
-        )
+        connection.extend.standard.modify_password(dn, args.old or None, args.new1)
     else:
-        await empty(connection, connection.modify(dn, [(1, "userPassword", None)]))
+        await empty(
+            connection, connection.modify(dn, {"userPassword": (MODIFY_DELETE, [])})
+        )
 
 
 @api.get(
@@ -417,10 +474,17 @@ async def export_ldif(dn: str, connection: AuthenticatedConnection) -> Response:
     "Dump an entry as LDIF"
 
     out = io.StringIO()
-    writer = ldif.LDIFWriter(out)
 
-    async for entry in results(connection, connection.search(dn, SCOPE_SUBTREE)):
-        writer.unparse(entry.dn, entry.attrs)
+    msgid = connection.search(dn, search_filter=ANY, attributes=ALL_ATTRIBUTES)
+    assert type(msgid) is int, "Expected async operation"
+    while True:
+        try:
+            entries, result = connection.get_response(msgid, timeout=0)
+            out.write("# ")
+            out.writelines(connection.response_to_ldif(entries))
+            break
+        except LDAPResponseTimeoutError:
+            await sleep(0.01)
 
     file_name = dn.split(",")[0].split("=")[1]
     return PlainTextResponse(
@@ -429,29 +493,32 @@ async def export_ldif(dn: str, connection: AuthenticatedConnection) -> Response:
     )
 
 
-class LDIFReader(ldif.LDIFParser):
-    def __init__(self, input: bytes, con: LDAPObject):
-        ldif.LDIFParser.__init__(self, io.BytesIO(input))
-        self.count = 0
-        self.con = con
-
-    def handle(self, dn: str, entry: Attributes):
-        self.con.add_s(dn, addModlist(entry))
-        self.count += 1
-
-
-@api.post(
+@api.put(
     "/ldif",
     tags=[Tag.EDITING],
-    operation_id="post_ldif",
+    operation_id="put_ldif",
     status_code=HTTPStatus.NO_CONTENT,
+    openapi_extra={
+        "requestBody": {
+            "content": {
+                "application/binary": {
+                    "schema": {
+                        "title": "LDIF data",
+                        "type": "string",
+                        "format": "binary",
+                    }
+                }
+            }
+        }
+    },
 )
 async def upload_ldif(request: Request, connection: AuthenticatedConnection) -> None:
     "Import LDIF"
 
-    reader = LDIFReader(await request.body(), connection)
+    parser = LDIFParser(io.BytesIO(await request.body()))
     try:
-        reader.parse()
+        for dn, record in parser.parse():
+            await empty(connection, connection.add(dn, attributes=record))
     except ValueError as e:
         raise HTTPException(HTTPStatus.UNPROCESSABLE_ENTITY, e.args[0])
 
@@ -476,13 +543,13 @@ async def search(query: str, connection: AuthenticatedConnection) -> list[Search
 
     # Collect results
     res = []
-    async for entry in results(
-        connection, connection.search(settings.BASE_DN, SCOPE_SUBTREE, query)
+    async for entry in get_responses(
+        connection, connection.search(settings.BASE_DN, search_filter=query)
     ):
         res.append(
             SearchResult(
                 dn=entry.dn,
-                name=entry.attr("cn")[0] if "cn" in entry.attrs else entry.dn,
+                name=entry.attr("cn")[0] if "cn" in entry.attributes else entry.dn,
             )
         )
         if len(res) >= settings.SEARCH_MAX:
@@ -493,7 +560,7 @@ async def search(query: str, connection: AuthenticatedConnection) -> list[Search
 @api.get("/whoami", tags=[Tag.MISC], operation_id="get_who_am_i")
 async def whoami(connection: AuthenticatedConnection) -> str:
     "DN of the current user"
-    return connection.whoami_s().replace("dn:", "")
+    return connection.user
 
 
 @api.get("/subtree/{root_dn:path}", tags=[Tag.MISC], operation_id="get_subtree")
@@ -504,11 +571,11 @@ async def list_subtree(
 
     return sorted(
         [
-            TreeItem.from_entry(entry)
-            async for entry in results(
+            TreeItem.of(entry)
+            async for entry in get_responses(
                 connection,
                 connection.search(
-                    root_dn, SCOPE_SUBTREE, attrlist=WITH_OPERATIONAL_ATTRS
+                    root_dn, search_filter=ANY, attributes=ALL_OPERATIONAL_ATTRIBUTES
                 ),
             )
             if root_dn != entry.dn
@@ -521,19 +588,18 @@ async def list_subtree(
 async def attribute_range(attribute: str, connection: AuthenticatedConnection) -> Range:
     "List all values for a numeric attribute of an objectClass like uidNumber or gidNumber"
 
-    schema = await get_schema(connection)
-    obj = schema.get_obj(AttributeType, attribute)
+    schema = connection.server.schema
+    obj = schema.attribute_types[attribute]
 
     values = set(
         [
-            int(entry.attrs[attribute][0])
-            async for entry in results(
+            int(entry.attributes[attribute])
+            async for entry in get_responses(
                 connection,
                 connection.search(
                     settings.BASE_DN,
-                    SCOPE_SUBTREE,
-                    f"({attribute}=*)",
-                    attrlist=(attribute,),
+                    search_filter=f"({attribute}=*)",
+                    attributes=(attribute,),
                 ),
             )
             if obj and obj.syntax == INTEGER
@@ -563,4 +629,4 @@ async def attribute_range(attribute: str, connection: AuthenticatedConnection) -
 async def ldap_schema(connection: AuthenticatedConnection) -> Schema:
     "Dump the LDAP schema as JSON"
     assert settings.SCHEMA_DN, "An LDAP schema DN is required!"
-    return frontend_schema(await get_schema(connection))
+    return Schema.of(connection.server.schema)

@@ -15,14 +15,15 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from ldap import (  # type: ignore
-    ALREADY_EXISTS,  # type: ignore
-    INSUFFICIENT_ACCESS,  # type: ignore
-    INVALID_CREDENTIALS,  # type: ignore
-    NO_SUCH_OBJECT,  # type: ignore
-    OBJECT_CLASS_VIOLATION,  # type: ignore
-    UNWILLING_TO_PERFORM,  # type: ignore  # type: ignore
-    LDAPError,  # type: ignore
+from ldap3.core.exceptions import (
+    LDAPEntryAlreadyExistsResult,
+    LDAPException,
+    LDAPInsufficientAccessRightsResult,
+    LDAPInvalidCredentialsResult,
+    LDAPNoSuchObjectResult,
+    LDAPObjectClassViolationResult,
+    LDAPOperationResult,
+    LDAPUnwillingToPerformResult,
 )
 
 from . import __version__, ldap_api, settings
@@ -50,24 +51,32 @@ async def cache_buster(request: Request, call_next) -> Response:
 # API error handling
 
 LDAP_ERROR_TO_STATUS = {
-    ALREADY_EXISTS: HTTPStatus.CONFLICT,
-    INSUFFICIENT_ACCESS: HTTPStatus.FORBIDDEN,
-    INVALID_CREDENTIALS: HTTPStatus.UNAUTHORIZED,
-    NO_SUCH_OBJECT: HTTPStatus.NOT_FOUND,
-    OBJECT_CLASS_VIOLATION: HTTPStatus.BAD_REQUEST,
-    UNWILLING_TO_PERFORM: HTTPStatus.FORBIDDEN,
+    LDAPEntryAlreadyExistsResult: HTTPStatus.CONFLICT,
+    LDAPInsufficientAccessRightsResult: HTTPStatus.FORBIDDEN,
+    LDAPInvalidCredentialsResult: HTTPStatus.UNAUTHORIZED,
+    LDAPNoSuchObjectResult: HTTPStatus.NOT_FOUND,
+    LDAPObjectClassViolationResult: HTTPStatus.BAD_REQUEST,
+    LDAPUnwillingToPerformResult: HTTPStatus.FORBIDDEN,
 }
 
 
-@app.exception_handler(LDAPError)
-def handle_ldap_error(request: Request, exc: LDAPError) -> Response:
+def camel_case_split(text: str) -> str:
+    "Split camel case string into words"
+    words = [[text[0].upper()]]
+    for c in text[1:]:
+        if words[-1][-1].islower() and c.isupper():
+            words.append(list(c))
+        else:
+            words[-1].append(c)
+    return " ".join(["".join(word) for word in words])
+
+
+@app.exception_handler(LDAPException)
+def handle_ldap_error(request: Request, exc: LDAPException) -> Response:
     "General handler for LDAP errors"
 
     exc_type = type(exc)
-    if exc_type is UNWILLING_TO_PERFORM:
-        logging.critical("Need BIND_DN or BIND_PATTERN to authenticate")
-
-    if exc_type is INVALID_CREDENTIALS:
+    if exc_type is LDAPInvalidCredentialsResult:
         return Response(
             status_code=HTTPStatus.UNAUTHORIZED,
             headers={
@@ -77,11 +86,13 @@ def handle_ldap_error(request: Request, exc: LDAPError) -> Response:
 
     if exc_type not in LDAP_ERROR_TO_STATUS:
         # Unknown error --> log it since FastApi won't do it for us
-        logging.exception("Error in %s %s:", request.method, request.url, exc_info=exc)
+        logging.exception("Error in %s %s:", request.method, request.url)
 
-    cause = exc.args[0] if exc.args else {}
-    desc = cause.get("desc", "LDAP error").capitalize()
-    msg = f"{desc}" if "info" not in cause else f"{desc}: {cause['info'].capitalize()}"
+    if isinstance(exc, LDAPOperationResult):
+        desc = camel_case_split(exc.description) or "LDAP error"
+        msg = f"{desc}: {exc.message}" if exc.message else desc
+    else:
+        msg = str(exc)
     return JSONResponse(
         {"detail": [msg]},
         status_code=LDAP_ERROR_TO_STATUS.get(

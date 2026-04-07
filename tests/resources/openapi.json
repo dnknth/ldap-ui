@@ -26,6 +26,7 @@
             "title": "Equality"
           },
           "name": {
+            "readOnly": true,
             "title": "Name",
             "type": "string"
           },
@@ -94,23 +95,18 @@
             "title": "Syntax"
           },
           "usage": {
-            "type": "string"
+            "$ref": "#/components/schemas/Usage",
+            "default": "userApplications"
           }
         },
         "required": [
           "oid",
-          "name",
           "names",
-          "desc",
           "obsolete",
           "sup",
           "single_value",
           "no_user_mod",
-          "usage",
-          "equality",
-          "syntax",
-          "substr",
-          "ordering"
+          "name"
         ],
         "title": "Attribute",
         "type": "object"
@@ -215,15 +211,6 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
-      "Kind": {
-        "enum": [
-          0,
-          1,
-          2
-        ],
-        "title": "Kind",
-        "type": "integer"
-      },
       "ObjectClass": {
         "properties": {
           "desc": {
@@ -238,6 +225,7 @@
             "title": "Desc"
           },
           "kind": {
+            "title": "Kind",
             "type": "string"
           },
           "may": {
@@ -255,6 +243,7 @@
             "type": "array"
           },
           "name": {
+            "readOnly": true,
             "title": "Name",
             "type": "string"
           },
@@ -284,14 +273,13 @@
         },
         "required": [
           "oid",
-          "name",
           "names",
-          "desc",
           "obsolete",
           "sup",
           "may",
           "must",
-          "kind"
+          "kind",
+          "name"
         ],
         "title": "ObjectClass",
         "type": "object"
@@ -378,6 +366,7 @@
             "type": "string"
           },
           "not_human_readable": {
+            "readOnly": true,
             "title": "Not Human Readable",
             "type": "boolean"
           },
@@ -420,13 +409,13 @@
       },
       "Usage": {
         "enum": [
-          0,
-          1,
-          2,
-          3
+          "directoryOperation",
+          "distributedOperation",
+          "dSAOperation",
+          "userApplications"
         ],
         "title": "Usage",
-        "type": "integer"
+        "type": "string"
       },
       "ValidationError": {
         "properties": {
@@ -1020,9 +1009,9 @@
       }
     },
     "/api/ldif": {
-      "post": {
+      "put": {
         "description": "Import LDIF",
-        "operationId": "post_ldif",
+        "operationId": "put_ldif",
         "parameters": [
           {
             "in": "header",
@@ -1041,6 +1030,17 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/binary": {
+              "schema": {
+                "format": "binary",
+                "title": "LDIF data",
+                "type": "string"
+              }
+            }
+          }
+        },
         "responses": {
           "204": {
             "description": "Successful Response"
