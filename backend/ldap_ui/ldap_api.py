@@ -21,6 +21,7 @@ from fastapi import (
     File,
     Header,
     HTTPException,
+    Request,
     Response,
     UploadFile,
 )
@@ -445,12 +446,10 @@ class LDIFReader(ldif.LDIFParser):
     operation_id="post_ldif",
     status_code=HTTPStatus.NO_CONTENT,
 )
-async def upload_ldif(
-    ldif: Annotated[str, Body()], connection: AuthenticatedConnection
-) -> None:
+async def upload_ldif(request: Request, connection: AuthenticatedConnection) -> None:
     "Import LDIF"
 
-    reader = LDIFReader(ldif.encode(), connection)
+    reader = LDIFReader(await request.body(), connection)
     try:
         reader.parse()
     except ValueError as e:
