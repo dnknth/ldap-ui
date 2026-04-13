@@ -8,8 +8,8 @@ from ldap_ui.app import app
 
 AUTH = ("admin", "bedrock")
 
-ADMIN_DN = "cn=admin,dc=flintstones,dc=com"
-FRED_DN = "cn=Fred Flintstone,ou=People,dc=flintstones,dc=com"
+ADMIN_DN = "cn=admin,o=Flintstones"
+FRED_DN = "cn=Fred Flintstone,ou=People,o=Flintstones"
 
 JPEG = (
     b"\xff\xd8\xff\xdb\x00C\x00\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
@@ -22,7 +22,7 @@ JPEG = (
 )
 
 LDIF = """
-dn: cn=test,dc=flintstones,dc=com
+dn: cn=test,o=Flintstones
 cn: test
 objectClass: organizationalRole
 objectClass: simpleSecurityObject
@@ -65,7 +65,7 @@ class BackendSmokeTest(unittest.TestCase):
 
     def test_020_get_tree_flintstones(self):
         with self.client:
-            result = self.client.get("/api/tree/dc=flintstones,dc=com", auth=AUTH)
+            result = self.client.get("/api/tree/o=Flintstones", auth=AUTH)
             self.assertEqual(result.status_code, HTTPStatus.OK)
             self.assertGreaterEqual(len(result.json()), 4)
 
@@ -79,9 +79,9 @@ class BackendSmokeTest(unittest.TestCase):
     def test_040_put_entry(self):
         with self.client:
             result = self.client.put(
-                "/api/entry/cn=foo,ou=People,dc=flintstones,dc=com",
+                "/api/entry/cn=foo,ou=People,o=Flintstones",
                 auth=AUTH,
-                content='{"objectClass":["inetOrgPerson"],"cn":["foo"],"sn":["bar"]}',
+                json={"objectClass": ["inetOrgPerson"], "cn": ["foo"], "sn": ["bar"]},
             )
             self.assertEqual(result.status_code, HTTPStatus.OK)
             self.assertEqual(result.json(), ["dn"])
@@ -89,9 +89,9 @@ class BackendSmokeTest(unittest.TestCase):
     def test_050_put_entry_again(self):
         with self.client:
             result = self.client.put(
-                "/api/entry/cn=foo,ou=People,dc=flintstones,dc=com",
+                "/api/entry/cn=foo,ou=People,o=Flintstones",
                 auth=AUTH,
-                content='{"objectClass":["inetOrgPerson"],"cn":["foo"],"sn":["bar"]}',
+                json={"objectClass": ["inetOrgPerson"], "cn": ["foo"], "sn": ["bar"]},
             )
             self.assertEqual(result.status_code, HTTPStatus.CONFLICT)
             self.assertEqual(result.json(), {"detail": ["Already exists"]})
@@ -99,9 +99,9 @@ class BackendSmokeTest(unittest.TestCase):
     def test_060_modify_entry(self):
         with self.client:
             result = self.client.post(
-                "/api/entry/cn=foo,ou=People,dc=flintstones,dc=com",
+                "/api/entry/cn=foo,ou=People,o=Flintstones",
                 auth=AUTH,
-                content='{"objectClass":["inetOrgPerson"],"cn":["foo"],"sn":["baz"]}',
+                json={"objectClass": ["inetOrgPerson"], "cn": ["foo"], "sn": ["baz"]},
             )
             self.assertEqual(result.status_code, HTTPStatus.OK)
             self.assertEqual(result.json(), ["sn"])
@@ -109,7 +109,7 @@ class BackendSmokeTest(unittest.TestCase):
     def test_070_put_image_to_entry(self):
         with self.client:
             result = self.client.put(
-                "/api/blob/jpegPhoto/0/cn=foo,ou=People,dc=flintstones,dc=com",
+                "/api/blob/jpegPhoto/0/cn=foo,ou=People,o=Flintstones",
                 auth=AUTH,
                 files={"blob": JPEG},
             )
@@ -118,7 +118,7 @@ class BackendSmokeTest(unittest.TestCase):
     def test_080_get_uploaded_image(self):
         with self.client:
             result = self.client.get(
-                "/api/blob/jpegPhoto/0/cn=foo,ou=People,dc=flintstones,dc=com",
+                "/api/blob/jpegPhoto/0/cn=foo,ou=People,o=Flintstones",
                 auth=AUTH,
             )
             self.assertEqual(result.status_code, HTTPStatus.OK)
@@ -131,7 +131,7 @@ class BackendSmokeTest(unittest.TestCase):
     def test_090_delete_image_from_entry(self):
         with self.client:
             result = self.client.delete(
-                "/api/blob/jpegPhoto/0/cn=foo,ou=People,dc=flintstones,dc=com",
+                "/api/blob/jpegPhoto/0/cn=foo,ou=People,o=Flintstones",
                 auth=AUTH,
             )
             self.assertEqual(result.status_code, HTTPStatus.NO_CONTENT)
@@ -139,7 +139,7 @@ class BackendSmokeTest(unittest.TestCase):
     def test_100_delete_image_from_entry_again(self):
         with self.client:
             result = self.client.delete(
-                "/api/blob/jpegPhoto/0/cn=foo,ou=People,dc=flintstones,dc=com",
+                "/api/blob/jpegPhoto/0/cn=foo,ou=People,o=Flintstones",
                 auth=AUTH,
             )
             self.assertEqual(result.status_code, HTTPStatus.NOT_FOUND)
@@ -147,39 +147,37 @@ class BackendSmokeTest(unittest.TestCase):
     def test_110_delete_entry(self):
         with self.client:
             result = self.client.delete(
-                "/api/entry/cn=foo,ou=People,dc=flintstones,dc=com",
+                "/api/entry/cn=foo,ou=People,o=Flintstones",
                 auth=AUTH,
             )
             self.assertEqual(result.status_code, HTTPStatus.NO_CONTENT)
 
     def test_120_post_ldif(self):
         with self.client:
-            result = self.client.post("/api/ldif", auth=AUTH, content=json.dumps(LDIF))
+            result = self.client.post("/api/ldif", auth=AUTH, content=LDIF)
             self.assertEqual(result.status_code, HTTPStatus.NO_CONTENT)
 
     def test_130_compare_ldif(self):
         with self.client:
-            result = self.client.get(
-                "/api/ldif/cn=test,dc=flintstones,dc=com", auth=AUTH
-            )
+            result = self.client.get("/api/ldif/cn=test,o=Flintstones", auth=AUTH)
             self.assertEqual(result.status_code, HTTPStatus.OK)
             self.assertEqual(result.content.decode().strip(), LDIF.strip())
 
     def test_140_change_password(self):
         with self.client:
             result = self.client.post(
-                "/api/change-password/cn=test,dc=flintstones,dc=com",
+                "/api/change-password/cn=test,o=Flintstones",
                 auth=AUTH,
-                content='{"old":"test","new1":"abc"}',
+                json={"old": "test", "new1": "abc"},
             )
             self.assertEqual(result.status_code, HTTPStatus.NO_CONTENT)
 
     def test_150_verify_password(self):
         with self.client:
             result = self.client.post(
-                "/api/check-password/cn=test,dc=flintstones,dc=com",
+                "/api/check-password/cn=test,o=Flintstones",
                 auth=AUTH,
-                content='"abc"',
+                json="abc",
             )
             self.assertEqual(result.status_code, HTTPStatus.OK)
             self.assertEqual(result.json(), True)
@@ -187,16 +185,16 @@ class BackendSmokeTest(unittest.TestCase):
     def test_160_rename_ldif(self):
         with self.client:
             result = self.client.post(
-                "/api/rename/cn=test,dc=flintstones,dc=com",
+                "/api/rename/cn=test,o=Flintstones",
                 auth=AUTH,
-                content='"objectClass=organizationalRole"',
+                json="objectClass=organizationalRole",
             )
             self.assertEqual(result.status_code, HTTPStatus.NO_CONTENT)
 
     def test_170_delete_ldif(self):
         with self.client:
             result = self.client.delete(
-                "/api/entry/objectClass=organizationalRole,dc=flintstones,dc=com",
+                "/api/entry/objectClass=organizationalRole,o=Flintstones",
                 auth=AUTH,
             )
             self.assertEqual(result.status_code, HTTPStatus.NO_CONTENT)
@@ -204,7 +202,7 @@ class BackendSmokeTest(unittest.TestCase):
     def test_180_verify_removed(self):
         with self.client:
             result = self.client.get(
-                "/api/entry/objectClass=organizationalRole,dc=flintstones,dc=com",
+                "/api/entry/objectClass=organizationalRole,o=Flintstones",
                 auth=AUTH,
             )
             self.assertEqual(result.status_code, HTTPStatus.NOT_FOUND)
@@ -215,9 +213,7 @@ class BackendSmokeTest(unittest.TestCase):
 
     def test_190_get_subtree(self):
         with self.client:
-            result = self.client.get(
-                "/api/subtree/ou=Pets,dc=flintstones,dc=com", auth=AUTH
-            )
+            result = self.client.get("/api/subtree/ou=Pets,o=Flintstones", auth=AUTH)
             self.assertEqual(result.status_code, HTTPStatus.OK)
             self.assertEqual(len(result.json()), 2)
 
