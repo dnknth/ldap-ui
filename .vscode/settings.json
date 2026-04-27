@@ -9,5 +9,6 @@
   },
   "python.testing.pytestEnabled": false,
   "python.testing.unittestEnabled": true,
-  "python.testing.unittestArgs": ["-v", "-s", "./tests", "-p", "*_test.py"]
+  "python.testing.unittestArgs": ["-v", "-s", "./tests", "-p", "*_test.py"],
+  "js/ts.tsdk.path": "node_modules/typescript/lib"
 }
