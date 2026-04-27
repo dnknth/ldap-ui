@@ -2,8 +2,6 @@
 
 SITE = backend/ldap_ui/statics
 VERSION = $(shell fgrep __version__ backend/ldap_ui/__init__.py | cut -d'"' -f2)
-ARCH = $(shell docker run --rm alpine uname -m)
-TAG = $(VERSION)-$(subst aarch64,arm64,$(ARCH))
 IMAGE = dnknth/ldap-ui
 
 debug: $(SITE) .env
@@ -31,7 +29,7 @@ node_modules: package.json
 
 clean:
 	rm -rf build dist $(SITE) backend/ldap_ui.egg-info
-	find backend -name __pycache__ -exec rm -rf {} \;
+	-find backend -name __pycache__ -exec rm -rf {} \;
 
 tidy: clean
 	rm -rf .venv node_modules
