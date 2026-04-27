@@ -14,10 +14,10 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 dependencies = [
-    "fastapi>=0.115.12",
-    "python-ldap",
-    "python-multipart",
-    "uvicorn>=0.34.3",
+    "fastapi>=0.128.5",
+    "python-ldap>=3.4.4",
+    "python-multipart>=0.0.22",
+    "uvicorn>=0.40.0",
 ]
 dynamic = ["version"]
 

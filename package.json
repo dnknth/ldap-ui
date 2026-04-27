@@ -19,7 +19,7 @@
     "vue": "latest"
   },
   "devDependencies": {
-    "@hey-api/openapi-ts": "^0.88.2",
+    "@hey-api/openapi-ts": "latest",
     "@tsconfig/node24": "latest",
     "@types/node": "latest",
     "@vitejs/plugin-vue": "latest",
@@ -32,7 +32,7 @@
     "npm-run-all2": "latest",
     "prettier": "latest",
     "tailwindcss": "^3.4.19",
-    "typescript": "latest",
+    "typescript": "^5.9.3",
     "vite": "latest",
     "vite-plugin-compression": "latest",
     "vitest": "latest",
