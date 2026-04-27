@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 from starlette.config import Config
 
@@ -48,7 +47,7 @@ INSECURE_TLS = config("INSECURE_TLS", cast=_boolean, default=False)
 #
 
 
-def GET_BIND_DN() -> Optional[str]:
+def GET_BIND_DN() -> str | None:
     """
     Try to find a hard-wired DN from in the environment.
     If this is present and GET_BIND_PASSWORD returns something,
@@ -58,7 +57,7 @@ def GET_BIND_DN() -> Optional[str]:
     return config("BIND_DN", default=None)
 
 
-def GET_BIND_PATTERN(username) -> Optional[str]:
+def GET_BIND_PATTERN(username: str | None) -> str | None:
     """
     Apply an optional user DN pattern for authentication
     from the environment,
@@ -70,12 +69,12 @@ def GET_BIND_PATTERN(username) -> Optional[str]:
         return config("BIND_PATTERN") % username
 
 
-def GET_BIND_DN_FILTER(username) -> str:
+def GET_BIND_DN_FILTER(username: str) -> str:
     "Produce a LDAP search filter for the login DN"
     return SEARCH_PATTERNS[0] % username
 
 
-def GET_BIND_PASSWORD() -> Optional[str]:
+def GET_BIND_PASSWORD() -> str | None:
     "Try to determine the login password from the environment or request"
     pw = config("BIND_PASSWORD", default=None)
     if pw is not None:

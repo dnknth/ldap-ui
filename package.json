@@ -31,7 +31,7 @@
     "npm-run-all2": "latest",
     "prettier": "latest",
     "tailwindcss": "^3.4.19",
-    "typescript": "latest",
+    "typescript": "^6.0.3",
     "vite": "latest",
     "vite-plugin-compression": "latest",
     "vitest": "latest",
