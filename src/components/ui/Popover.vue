@@ -1,7 +1,13 @@
 <template>
-  <transition name="fade" @after-enter="emit('opened')" @after-leave="emit('closed')">
-    <div v-if="open"
-      class="ui-popover absolute z-10 border border-front/70 rounded min-w-max text-front bg-back list-none">
+  <transition
+    name="fade"
+    @after-enter="emit('opened')"
+    @after-leave="emit('closed')"
+  >
+    <div
+      v-if="open"
+      class="ui-popover absolute z-10 border border-front/70 rounded min-w-max text-front bg-back list-none"
+    >
       <ul class="bg-front/5 dark:bg-front/10 py-2" ref="items" @click="close">
         <slot></slot>
       </ul>
@@ -10,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { onMounted, ref, useTemplateRef, watch } from "vue";
 import { useEventListener, useMouseInElement } from "@vueuse/core";
 
 const props = defineProps<{ open?: boolean }>(),
@@ -19,7 +25,7 @@ const props = defineProps<{ open?: boolean }>(),
     closed: [];
     "update:open": [];
   }>(),
-  items = ref<HTMLElement | null>(null),
+  items = useTemplateRef("items"),
   selected = ref<number>(),
   { isOutside } = useMouseInElement(items);
 

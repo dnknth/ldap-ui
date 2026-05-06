@@ -1,6 +1,12 @@
 <template>
-  <modal title="Add objectClass" :open="modal == 'add-object-class'" @show="oc = undefined" @shown="select?.focus()"
-    @ok="onOk" @cancel="emit('update:modal')">
+  <modal
+    title="Add objectClass"
+    :open="modal == 'add-object-class'"
+    @show="oc = undefined"
+    @shown="select?.focus()"
+    @ok="onOk"
+    @cancel="emit('update:modal')"
+  >
     <select v-model="oc" ref="select" @keyup.enter="onOk">
       <option v-for="cls in available" :key="cls">{{ cls }}</option>
     </select>
@@ -8,21 +14,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 import Modal from "../ui/Modal.vue";
 import type { Entry } from "../../generated/types.gen";
-import { state } from "../../state"
+import { state } from "../../state";
 
 const props = defineProps<{
-  entry: Entry;
-  modal?: string;
-}>(),
+    entry: Entry;
+    modal?: string;
+  }>(),
   emit = defineEmits<{
     ok: [oc: string];
     "update:modal": [];
   }>(),
   oc = ref<string>(),
-  select = ref<HTMLSelectElement | null>(),
+  select = useTemplateRef("select"),
   available = computed(() =>
     Array.from(state.schema?.objectClasses.values() || [])
       .filter(

@@ -23,7 +23,7 @@ deploy: clean $(SITE)
 
 $(SITE): node_modules
 	pnpm audit
-	pnpm run build
+	pnpm build
 
 node_modules: package.json
 	pnpm install

@@ -1,27 +1,38 @@
 <template>
-  <modal title="Upload photo" hide-footer :return-to="returnTo" :open="modal == 'add-' + attr" @shown="upload?.focus()"
-    @cancel="emit('update:modal')">
-    <input name="photo" type="file" ref="upload" @change="onOk"
-      :accept="attr == 'jpegPhoto' ? 'image/jpeg' : 'image/*'" />
+  <modal
+    title="Upload photo"
+    hide-footer
+    :return-to="returnTo"
+    :open="modal == 'add-' + attr"
+    @shown="upload?.focus()"
+    @cancel="emit('update:modal')"
+  >
+    <input
+      name="photo"
+      type="file"
+      ref="upload"
+      @change="onOk"
+      :accept="attr == 'jpegPhoto' ? 'image/jpeg' : 'image/*'"
+    />
   </modal>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { useTemplateRef } from "vue";
 import Modal from "../ui/Modal.vue";
 import { putBlob } from "../../generated/sdk.gen";
 
 const props = defineProps({
-  dn: { type: String, required: true },
-  attr: {
-    type: String,
-    validator: (value: string) =>
-      ["jpegPhoto", "thumbnailPhoto"].includes(value),
-  },
-  modal: String,
-  returnTo: String,
-}),
-  upload = ref<HTMLInputElement | null>(null),
+    dn: { type: String, required: true },
+    attr: {
+      type: String,
+      validator: (value: string) =>
+        ["jpegPhoto", "thumbnailPhoto"].includes(value),
+    },
+    modal: String,
+    returnTo: String,
+  }),
+  upload = useTemplateRef("upload"),
   emit = defineEmits<{
     ok: [dn: string, attrs: string[]];
     "update:modal": [];

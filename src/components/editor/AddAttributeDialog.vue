@@ -1,6 +1,13 @@
 <template>
-  <modal title="Add attribute" :open="modal == 'add-attribute'" :return-to="props.returnTo" @show="attr = undefined"
-    @shown="select?.focus()" @ok="onOk" @cancel="emit('update:modal')">
+  <modal
+    title="Add attribute"
+    :open="modal == 'add-attribute'"
+    :return-to="props.returnTo"
+    @show="attr = undefined"
+    @shown="select?.focus()"
+    @ok="onOk"
+    @cancel="emit('update:modal')"
+  >
     <select v-model="attr" ref="select" @keyup.enter="onOk">
       <option v-for="attr in available" :key="attr">{{ attr }}</option>
     </select>
@@ -8,22 +15,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 import Modal from "../ui/Modal.vue";
 import type { Entry } from "../../generated/types.gen";
 
 const props = defineProps<{
-  entry: Entry;
-  attributes: string[];
-  modal?: string;
-  returnTo?: string;
-}>(),
+    entry: Entry;
+    attributes: string[];
+    modal?: string;
+    returnTo?: string;
+  }>(),
   attr = ref<string>(),
-  select = ref<HTMLSelectElement | undefined>(undefined),
+  select = useTemplateRef("select"),
   available = computed(() =>
     // Choice list for new attribute selection popup
     props.attributes.filter(
-      (attr) => !Object.keys(props.entry.attrs).includes(attr))
+      (attr) => !Object.keys(props.entry.attrs).includes(attr),
+    ),
   ),
   emit = defineEmits<{
     ok: [attr: string];

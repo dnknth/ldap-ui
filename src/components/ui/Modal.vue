@@ -1,18 +1,34 @@
 <template>
   <div>
     <transition name="fade">
-      <div v-if="open" class="fixed w-full h-full top-0 left-0 z-20 bg-front/60 dark:bg-back/70" />
+      <div
+        v-if="open"
+        class="fixed w-full h-full top-0 left-0 z-20 bg-front/60 dark:bg-back/70"
+      />
     </transition>
 
-    <transition name="bounce" @enter="emit('show')" @after-enter="emit('shown')" @leave="emit('hide')"
-      @after-leave="emit('hidden')">
-      <div ref="backdrop" v-if="open" @click.self="onCancel" @keydown.esc="onCancel"
-        class="fixed w-full h-full top-0 left-0 flex items-center justify-center z-30">
+    <transition
+      name="bounce"
+      @enter="emit('show')"
+      @after-enter="emit('shown')"
+      @leave="emit('hide')"
+      @after-leave="emit('hidden')"
+    >
+      <div
+        v-if="open"
+        @click.self="onCancel"
+        @keydown.esc="onCancel"
+        class="fixed w-full h-full top-0 left-0 flex items-center justify-center z-30"
+      >
         <div
-          class="absolute max-h-full w-1/2 max-w-lg container text-front overflow-hidden rounded bg-back border border-front/40">
+          class="absolute max-h-full w-1/2 max-w-lg container text-front overflow-hidden rounded bg-back border border-front/40"
+        >
           <div class="flex justify-between items-start">
             <div class="max-h-full w-full divide-y divide-front/30">
-              <div v-if="title" class="flex justify-between items-center px-4 py-1">
+              <div
+                v-if="title"
+                class="flex justify-between items-center px-4 py-1"
+              >
                 <h3 class="ui-modal-header text-xl font-bold leading-normal">
                   <slot name="header">{{ title }}</slot>
                 </h3>
@@ -26,13 +42,29 @@
                 <slot />
               </div>
 
-              <div v-show="!hideFooter" class="ui-modal-footer flex justify-end w-full p-4 space-x-3">
+              <div
+                v-show="!hideFooter"
+                class="ui-modal-footer flex justify-end w-full p-4 space-x-3"
+              >
                 <slot name="footer">
-                  <button id="ui-modal-cancel" @click="onCancel" type="button" class="btn" :class="cancelClasses"
-                    tabindex="0">
+                  <button
+                    id="ui-modal-cancel"
+                    @click="onCancel"
+                    type="button"
+                    class="btn"
+                    :class="cancelClasses"
+                    tabindex="0"
+                  >
                     <slot name="modal-cancel">{{ cancelTitle }}</slot>
                   </button>
-                  <button id="ui-modal-ok" @click.stop="onOk" type="button" class="btn" :class="okClasses" tabindex="0">
+                  <button
+                    id="ui-modal-ok"
+                    @click.stop="onOk"
+                    type="button"
+                    class="btn"
+                    :class="okClasses"
+                    tabindex="0"
+                  >
                     <slot name="modal-ok">{{ okTitle }}</slot>
                   </button>
                 </slot>
@@ -47,15 +79,15 @@
 
 <script setup lang="ts">
 const props = defineProps({
-  title: { type: String, required: true },
-  open: { type: Boolean, required: true },
-  okTitle: { type: String, default: "OK" },
-  okClasses: { type: String, default: "bg-primary/80" },
-  cancelTitle: { type: String, default: "Cancel" },
-  cancelClasses: { type: String, default: "bg-secondary" },
-  hideFooter: { type: Boolean, default: false },
-  returnTo: String,
-}),
+    title: { type: String, required: true },
+    open: { type: Boolean, required: true },
+    okTitle: { type: String, default: "OK" },
+    okClasses: { type: String, default: "bg-primary/80" },
+    cancelTitle: { type: String, default: "Cancel" },
+    cancelClasses: { type: String, default: "bg-secondary" },
+    hideFooter: { type: Boolean, default: false },
+    returnTo: String,
+  }),
   emit = defineEmits<{
     ok: [];
     cancel: [];
