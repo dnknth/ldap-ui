@@ -1,15 +1,27 @@
 <template>
-  <modal title="New entry" :open="modal == 'new-entry'" :return-to="returnTo" @ok="onOk" @cancel="emit('update:modal')"
-    @show="init" @shown="select?.focus()">
-    <label>Object class:
+  <modal
+    title="New entry"
+    :open="modal == 'new-entry'"
+    :return-to="returnTo"
+    @ok="onOk"
+    @cancel="emit('update:modal')"
+    @show="init"
+    @shown="select?.focus()"
+  >
+    <label
+      >Object class:
       <select ref="select" v-model="objectClass">
-        <template v-for="cls in state.schema?.objectClasses.values()" :key="cls.name">
+        <template
+          v-for="cls in state.schema?.objectClasses.values()"
+          :key="cls.name"
+        >
           <option v-if="cls.structural">{{ cls }}</option>
         </template>
       </select>
     </label>
 
-    <label v-if="objectClass">RDN attribute:
+    <label v-if="objectClass"
+      >RDN attribute:
       <select v-model="rdn">
         <option v-for="rdn in rdns()" :key="rdn">
           {{ rdn }}
@@ -17,25 +29,30 @@
       </select>
     </label>
 
-    <input v-if="objectClass" v-model="name" placeholder="RDN value" @keyup.enter="onOk" />
+    <input
+      v-if="objectClass"
+      v-model="name"
+      placeholder="RDN value"
+      @keyup.enter="onOk"
+    />
   </modal>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 import Modal from "../ui/Modal.vue";
-import { state } from "../../state"
+import { state } from "../../state";
 import type { Entry } from "../../generated/types.gen";
 
 const props = defineProps<{
-  dn: string;
-  modal?: string;
-  returnTo?: string;
-}>(),
+    dn: string;
+    modal?: string;
+    returnTo?: string;
+  }>(),
   objectClass = ref(""),
   rdn = ref(""),
   name = ref(""),
-  select = ref<HTMLSelectElement | null>(null),
+  select = useTemplateRef("select"),
   oc = computed(() => state.schema?.oc(objectClass.value)),
   emit = defineEmits<{
     ok: [entry: Entry];

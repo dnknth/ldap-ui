@@ -1,55 +1,138 @@
 <template>
   <div v-if="attr && shown" class="flex mx-4 space-x-4">
-    <div :class="{ required: must, optional: may, rdn: isRdn, illegal: illegal }" class="w-1/4">
-      <span class="cursor-pointer oc" :title="attr.desc" @click="emit('show-attr', attr.name)">{{ attr }}</span>
+    <div
+      :class="{ required: must, optional: may, rdn: isRdn, illegal: illegal }"
+      class="w-1/4"
+    >
+      <span
+        class="cursor-pointer oc"
+        :title="attr.desc"
+        @click="emit('show-attr', attr.name)"
+        >{{ attr }}</span
+      >
       <i v-if="changed" class="fa text-emerald-700 ml-1 fa-check"></i>
     </div>
 
     <div class="w-3/4">
       <div v-for="(val, index) in values" :key="index">
-        <span v-if="isStructural(val)" @click="emit('show-modal', 'add-object-class')" tabindex="-1"
-          class="add-btn control font-bold" title="Add object class…" accesskey="o">⊕</span>
-        <span v-else-if="isAux(val)" @click="removeObjectClass(index)" class="remove-btn control"
-          :title="'Remove ' + val">⊖</span>
-        <span v-else-if="password" class="fa fa-question-circle control" @click="emit('show-modal', 'change-password')"
-          tabindex="-1" title="change password"></span>
-        <span v-else-if="attr.name == 'jpegPhoto' || attr.name == 'thumbnailPhoto'"
-          @click="emit('show-modal', 'add-jpegPhoto')" tabindex="-1" class="add-btn control align-top"
-          title="Add photo…">⊕</span>
-        <span v-else-if="multiple(index) && !illegal" @click="addRow" class="add-btn control" title="Add row">⊕</span>
+        <span
+          v-if="isStructural(val)"
+          @click="emit('show-modal', 'add-object-class')"
+          tabindex="-1"
+          class="add-btn control font-bold"
+          title="Add object class…"
+          accesskey="o"
+          >⊕</span
+        >
+        <span
+          v-else-if="isAux(val)"
+          @click="removeObjectClass(index)"
+          class="remove-btn control"
+          :title="'Remove ' + val"
+          >⊖</span
+        >
+        <span
+          v-else-if="password"
+          class="fa fa-question-circle control"
+          @click="emit('show-modal', 'change-password')"
+          tabindex="-1"
+          title="change password"
+        ></span>
+        <span
+          v-else-if="attr.name == 'jpegPhoto' || attr.name == 'thumbnailPhoto'"
+          @click="emit('show-modal', 'add-jpegPhoto')"
+          tabindex="-1"
+          class="add-btn control align-top"
+          title="Add photo…"
+          >⊕</span
+        >
+        <span
+          v-else-if="multiple(index) && !illegal"
+          @click="addRow"
+          class="add-btn control"
+          title="Add row"
+          >⊕</span
+        >
         <span v-else class="mr-5"></span>
 
         <span v-if="attr.name == 'jpegPhoto' || attr.name == 'thumbnailPhoto'">
-          <img v-if="val" :src="'data:image/' +
-            (attr.name == 'jpegPhoto' ? 'jpeg' : '*') +
-            ';base64,' +
-            val
-            " class="max-w-[120px] max-h-[120px] border p-px inline mx-1" />
-          <span v-if="val" class="control remove-btn align-top ml-1" @click="doDeleteBlob(index)"
-            title="Remove photo">⊖</span>
+          <img
+            v-if="val"
+            :src="`data:image/${attr.name == 'jpegPhoto' ? 'jpeg' : '*'};base64,${val}`"
+            class="max-w-[120px] max-h-[120px] border p-px inline mx-1"
+          />
+          <span
+            v-if="val"
+            class="control remove-btn align-top ml-1"
+            @click="doDeleteBlob(index)"
+            title="Remove photo"
+            >⊖</span
+          >
         </span>
         <span v-else-if="boolean">
-          <span v-if="index == 0 && !values[0]" class="control text-lg" @click="updateValue(index, 'FALSE')">⊕</span>
-          <span v-else class="pb-1 border-primary focus-within:border-b border-solid">
-            <toggle-button :id="attr + '-' + index" :value="values[index]" class="mt-2"
-              @update:value="updateValue(index, $event)" />
-            <i class="fa fa-trash ml-2 relative -top-0.5 control" @click="updateValue(index, '')"></i>
+          <span
+            v-if="index == 0 && !values[0]"
+            class="control text-lg"
+            @click="updateValue(index, 'FALSE')"
+            >⊕</span
+          >
+          <span
+            v-else
+            class="pb-1 border-primary focus-within:border-b border-solid"
+          >
+            <toggle-button
+              :id="attr + '-' + index"
+              :value="values[index]"
+              class="mt-2"
+              @update:value="updateValue(index, $event)"
+            />
+            <i
+              class="fa fa-trash ml-2 relative -top-0.5 control"
+              @click="updateValue(index, '')"
+            ></i>
           </span>
         </span>
-        <input v-else :value="values[index]" :id="attr + '-' + index" :type="type" autocomplete="off"
+        <input
+          v-else
+          :value="values[index]"
+          :id="attr + '-' + index"
+          :type="type"
+          autocomplete="off"
           class="w-[90%] glyph outline-none bg-back border-x-0 border-t-0 border-b border-solid border-front/20 focus:border-primary px-1"
-          :placeholder="placeholder" :disabled="disabled" :title="time ? dateString(val) : ''" @input="update"
+          :placeholder="placeholder"
+          :disabled="disabled"
+          :title="time ? dateString(val) : ''"
+          @input="update"
           :class="{
             structural: isStructural(val),
             auto: defaultValue,
             illegal: (illegal && !empty) || duplicate(index),
           }"
-          @focusin="query = ''" @keyup="search" @keyup.esc="query = ''" />
-        <i v-if="attr.name == 'objectClass'" class="cursor-pointer fa fa-info-circle" @click="emit('show-oc', val)"></i>
+          @focusin="query = ''"
+          @keyup="search"
+          @keyup.esc="query = ''"
+        />
+        <i
+          v-if="attr.name == 'objectClass'"
+          class="cursor-pointer fa fa-info-circle"
+          @click="emit('show-oc', val)"
+        ></i>
       </div>
-      <search-results silent v-if="completable && elementId" @select-dn="complete" :for="elementId" :query="query"
-        label="dn" :shorten="baseDn" />
-      <attribute-search v-if="oid && elementId" @done="complete" :for="elementId" :query="query" />
+      <search-results
+        silent
+        v-if="completable && elementId"
+        @select-dn="complete"
+        :for="elementId"
+        :query="query"
+        label="dn"
+        :shorten="baseDn"
+      />
+      <attribute-search
+        v-if="oid && elementId"
+        @done="complete"
+        :for="elementId"
+        :query="query"
+      />
       <div v-if="hint" class="text-xs ml-6 opacity-70">{{ hint }}</div>
     </div>
   </div>
@@ -74,14 +157,14 @@ function unique(
 }
 
 const dateFormat: Intl.DateTimeFormatOptions = {
-  weekday: "long",
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-  hour: "numeric",
-  minute: "numeric",
-  second: "numeric",
-},
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+  },
   syntaxes = {
     boolean: "1.3.6.1.4.1.1466.115.121.1.7",
     distinguishedName: "1.3.6.1.4.1.1466.115.121.1.12",
@@ -170,7 +253,7 @@ onMounted(async () => {
   )
     return;
 
-  const response = await getRange({ path: { attribute: props.attr.name! }});
+  const response = await getRange({ path: { attribute: props.attr.name! } });
   if (!response.data) return;
 
   const range = response.data;
@@ -227,13 +310,16 @@ function dateString(dt: string): string {
 
 // Is the given value a structural object class?
 function isStructural(val: string): boolean {
-  return props.attr.name == "objectClass" && (state.schema?.oc(val)?.structural || false);
+  return (
+    props.attr.name == "objectClass" &&
+    (state.schema?.oc(val)?.structural || false)
+  );
 }
 
 // Is the given value an auxillary object class?
 function isAux(val: string): boolean {
   const oc = state.schema?.oc(val);
-  return props.attr.name == "objectClass" && (!!oc && !oc.structural);
+  return props.attr.name == "objectClass" && !!oc && !oc.structural;
 }
 
 function duplicate(index: number): boolean {

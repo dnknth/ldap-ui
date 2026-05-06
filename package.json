@@ -13,7 +13,6 @@
     "generate": "openapi-ts -i tests/resources/openapi.json -o ./src/generated"
   },
   "dependencies": {
-    "@vueuse/components": "latest",
     "@vueuse/core": "latest",
     "font-awesome": "^4.7.0",
     "vue": "latest"

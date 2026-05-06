@@ -1,7 +1,15 @@
 <template>
-  <modal title="Rename entry" :open="modal == 'rename-entry'" :return-to="returnTo" @ok="onOk"
-    @cancel="emit('update:modal')" @show="init" @shown="select?.focus()">
-    <label>New RDN attribute:
+  <modal
+    title="Rename entry"
+    :open="modal == 'rename-entry'"
+    :return-to="returnTo"
+    @ok="onOk"
+    @cancel="emit('update:modal')"
+    @show="init"
+    @shown="select?.focus()"
+  >
+    <label
+      >New RDN attribute:
       <select ref="select" v-model="rdn" @keyup.enter="onOk">
         <option v-for="rdn in rdns" :key="rdn">{{ rdn }}</option>
       </select>
@@ -10,17 +18,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 import Modal from "../ui/Modal.vue";
 import type { Entry } from "../../generated/types.gen";
 
 const props = defineProps<{
-  entry: Entry;
-  modal?: string;
-  returnTo?: string;
-}>(),
+    entry: Entry;
+    modal?: string;
+    returnTo?: string;
+  }>(),
   rdn = ref<string>(),
-  select = ref<HTMLInputElement | null>(null),
+  select = useTemplateRef("select"),
   rdns = computed(() => Object.keys(props.entry.attrs).filter(ok)),
   emit = defineEmits<{
     ok: [rdn: string];

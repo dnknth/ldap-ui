@@ -1,42 +1,71 @@
 <template>
-  <modal title="Change / verify password" :open="modal == 'change-password'" :return-to="returnTo" @show="init"
-    @shown="focus" @ok="onOk" @cancel="emit('update:modal')" @hidden="emit('update-form')">
+  <modal
+    title="Change / verify password"
+    :open="modal == 'change-password'"
+    :return-to="returnTo"
+    @show="init"
+    @shown="focus"
+    @ok="onOk"
+    @cancel="emit('update:modal')"
+    @hidden="emit('update-form')"
+  >
     <div v-if="oldExists">
       <small>{{ currentUser ? "Required" : "Optional" }}</small>
-      <i v-if="passwordOk !== undefined" class="fa ml-2" :class="passwordOk
-          ? 'text-emerald-700 fa-check-circle'
-          : 'text-danger fa-times-circle'
-        "></i>
+      <i
+        v-if="passwordOk !== undefined"
+        class="fa ml-2"
+        :class="
+          passwordOk
+            ? 'text-emerald-700 fa-check-circle'
+            : 'text-danger fa-times-circle'
+        "
+      ></i>
 
-      <input ref="old" v-model="oldPassword" placeholder="Old password" type="password" @change="check" />
+      <input
+        ref="old"
+        v-model="oldPassword"
+        placeholder="Old password"
+        type="password"
+        @change="check"
+      />
     </div>
 
-    <input ref="changed" v-model="newPassword" placeholder="New password" type="password" />
+    <input
+      ref="changed"
+      v-model="newPassword"
+      placeholder="New password"
+      type="password"
+    />
 
-    <input v-model="repeated" :class="{ 'text-danger': repeated && !passwordsMatch }" placeholder="Repeat new password"
-      type="password" @keyup.enter="onOk" />
+    <input
+      v-model="repeated"
+      :class="{ 'text-danger': repeated && !passwordsMatch }"
+      placeholder="Repeat new password"
+      type="password"
+      @keyup.enter="onOk"
+    />
   </modal>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 import Modal from "../ui/Modal.vue";
 import { postCheckPassword } from "../../generated/sdk.gen";
 import { getWhoAmI } from "../../generated/sdk.gen";
 import type { Entry } from "../../generated/types.gen";
 
 const props = defineProps<{
-  entry: Entry;
-  modal?: string;
-  returnTo?: string;
-}>(),
+    entry: Entry;
+    modal?: string;
+    returnTo?: string;
+  }>(),
   oldPassword = ref(""),
   newPassword = ref(""),
   repeated = ref(""),
   passwordOk = ref<boolean>(),
   user = ref<string | null>(null),
-  old = ref<HTMLInputElement | null>(null),
-  changed = ref<HTMLInputElement | null>(null),
+  old = useTemplateRef("old"),
+  changed = useTemplateRef("changed"),
   currentUser = computed(() => user.value == props.entry.dn),
   passwordsMatch = computed(
     () => newPassword.value && newPassword.value == repeated.value,

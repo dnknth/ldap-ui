@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@vueuse/components':
-        specifier: latest
-        version: 14.3.0(vue@3.5.33(typescript@6.0.3))
       '@vueuse/core':
         specifier: latest
         version: 14.3.0(vue@3.5.33(typescript@6.0.3))
@@ -522,11 +519,6 @@ packages:
         optional: true
       vue:
         optional: true
-
-  '@vueuse/components@14.3.0':
-    resolution: {integrity: sha512-jnrJrecSfa8H+G6wtAwsCnMtKbKZDSpu5JZDuulZikWrHb6uuS5SyXP6M2b79tofxipm78VWDSzW+58pu1yglA==}
-    peerDependencies:
-      vue: ^3.5.0
 
   '@vueuse/core@14.3.0':
     resolution: {integrity: sha512-aHfz47g0ZhMtTVHmIzMVpJy8ePhhOy68GY5bv110+5DVtZ+W7BsOx+m61UNQqfrWyPztIHIanWa3E2tib3NFIw==}
@@ -2123,12 +2115,6 @@ snapshots:
   '@vue/tsconfig@0.9.1(typescript@6.0.3)(vue@3.5.33(typescript@6.0.3))':
     optionalDependencies:
       typescript: 6.0.3
-      vue: 3.5.33(typescript@6.0.3)
-
-  '@vueuse/components@14.3.0(vue@3.5.33(typescript@6.0.3))':
-    dependencies:
-      '@vueuse/core': 14.3.0(vue@3.5.33(typescript@6.0.3))
-      '@vueuse/shared': 14.3.0(vue@3.5.33(typescript@6.0.3))
       vue: 3.5.33(typescript@6.0.3)
 
   '@vueuse/core@14.3.0(vue@3.5.33(typescript@6.0.3))':
