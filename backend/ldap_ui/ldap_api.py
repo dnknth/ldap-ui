@@ -113,6 +113,15 @@ async def ldap_connect() -> Connection:
     url, base_dn = parse_url(settings.LDAP_URL)
     server = Server(url, get_info=ALL)
     connection = Connection(server, client_strategy=ASYNC, raise_exceptions=True)
+
+    # Negotiate StartTLS before binding. Otherwise the bind and the root DSE
+    # lookup below are sent in clear text, and directories that mandate
+    # confidentiality (e.g. OpenLDAP `olcSecurity: tls=1`) reject every
+    # operation attempted before TLS is in place. See RFC 4513, §3.1.1.
+    if settings.USE_TLS and url.startswith("ldap://"):
+        connection.open(read_server_info=False)
+        connection.start_tls()
+
     connection.bind()
     dsa_info = connection.server.info
 
@@ -130,9 +139,6 @@ async def ldap_connect() -> Connection:
     if not settings.SCHEMA_DN:
         assert dsa_info.schema_entry, "Cannot determine LDAP schema"
         settings.SCHEMA_DN = dsa_info.schema_entry[0]
-
-    if settings.USE_TLS and url.startswith("ldap://"):
-        connection.start_tls()
 
     return connection
 
