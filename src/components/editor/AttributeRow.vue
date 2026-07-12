@@ -16,16 +16,7 @@
     <div class="w-3/4">
       <div v-for="(val, index) in values" :key="index">
         <span
-          v-if="isStructural(val)"
-          @click="emit('show-modal', 'add-object-class')"
-          tabindex="-1"
-          class="add-btn control font-bold"
-          title="Add object class…"
-          accesskey="o"
-          >⊕</span
-        >
-        <span
-          v-else-if="isAux(val)"
+          v-if="isAux(val)"
           @click="removeObjectClass(index)"
           class="remove-btn control"
           :title="'Remove ' + val"
@@ -196,7 +187,9 @@ const dateFormat: Intl.DateTimeFormatOptions = {
     () => props.values.length == 1 && props.values[0] == autoFilled.value,
   ),
   empty = computed(() => props.values.every((value) => !value.trim())),
-  illegal = computed(() => !props.must && !props.may),
+  illegal = computed(
+    () => !props.must && !props.may && props.attr.usage != "directoryOperation",
+  ),
   isRdn = computed(() => props.attr.name == props.entry.dn.split("=")[0]),
   oid = computed(() => props.attr.syntax == syntaxes.oid),
   missing = computed(() => empty.value && props.must),
@@ -348,7 +341,9 @@ function complete(dn: string): void {
   const index = +elementId.value!.split("-").slice(-1).pop()!;
   const values = props.values.slice();
   values[index] = dn;
-  values.push("");
+  if (!props.attr.single_value) {
+    values.push("");
+  }
   query.value = "";
   emit("update", props.attr.name!, values, index + 1);
 }

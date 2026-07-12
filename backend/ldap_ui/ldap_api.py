@@ -30,7 +30,6 @@ from fastapi.responses import PlainTextResponse
 from ldap3 import (
     ALL,
     ALL_ATTRIBUTES,
-    ALL_OPERATIONAL_ATTRIBUTES,
     ASYNC,
     BASE,
     LEVEL,
@@ -66,6 +65,7 @@ NO_CONTENT = Response(status_code=HTTPStatus.NO_CONTENT)
 # Special fields
 PHOTOS = ("jpegPhoto", "thumbnailPhoto")
 PASSWORDS = ("userPassword",)
+PWD_POLICY_DN = "pwdPolicySubentry"
 
 # Special syntaxes
 INTEGER = "1.3.6.1.4.1.1466.115.121.1.27"
@@ -220,15 +220,14 @@ async def get_base_entry(connection: AuthenticatedConnection) -> list[TreeItem]:
             settings.BASE_DN,
             search_filter=ANY,
             search_scope=BASE,
-            attributes=ALL_OPERATIONAL_ATTRIBUTES,
+            get_operational_attributes=True,
         ),
     )
     return [TreeItem.of(result)]
 
 
 async def get_entry_by_dn(
-    connection: Connection,
-    dn: str,
+    connection: Connection, dn: str, with_operational_attributes=False
 ) -> ResponseEntry:
     "Asynchronously retrieve an LDAP entry by its DN"
 
@@ -239,6 +238,7 @@ async def get_entry_by_dn(
             search_filter=ANY,
             search_scope=BASE,
             attributes=ALL_ATTRIBUTES,
+            get_operational_attributes=with_operational_attributes,
         ),
     )
 
@@ -255,7 +255,7 @@ async def get_tree(basedn: str, connection: AuthenticatedConnection) -> list[Tre
                 basedn,
                 search_filter=ANY,
                 search_scope=LEVEL,
-                attributes=ALL_OPERATIONAL_ATTRIBUTES,
+                get_operational_attributes=True,
             ),
         )
     ]
@@ -581,7 +581,10 @@ async def list_subtree(
             async for entry in get_responses(
                 connection,
                 connection.search(
-                    root_dn, search_filter=ANY, attributes=ALL_OPERATIONAL_ATTRIBUTES
+                    root_dn,
+                    search_filter=ANY,
+                    attributes=ALL_ATTRIBUTES,
+                    get_operational_attributes=True,
                 ),
             )
             if root_dn != entry.dn

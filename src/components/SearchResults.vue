@@ -1,7 +1,12 @@
 <template>
   <popover :open="show" @update:open="results = []">
-    <li v-for="item in results" :key="item.dn" @click="done(item.dn)" :title="label == 'dn' ? '' : trim(item.dn)"
-      role="menuitem">
+    <li
+      v-for="item in results"
+      :key="item.dn"
+      @click="done(item.dn)"
+      :title="label == 'dn' ? '' : trim(item.dn)"
+      role="menuitem"
+    >
       {{ item[label as keyof Result] }}
     </li>
   </popover>
@@ -20,22 +25,22 @@ interface Result {
 }
 
 const props = defineProps({
-  query: {
-    type: String,
-    default: "",
-  },
-  for: String,
-  label: {
-    type: String,
-    default: "name",
-    validator: (value: string) => ["name", "dn"].includes(value),
-  },
-  shorten: String,
-  silent: {
-    type: Boolean,
-    default: false,
-  },
-}),
+    query: {
+      type: String,
+      default: "",
+    },
+    for: String,
+    label: {
+      type: String,
+      default: "name",
+      validator: (value: string) => ["name", "dn"].includes(value),
+    },
+    shorten: String,
+    silent: {
+      type: Boolean,
+      default: false,
+    },
+  }),
   results = ref<SearchResult[]>([]),
   show = computed(
     () => props.query.trim() != "" && results.value && results.value.length > 1,
@@ -47,7 +52,7 @@ watch(
   async (q) => {
     if (!q) return;
 
-    const response = await search({ path: { query: q }});
+    const response = await search({ path: { query: q } });
     if (!response.data) return;
     results.value = await response.data;
 

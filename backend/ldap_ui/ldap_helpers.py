@@ -45,6 +45,12 @@ class ResponseEntry:
             self.raw_attributes.get("numSubordinates", 0)
         )
 
+    def is_modifiable(self, attr: str, schema: SchemaInfo):
+        "Is an attribute modifiable by users?"
+        attr_type = schema.attribute_types.get(attr)
+        assert attr_type, f"Attribute '{attr}' not found in schema"
+        return not attr_type.no_user_modification
+
     def is_binary(self, attr: str, schema: SchemaInfo) -> bool:
         "Guess whether an attribute has binary content"
 
@@ -63,8 +69,7 @@ class ResponseEntry:
 
         # Check human-readable flag
         syntax = schema.ldap_syntaxes.get(attr_type.syntax)
-        assert syntax, f"Syntax '{attr_type.syntax}' not found in schema"
-        return Syntax.of(syntax).not_human_readable
+        return syntax is None or Syntax.of(syntax).not_human_readable
 
 
 async def get_responses(

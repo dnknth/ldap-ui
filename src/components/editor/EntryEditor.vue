@@ -1,24 +1,79 @@
 <template>
   <div v-if="entry" class="rounded border border-front/20 mb-3 mx-4 flex-auto">
     <!-- Modals for navigation menu -->
-    <new-entry-dialog v-model:modal="modal" :dn="entry.dn" :return-to="focused" @ok="newEntry" />
-    <copy-entry-dialog v-model:modal="modal" :entry="entry" :return-to="focused" @ok="newEntry" />
-    <rename-entry-dialog v-model:modal="modal" :entry="entry" :return-to="focused" @ok="renameEntry" />
-    <delete-entry-dialog v-model:modal="modal" :dn="entry.dn" :return-to="focused" @ok="deleteEntryByDn" />
-    <discard-entry-dialog v-model:modal="modal" :dn="props.activeDn" :return-to="focused" @ok="discardEntry"
-      @shown="emit('update:activeDn')" />
+    <new-entry-dialog
+      v-model:modal="modal"
+      :dn="entry.dn"
+      :return-to="focused"
+      @ok="newEntry"
+    />
+    <copy-entry-dialog
+      v-model:modal="modal"
+      :entry="entry"
+      :return-to="focused"
+      @ok="newEntry"
+    />
+    <rename-entry-dialog
+      v-model:modal="modal"
+      :entry="entry"
+      :return-to="focused"
+      @ok="renameEntry"
+    />
+    <delete-entry-dialog
+      v-model:modal="modal"
+      :dn="entry.dn"
+      :return-to="focused"
+      @ok="deleteEntryByDn"
+    />
+    <discard-entry-dialog
+      v-model:modal="modal"
+      :dn="props.activeDn"
+      :return-to="focused"
+      @ok="discardEntry"
+      @shown="emit('update:activeDn')"
+    />
 
     <!-- Modals for main editing area -->
-    <password-change-dialog v-model:modal="modal" :entry="entry" :return-to="focused" @ok="changePassword" />
-    <add-photo-dialog v-model:modal="modal" attr="jpegPhoto" :dn="entry.dn" :return-to="focused" @ok="load" />
-    <add-photo-dialog v-model:modal="modal" attr="thumbnailPhoto" :dn="entry.dn" :return-to="focused" @ok="load" />
-    <add-object-class-dialog v-model:modal="modal" :entry="entry" :return-to="focused" @ok="addObjectClass" />
+    <password-change-dialog
+      v-model:modal="modal"
+      :entry="entry"
+      :return-to="focused"
+      @ok="changePassword"
+    />
+    <add-photo-dialog
+      v-model:modal="modal"
+      attr="jpegPhoto"
+      :dn="entry.dn"
+      :return-to="focused"
+      @ok="load"
+    />
+    <add-photo-dialog
+      v-model:modal="modal"
+      attr="thumbnailPhoto"
+      :dn="entry.dn"
+      :return-to="focused"
+      @ok="load"
+    />
+    <add-object-class-dialog
+      v-model:modal="modal"
+      :entry="entry"
+      :return-to="focused"
+      @ok="addObjectClass"
+    />
 
     <!-- Modals for footer -->
-    <add-attribute-dialog v-model:modal="modal" :entry="entry" :attributes="attributes('may')" :return-to="focused"
-      @ok="addAttribute" @show-modal="modal = $event" />
+    <add-attribute-dialog
+      v-model:modal="modal"
+      :entry="entry"
+      :attributes="attributes('may')"
+      :return-to="focused"
+      @ok="addAttribute"
+      @show-modal="modal = $event"
+    />
 
-    <nav class="flex justify-between mb-4 border-b border-front/20 bg-primary/70">
+    <nav
+      class="flex justify-between mb-4 border-b border-front/20 bg-primary/70"
+    >
       <div v-if="entry.isNew" class="py-2 ml-3">
         <node-label :dn="entry.dn" :oc="structural" />
       </div>
@@ -31,37 +86,99 @@
           <li @click="modal = 'copy-entry'" role="menuitem">Copy…</li>
           <li @click="modal = 'rename-entry'" role="menuitem">Rename…</li>
           <li role="menuitem"><a :href="'api/ldif/' + entry.dn">Export</a></li>
-          <li @click="modal = 'delete-entry'" class="text-danger" role="menuitem">
+          <li
+            @click="modal = 'delete-entry'"
+            class="text-danger"
+            role="menuitem"
+          >
             Delete…
           </li>
         </dropdown-menu>
       </div>
 
-      <div v-if="entry.isNew" class="control text-2xl mr-2" @click="modal = 'discard-entry'" title="close">⊗</div>
-      <div v-else class="control text-xl mr-2" title="close" @click="emit('update:activeDn')">⊗</div>
+      <div
+        v-if="entry.isNew"
+        class="control text-2xl mr-2"
+        @click="modal = 'discard-entry'"
+        title="close"
+      >
+        ⊗
+      </div>
+      <div
+        v-else
+        class="control text-xl mr-2"
+        title="close"
+        @click="emit('update:activeDn')"
+      >
+        ⊗
+      </div>
     </nav>
 
-    <form id="entry" class="space-y-4 my-4" @submit.prevent="save" @reset="load(entry!.dn, undefined, undefined)"
-      @focusin="onFocus">
-      <attribute-row v-for="key in keys" :key="key" :base-dn="props.baseDn" :attr="state.schema?.attr(key)!"
-        :entry="entry" :values="entry.attrs[key]!" :changed="hasChanged(key)" :may="attributes('may').includes(key)"
-        :must="attributes('must').includes(key)" @update="updateRow" @reload-form="load" @valid="valid(key, $event)"
-        @show-modal="modal = $event" @show-attr="emit('show-attr', $event)" @show-oc="emit('show-oc', $event)" />
+    <form
+      id="entry"
+      class="space-y-4 my-4"
+      @submit.prevent="save"
+      @reset="load(entry!.dn, undefined, undefined)"
+      @focusin="onFocus"
+    >
+      <attribute-row
+        v-for="key in keys"
+        :key="key"
+        :base-dn="props.baseDn"
+        :attr="state.schema?.attr(key)!"
+        :entry="entry"
+        :values="entry.attrs[key]!"
+        :changed="hasChanged(key)"
+        :may="attributes('may').includes(key)"
+        :must="attributes('must').includes(key)"
+        @update="updateRow"
+        @reload-form="load"
+        @valid="valid(key, $event)"
+        @show-modal="modal = $event"
+        @show-attr="emit('show-attr', $event)"
+        @show-oc="emit('show-oc', $event)"
+      />
 
       <!-- Footer with buttons -->
       <div class="flex ml-4 mt-2 space-x-4">
         <div class="w-1/4"></div>
         <div class="w-3/4 pl-4">
           <div class="w-[90%] space-x-3">
-            <button type="submit" class="btn bg-primary/70" tabindex="0" accesskey="s" :disabled="invalid.length != 0">
+            <button
+              type="submit"
+              class="btn bg-primary/70"
+              tabindex="0"
+              accesskey="s"
+              :disabled="invalid.length != 0"
+            >
               Submit
             </button>
-            <button type="reset" v-if="!entry.isNew" accesskey="r" tabindex="0" class="btn bg-secondary">
+            <button
+              type="reset"
+              v-if="!entry.isNew"
+              accesskey="r"
+              tabindex="0"
+              class="btn bg-secondary"
+            >
               Reset
             </button>
-            <button class="btn float-right bg-secondary" accesskey="a" tabindex="0" v-if="!entry.isNew"
-              @click.prevent="modal = 'add-attribute'">
-              Add attribute…
+            <button
+              class="btn float-right bg-secondary"
+              accesskey="a"
+              tabindex="0"
+              v-if="!entry.isNew"
+              @click.prevent="modal = 'add-attribute'"
+            >
+              ＋ Attribute…
+            </button>
+            <button
+              class="btn float-right bg-secondary"
+              accesskey="o"
+              tabindex="0"
+              v-if="!entry.isNew"
+              @click.prevent="modal = 'add-object-class'"
+            >
+              ＋ ObjectClass…
             </button>
           </div>
         </div>
@@ -118,8 +235,8 @@ const inputTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"],
     return keys;
   }),
   structural = computed(() => {
-    const oc = entry.value?.attrs.objectClass!
-      .map((oc) => state.schema?.oc(oc as string))
+    const oc = entry.value?.attrs
+      .objectClass!.map((oc) => state.schema?.oc(oc as string))
       .filter((oc) => oc && oc.structural)[0];
     return oc ? oc.name! : "";
   }),
@@ -146,8 +263,8 @@ function focus(focused?: string): void {
     const input = focused
       ? document.getElementById(focused)
       : (document.querySelector(
-        'form#entry input:not([disabled]), form#entry button[type="button"]',
-      ) as HTMLElement);
+          'form#entry input:not([disabled]), form#entry button[type="button"]',
+        ) as HTMLElement);
 
     if (input) {
       // work around annoying focus jump in OS X Safari
@@ -205,7 +322,7 @@ async function load(dn?: string, changed?: string[], focused?: string) {
     entry.value = undefined;
     return;
   }
-  const response = await getEntry({ path: { dn }});
+  const response = await getEntry({ path: { dn } });
   if (response.error) {
     showError(response.error);
     return;
@@ -275,7 +392,7 @@ async function renameEntry(rdn: string) {
 }
 
 async function deleteEntryByDn(dn: string) {
-  const response = await deleteEntry({ path: { dn }});
+  const response = await deleteEntry({ path: { dn } });
   if (response.error) {
     showError(response.error);
     return;
@@ -299,11 +416,17 @@ async function changePassword(oldPass: string, newPass: string) {
 }
 
 function attributes(kind: "must" | "may"): string[] {
-  const attrs = entry.value!.attrs.objectClass!
-    .filter((oc) => oc && oc != "top")
+  const attrs = entry
+    .value!.attrs.objectClass!.filter((oc) => oc && oc != "top")
     .map((oc) => state.schema?.oc(oc))
     .flatMap((oc) => (oc ? oc.$collect(kind) : []))
     .filter(unique);
+  if (
+    attrs.includes("userPassword") &&
+    state.schema?.attr("pwdPolicySubentry")
+  ) {
+    attrs.push("pwdPolicySubentry");
+  }
   attrs.sort();
   return attrs;
 }

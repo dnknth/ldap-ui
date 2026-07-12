@@ -28,7 +28,11 @@ class Entry(BaseModel):
         "Decode an LDAP entry for transmission"
 
         binary = sorted(
-            set(attr for attr in entry.raw_attributes if entry.is_binary(attr, schema))
+            set(
+                attr
+                for attr in entry.raw_attributes
+                if entry.is_binary(attr, schema) and entry.is_modifiable(attr, schema)
+            )
         )
         return cls(
             attrs={
@@ -38,6 +42,7 @@ class Entry(BaseModel):
                 if k in binary
                 else [val.decode() for val in entry.raw_attributes[k]]
                 for k in sorted(entry.raw_attributes)
+                if entry.is_modifiable(k, schema)
             },
             dn=entry.dn,
             binary=binary,
