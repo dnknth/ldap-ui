@@ -9,4 +9,4 @@ if test -e /var/restore/*data.ldif; then
     mv /var/restore/*data.ldif /var/backups/
 fi
 
-exec /usr/sbin/slapd -d none -h ldap:/// -f /etc/openldap/slapd.conf
+exec /usr/sbin/slapd -d ${DEBUG:-none} -h ldap:/// -f /etc/openldap/slapd.conf
