@@ -22,14 +22,6 @@ from ldap3.core.exceptions import LDAPResponseTimeoutError
 from .schema import OCTET_STRING, Syntax
 
 
-@dataclass(frozen=True)
-class Result:  # TODO unused
-    result: int
-    description: str
-    message: str | None
-    dn: str | None
-    referrals: list
-
 
 @dataclass(frozen=True)
 class ResponseEntry:
@@ -48,7 +40,8 @@ class ResponseEntry:
     def is_modifiable(self, attr: str, schema: SchemaInfo):
         "Is an attribute modifiable by users?"
         attr_type = schema.attribute_types.get(attr)
-        assert attr_type, f"Attribute '{attr}' not found in schema"
+        if not attr_type:
+            raise ValueError(f"Attribute '{attr}' not found in schema")
         return not attr_type.no_user_modification
 
     def is_binary(self, attr: str, schema: SchemaInfo) -> bool:
@@ -57,7 +50,8 @@ class ResponseEntry:
         # Octet strings are not used consistently in schemata.
         # Try to decode as text and treat as binary on failure
         attr_type = schema.attribute_types.get(attr)
-        assert attr_type, f"Attribute '{attr}' not found in schema"
+        if not attr_type:
+            raise ValueError(f"Attribute '{attr}' not found in schema")
         if not attr_type.syntax or attr_type.syntax == OCTET_STRING:
             try:
                 return any(

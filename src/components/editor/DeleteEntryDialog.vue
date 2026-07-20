@@ -1,6 +1,15 @@
 <template>
-  <modal title="Are you sure?" :open="modal == 'delete-entry'" :return-to="returnTo" cancel-classes="bg-primary/80"
-    ok-classes="bg-danger/80" @show="init" @shown="onShown" @ok="onOk" @cancel="emit('update:modal')">
+  <modal
+    title="Are you sure?"
+    :open="modal == 'delete-entry'"
+    :return-to="returnTo"
+    cancel-classes="bg-primary/80"
+    ok-classes="bg-danger/80"
+    @show="init"
+    @shown="onShown"
+    @ok="onOk"
+    @cancel="emit('update:modal')"
+  >
     <p class="strong">This action is irreversible.</p>
 
     <div v-if="subtree.length">
@@ -24,14 +33,14 @@ import { computed, ref } from "vue";
 import { DN } from "../schema/schema";
 import Modal from "../ui/Modal.vue";
 import NodeLabel from "../NodeLabel.vue";
-import type { TreeItem } from "../../generated/types.gen";
-import { getSubtree } from "../../generated/sdk.gen";
+import type { TreeItem } from "@/generated";
+import { getSubtree } from "@/generated";
 
 const props = defineProps<{
-  dn: string;
-  modal?: string;
-  returnTo?: string;
-}>(),
+    dn: string;
+    modal?: string;
+    returnTo?: string;
+  }>(),
   subtree = ref<TreeItem[]>([]),
   emit = defineEmits<{
     ok: [dn: string];

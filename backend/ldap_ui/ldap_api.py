@@ -96,10 +96,8 @@ def parse_url(url: str) -> tuple[str, str | None]:
                 raise ValueError("Missing LDAPI domain socket path")
             else:
                 host = "localhost"
-        while host.endswith("/"):
-            # ldap3 is not particularly smart with server URLs
-            host = host[:-1]
-        url = f"{scheme}://{host}"
+        # ldap3 is not particularly smart with server URLs
+        url = f"{scheme}://{host.rstrip('/')}"
         if scheme != "ldapi" and parts["port"]:
             url += f":{parts['port']}"
         return url, parts["dn"]
@@ -130,14 +128,16 @@ async def ldap_connect() -> Connection:
             settings.BASE_DN = base_dn
         else:
             base_dns = dsa_info.naming_contexts
-            assert len(base_dns) == 1, f"No unique base DN: {base_dns}"
+            if len(base_dns) != 1:
+                raise ValueError(f"No unique base DN: {base_dns}")
             settings.BASE_DN = base_dns[0]
 
     elif base_dn and base_dn != settings.BASE_DN:
         raise ValueError(f"Contradicting base DNs: {base_dn} vs. {settings.BASE_DN}")
 
     if not settings.SCHEMA_DN:
-        assert dsa_info.schema_entry, "Cannot determine LDAP schema"
+        if not dsa_info.schema_entry:
+            raise ValueError("Cannot determine LDAP schema")
         settings.SCHEMA_DN = dsa_info.schema_entry[0]
 
     return connection
@@ -213,7 +213,8 @@ class Tag(StrEnum):
 async def get_base_entry(connection: AuthenticatedConnection) -> list[TreeItem]:
     "Get the directory base entry"
 
-    assert settings.BASE_DN, "An LDAP base DN is required!"
+    if not settings.BASE_DN:
+        raise ValueError("An LDAP base DN is required!")
     result = await unique(
         connection,
         connection.search(
@@ -310,6 +311,7 @@ def get_modifications(
     attributes: Attributes,
     schema: SchemaInfo,
 ) -> dict[str, list[Modification]]:
+    # Re-filter non-modifiable attributes (mirrors Entry.of logic)
     attributes = {
         attr: list(filter(None, (attributes[attr])))
         for attr in attributes
@@ -482,7 +484,8 @@ async def export_ldif(dn: str, connection: AuthenticatedConnection) -> Response:
     out = io.StringIO()
 
     msgid = connection.search(dn, search_filter=ANY, attributes=ALL_ATTRIBUTES)
-    assert type(msgid) is int, "Expected async operation"
+    if not isinstance(msgid, int):
+        raise TypeError("Expected async operation")
     while True:
         try:
             entries, result = connection.get_response(msgid, timeout=0)
@@ -540,10 +543,10 @@ async def search(query: str, connection: AuthenticatedConnection) -> list[Search
         if "(" not in query:
             query = f"({query})"
     else:  # Build default query
-        if "*" in query:  # disable implicit prefix searches
-            query = "(|%s)" % "".join(
-                p.replace("*", "") % query for p in settings.SEARCH_PATTERNS
-            )
+        if "*" in query:
+            # use exact match patterns (strip the implicit prefix wildcard)
+            exact_patterns = [p.replace("*", "") for p in settings.SEARCH_PATTERNS]
+            query = "(|%s)" % "".join(p % query for p in exact_patterns)
         else:
             query = "(|%s)" % "".join(p % query for p in settings.SEARCH_PATTERNS)
 
@@ -637,5 +640,6 @@ async def attribute_range(attribute: str, connection: AuthenticatedConnection) -
 )
 async def ldap_schema(connection: AuthenticatedConnection) -> Schema:
     "Dump the LDAP schema as JSON"
-    assert settings.SCHEMA_DN, "An LDAP schema DN is required!"
+    if not settings.SCHEMA_DN:
+        raise ValueError("An LDAP schema DN is required!")
     return Schema.of(connection.server.schema)

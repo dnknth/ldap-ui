@@ -1,15 +1,36 @@
 <template>
   <div class="rounded-md bg-front/[.07] p-4 shadow-md shadow-front/20">
     <ul v-if="tree" class="list-unstyled">
-      <li v-for="item in tree.visible()" :key="item.dn" :id="item.dn" :class="item.structuralObjectClass">
-        <span v-for="i in item.distinguishedName.level - tree.distinguishedName.level" class="ml-6" :key="i"></span>
+      <li
+        v-for="item in tree.visible()"
+        :key="item.dn"
+        :id="item.dn"
+        :class="item.structuralObjectClass"
+      >
+        <span
+          v-for="i in item.distinguishedName.level -
+          tree.distinguishedName.level"
+          class="ml-6"
+          :key="i"
+        ></span>
         <span v-if="item.hasSubordinates" class="control" @click="toggle(item)">
-          <i :class="'control p-0 fa fa-chevron-circle-' + (item.open ? 'down' : 'right')"></i>
+          <i
+            :class="
+              'control p-0 fa fa-chevron-circle-' +
+              (item.open ? 'down' : 'right')
+            "
+          ></i>
         </span>
         <span v-else class="mr-4"></span>
 
-        <node-label :dn="item.dn" :key="item.dn" :oc="item.structuralObjectClass" class="tree-link whitespace-nowrap text-front/80"
-          @select-dn="clicked(item.distinguishedName)" :class="{ active: activeDn == item.dn }">
+        <node-label
+          :dn="item.dn"
+          :key="item.dn"
+          :oc="item.structuralObjectClass"
+          class="tree-link whitespace-nowrap text-front/80"
+          @select-dn="clicked(item.distinguishedName)"
+          :class="{ active: activeDn == item.dn }"
+        >
           <span v-if="!item.distinguishedName.level">{{ item.dn }}</span>
         </node-label>
       </li>
@@ -21,9 +42,9 @@
 import { DN } from "./schema/schema";
 import { onMounted, ref, watch } from "vue";
 import NodeLabel from "./NodeLabel.vue";
-import { state } from "../state";
-import type { TreeItem } from "../generated/types.gen";
-import { getTree } from "../generated/sdk.gen";
+import { state } from "@/state";
+import type { TreeItem } from "@/generated";
+import { getTree } from "@/generated";
 
 class Node implements TreeItem {
   dn: string;
@@ -49,10 +70,9 @@ class Node implements TreeItem {
     // Matching rules are partially supported.
     if (!dn) return undefined;
     if (this.distinguishedName.matches(dn)) return this;
-    if (!dn.isSubordinate(this.distinguishedName) || !this.hasSubordinates) return undefined;
-    return this.subordinates
-      .map((node) => node.find(dn))
-      .filter((node) => node)[0];
+    if (!dn.isSubordinate(this.distinguishedName) || !this.hasSubordinates)
+      return undefined;
+    return this.subordinates.find((node) => node.find(dn));
   }
 
   get loaded(): boolean {
@@ -90,10 +110,11 @@ watch(
     }
 
     let newDn = selected;
-    if (selected.startsWith('-')) {
-      newDn = selected.split(',').slice(1).join(',');
+    if (selected.startsWith("-")) {
+      newDn = selected.split(",").slice(1).join(",");
       await reload(newDn);
     }
+    if (!newDn) return;
 
     // Reveal the selected entry by opening all parents
     let dn = new DN(newDn);
@@ -124,12 +145,12 @@ async function clicked(dn: DN) {
 // Reload the subtree at entry with given DN
 async function reload(dn?: string) {
   if (!dn) return;
-  const response = await getTree({ path: { basedn: dn }});
+  const response = await getTree({ path: { basedn: dn } });
   if (!response.data) return;
 
   const data = response.data;
   data.sort((a: TreeItem, b: TreeItem) =>
-    a.dn.toLowerCase().localeCompare(b.dn.toLowerCase())
+    a.dn.toLowerCase().localeCompare(b.dn.toLowerCase()),
   );
 
   if (dn == "base") {

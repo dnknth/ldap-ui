@@ -1,5 +1,9 @@
 <template>
-  <span @click="onClick(dn)" :title="dn" class="node-label cursor-pointer select-none">
+  <span
+    @click="onClick(dn)"
+    :title="dn"
+    class="node-label cursor-pointer select-none"
+  >
     <i class="fa w-6 text-center" :class="icon" v-if="oc"></i>
     <slot>{{ label }}</slot>
   </span>
@@ -8,9 +12,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 const props = defineProps<{
-  dn: string;
-  oc?: string;
-}>(),
+    dn: string;
+    oc?: string;
+  }>(),
   icons: { [key: string]: string } = {
     // OC -> icon mapping
     account: "user",
@@ -27,9 +31,9 @@ const props = defineProps<{
     person: "user",
     posixGroup: "users",
   },
-  icon = computed(() =>
+  icon = computed(
     // Get the icon for an OC
-    props.oc ? " fa-" + (icons[props.oc] || "question") : "fa-question",
+    () => "fa-" + (icons[props.oc ?? ""] || "question"),
   ),
   // Shorten a DN for readability
   label = computed(() =>

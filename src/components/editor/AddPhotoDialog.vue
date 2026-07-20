@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import { useTemplateRef } from "vue";
 import Modal from "../ui/Modal.vue";
-import { putBlob } from "../../generated/sdk.gen";
+import { putBlob } from "@/generated";
 
 const props = defineProps({
     dn: { type: String, required: true },

@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from "vue";
 import Modal from "../ui/Modal.vue";
-import type { Entry } from "../../generated/types.gen";
+import type { Entry } from "@/generated";
 
 const props = defineProps<{
     entry: Entry;
@@ -61,7 +61,7 @@ function onOk() {
 
   emit("update:modal");
   const entry = JSON.parse(JSON.stringify(props.entry));
-  entry.attrs[rdn!] = [rdnpart[1]];
+  entry.attrs[rdn] = [rdnpart[1]];
   entry.dn = dn.value;
   entry.isNew = true;
   emit("ok", entry);

@@ -1,7 +1,17 @@
 <template>
-  <modal title="Import" :open="modal == 'ldif-import'" ok-title="Import" @show="init" @ok="onOk"
-    @cancel="emit('update:modal')">
-    <textarea v-model="ldifData" id="ldif-data" placeholder="Paste or upload LDIF"></textarea>
+  <modal
+    title="Import"
+    :open="modal == 'ldif-import'"
+    ok-title="Import"
+    @show="init"
+    @ok="onOk"
+    @cancel="emit('update:modal')"
+  >
+    <textarea
+      v-model="ldifData"
+      id="ldif-data"
+      placeholder="Paste or upload LDIF"
+    ></textarea>
     <input type="file" @change="upload" accept=".ldif" />
   </modal>
 </template>
@@ -9,7 +19,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import Modal from "./ui/Modal.vue";
-import { putLdif } from "../generated/sdk.gen";
+import { putLdif } from "@/generated";
 
 const ldifData = ref(""),
   emit = defineEmits<{

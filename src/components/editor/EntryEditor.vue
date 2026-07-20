@@ -197,12 +197,12 @@ import CopyEntryDialog from "./CopyEntryDialog.vue";
 import DeleteEntryDialog from "./DeleteEntryDialog.vue";
 import DiscardEntryDialog from "./DiscardEntryDialog.vue";
 import DropdownMenu from "../ui/DropdownMenu.vue";
-import type { Entry, HttpValidationError } from "../../generated/types.gen";
+import type { Entry, HttpValidationError } from "@/generated";
 import NewEntryDialog from "./NewEntryDialog.vue";
 import NodeLabel from "../NodeLabel.vue";
 import PasswordChangeDialog from "./PasswordChangeDialog.vue";
 import RenameEntryDialog from "./RenameEntryDialog.vue";
-import { state } from "../../state";
+import { state } from "@/state";
 import {
   getEntry,
   postEntry,
@@ -210,15 +210,8 @@ import {
   postRenameEntry,
   deleteEntry,
   postChangePassword,
-} from "../../generated/sdk.gen";
-
-function unique(
-  element: unknown,
-  index: number,
-  array: Array<unknown>,
-): boolean {
-  return array.indexOf(element) == index;
-}
+} from "@/generated";
+import { unique } from "@/utils";
 
 const inputTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"],
   props = defineProps<{
@@ -416,11 +409,10 @@ async function changePassword(oldPass: string, newPass: string) {
 }
 
 function attributes(kind: "must" | "may"): string[] {
-  const attrs = entry
-    .value!.attrs.objectClass!.filter((oc) => oc && oc != "top")
-    .map((oc) => state.schema?.oc(oc))
-    .flatMap((oc) => (oc ? oc.$collect(kind) : []))
-    .filter(unique);
+    const attrs = entry
+      .value!.attrs.objectClass!.filter((oc) => oc && oc != "top")
+      .map((oc) => state.schema?.oc(oc))
+      .flatMap((oc) => (oc ? oc.$collect(kind) : []));
   if (
     attrs.includes("userPassword") &&
     state.schema?.attr("pwdPolicySubentry")

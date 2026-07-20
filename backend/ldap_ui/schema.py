@@ -71,7 +71,7 @@ class Attribute(_Element):
             # FIXME avoid null values below
             equality=attr.equality[0] if attr.equality else None,
             syntax=attr.syntax,
-            substr=getattr(attr, "substr")[0] if hasattr(attr, "substr") else None,
+            substr=attr.substr[0] if hasattr(attr, "substr") else None,
             ordering=attr.ordering[0] if attr.ordering else None,
             **_Element.args(attr),
         )

@@ -1,11 +1,20 @@
 <template>
-  <card v-if="modelValue && attr" :title="attr.names?.join(', ') || ''" class="ml-4" @close="emit('update:modelValue')">
+  <card
+    v-if="modelValue && attr"
+    :title="attr.names?.join(', ') || ''"
+    class="ml-4"
+    @close="emit('update:modelValue')"
+  >
     <div class="header">{{ attr.desc }}</div>
 
     <ul class="list-disc mt-2">
       <li v-if="attr.$super">
         Parent:
-        <span class="cursor-pointer" @click="emit('update:modelValue', attr.$super.name)">{{ attr.$super }}</span>
+        <span
+          class="cursor-help"
+          @click="emit('update:modelValue', attr.$super.name)"
+          >{{ attr.$super }}</span
+        >
       </li>
       <li v-if="attr.equality">Equality: {{ attr.equality }}</li>
       <li v-if="attr.ordering">Ordering: {{ attr.ordering }}</li>
@@ -20,7 +29,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import Card from "../ui/Card.vue";
-import { state } from "../../state"
+import { state } from "@/state";
 
 const props = defineProps<{ modelValue?: string }>(),
   attr = computed(() => state.schema?.attr(props.modelValue)),

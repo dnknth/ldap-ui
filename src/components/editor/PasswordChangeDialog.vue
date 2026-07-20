@@ -50,9 +50,8 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from "vue";
 import Modal from "../ui/Modal.vue";
-import { postCheckPassword } from "../../generated/sdk.gen";
-import { getWhoAmI } from "../../generated/sdk.gen";
-import type { Entry } from "../../generated/types.gen";
+import { getWhoAmI, postCheckPassword } from "@/generated";
+import type { Entry } from "@/generated";
 
 const props = defineProps<{
     entry: Entry;
@@ -68,7 +67,7 @@ const props = defineProps<{
   changed = useTemplateRef("changed"),
   currentUser = computed(() => user.value == props.entry.dn),
   passwordsMatch = computed(
-    () => newPassword.value && newPassword.value == repeated.value,
+    () => newPassword.value && newPassword.value === repeated.value,
   ),
   oldExists = computed(
     () =>
@@ -118,7 +117,7 @@ async function onOk() {
   // new passwords must match
   if (
     (currentUser.value && !newPassword.value) ||
-    newPassword.value != repeated.value ||
+    newPassword.value !== repeated.value ||
     (currentUser.value && oldExists.value && !passwordOk.value)
   )
     return;

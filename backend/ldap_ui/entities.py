@@ -24,6 +24,23 @@ class Entry(BaseModel):
     isNew: bool = False
 
     @classmethod
+    def _format_attrs(
+        cls, entry: ResponseEntry, binary: set, schema: SchemaInfo
+    ) -> Attributes:
+        result = {}
+        for k in sorted(entry.raw_attributes):
+            if not entry.is_modifiable(k, schema):
+                continue
+            vals = entry.raw_attributes[k]
+            if k == "userPassword":
+                result[k] = ["*****"]
+            elif k in binary:
+                result[k] = [b64encode(val).decode() for val in vals]
+            else:
+                result[k] = [val.decode() for val in vals]
+        return result
+
+    @classmethod
     def of(cls, entry: ResponseEntry, schema: SchemaInfo) -> Self:
         "Decode an LDAP entry for transmission"
 
@@ -35,15 +52,7 @@ class Entry(BaseModel):
             )
         )
         return cls(
-            attrs={
-                k: ["*****"]  # 23 suppress userPassword
-                if k == "userPassword"
-                else [b64encode(val).decode() for val in entry.raw_attributes[k]]
-                if k in binary
-                else [val.decode() for val in entry.raw_attributes[k]]
-                for k in sorted(entry.raw_attributes)
-                if entry.is_modifiable(k, schema)
-            },
+            attrs=cls._format_attrs(entry, set(binary), schema),
             dn=entry.dn,
             binary=binary,
             autoFilled=[],

@@ -15,9 +15,9 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
 import Popover from "./ui/Popover.vue";
-import { state } from "../state";
-import { search } from "../generated/sdk.gen";
-import type { SearchResult } from "../generated/types.gen";
+import { state } from "@/state";
+import { search } from "@/generated";
+import type { SearchResult } from "@/generated";
 
 interface Result {
   dn: string;

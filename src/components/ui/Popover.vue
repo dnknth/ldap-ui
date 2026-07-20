@@ -1,9 +1,5 @@
 <template>
-  <transition
-    name="fade"
-    @after-enter="emit('opened')"
-    @after-leave="emit('closed')"
-  >
+  <transition name="fade">
     <div
       v-if="open"
       class="ui-popover absolute z-10 border border-front/70 rounded min-w-max text-front bg-back list-none"
@@ -21,8 +17,6 @@ import { useEventListener, useMouseInElement } from "@vueuse/core";
 
 const props = defineProps<{ open?: boolean }>(),
   emit = defineEmits<{
-    opened: [];
-    closed: [];
     "update:open": [];
   }>(),
   items = useTemplateRef("items"),

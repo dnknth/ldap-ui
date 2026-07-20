@@ -31,7 +31,7 @@
       <dropdown-menu title="Schema">
         <li
           role="menuitem"
-          v-for="key in state.schema!.objectClasses.keys()"
+          v-for="key in state.schema?.objectClasses.keys() ?? []"
           :key="key"
           @click="emit('update:oc', key)"
         >
@@ -70,8 +70,8 @@ import { nextTick, ref, onMounted, useTemplateRef } from "vue";
 import DropdownMenu from "./ui/DropdownMenu.vue";
 import NodeLabel from "./NodeLabel.vue";
 import SearchResults from "./SearchResults.vue";
-import { state } from "../state";
-import { getWhoAmI } from "../generated/sdk.gen";
+import { state } from "@/state";
+import { getWhoAmI } from "@/generated";
 
 const user = ref<string | null>(null),
   input = useTemplateRef("input"),

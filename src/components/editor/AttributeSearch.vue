@@ -1,6 +1,12 @@
 <template>
   <popover :open="show" @update:open="results = []">
-    <li v-for="item in results" :key="item.oid" @click="done(item.name!)" :title="item.oid" role="menuitem">
+    <li
+      v-for="item in results"
+      :key="item.oid"
+      @click="done(item.name!)"
+      :title="item.oid"
+      role="menuitem"
+    >
       {{ item.name }}
     </li>
   </popover>
@@ -10,12 +16,12 @@
 import type { Attribute } from "../schema/schema";
 import { computed, nextTick, ref, watch } from "vue";
 import Popover from "../ui/Popover.vue";
-import { state } from "../../state"
+import { state } from "@/state";
 
 const props = defineProps<{
-  query?: string;
-  for?: string;
-}>(),
+    query?: string;
+    for?: string;
+  }>(),
   results = ref<Attribute[]>([]),
   show = computed(
     () =>

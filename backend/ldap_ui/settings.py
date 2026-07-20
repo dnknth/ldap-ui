@@ -5,6 +5,11 @@ from starlette.config import Config
 
 config = Config(".env")
 
+
+def _boolean(b) -> bool:
+    return b if isinstance(b, bool) else str(b).lower() in ("true", "yes", "1")
+
+
 # App settings
 DEBUG = config("DEBUG", cast=lambda x: bool(x), default=False)
 PREFERRED_URL_SCHEME = "https"
@@ -30,11 +35,17 @@ BASE_DN = config("BASE_DN", default=None)
 SCHEMA_DN = config("SCHEMA_DN", default=None)
 
 USE_TLS = config(
-    "USE_TLS", cast=lambda x: bool(x), default=LDAP_URL.startswith("ldaps://")
+    "USE_TLS",
+    cast=lambda x: str(x).lower() in ("true", "yes", "1"),
+    default=LDAP_URL.startswith("ldaps://"),
 )
 
 # DANGEROUS: Disable TLS host name verification.
-INSECURE_TLS = config("INSECURE_TLS", cast=lambda x: bool(x), default=False)
+INSECURE_TLS = config(
+    "INSECURE_TLS",
+    cast=lambda x: x.lower() in ("true", "yes", "1"),
+    default="false",
+)
 
 #
 # Binding

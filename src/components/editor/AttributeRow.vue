@@ -5,7 +5,7 @@
       class="w-1/4"
     >
       <span
-        class="cursor-pointer oc"
+        class="cursor-help oc"
         :title="attr.desc"
         @click="emit('show-attr', attr.name)"
         >{{ attr }}</span
@@ -60,6 +60,13 @@
             >⊖</span
           >
         </span>
+        <span
+          v-if="attr.name == 'objectClass'"
+          @click="emit('show-oc', val)"
+          class="cursor-help oc"
+        >
+          {{ values[index] }}
+        </span>
         <span v-else-if="boolean">
           <span
             v-if="index == 0 && !values[0]"
@@ -103,11 +110,6 @@
           @keyup="search"
           @keyup.esc="query = ''"
         />
-        <i
-          v-if="attr.name == 'objectClass'"
-          class="cursor-pointer fa fa-info-circle"
-          @click="emit('show-oc', val)"
-        ></i>
       </div>
       <search-results
         silent
@@ -135,8 +137,8 @@ import { computed, onMounted, onUpdated, ref, watch } from "vue";
 import AttributeSearch from "./AttributeSearch.vue";
 import SearchResults from "../SearchResults.vue";
 import ToggleButton from "../ui/ToggleButton.vue";
-import { state } from "../../state";
-import { getRange, deleteBlob } from "../../generated/sdk.gen";
+import { state } from "@/state";
+import { getRange, deleteBlob } from "@/generated";
 import type { Entry } from "@/generated";
 
 function unique(

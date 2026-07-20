@@ -244,7 +244,6 @@ class ModificationTest(unittest.TestCase):
                 json="sn=baz",
             )
             self.assertHTTPStatus(result, HTTPStatus.NO_CONTENT)
-            self.assertEntryEqual
 
     def test_110_delete_entry(self):
         with self.client:

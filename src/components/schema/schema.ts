@@ -1,12 +1,5 @@
-import type { Schema } from "../../generated/types.gen";
-
-function unique(
-  element: unknown,
-  index: number,
-  array: Array<unknown>,
-): boolean {
-  return array.indexOf(element) == index;
-}
+import type { Schema } from "@/generated";
+import { unique } from "@/utils";
 
 export function generalizedTime(dt: string): Date {
   let tz = dt.substring(14);
@@ -37,7 +30,11 @@ export class RDN {
 
   constructor(value: string) {
     const parts = value.split("=");
-    this.attr = schema.attr(parts[0].trim())!;
+    const attr = schema.attr(parts[0].trim());
+    if (!attr) {
+      throw new Error(`Unknown attribute in RDN: ${parts[0].trim()}`);
+    }
+    this.attr = attr;
     this.value = parts[1].trim();
   }
 
@@ -46,9 +43,11 @@ export class RDN {
   }
 
   matches(other?: RDN): boolean {
-    return other !== undefined
-    && this.attr.name == other.attr.name
-    && this.attr.normalizer(this.value) == this.attr.normalizer(other.value);
+    return (
+      other !== undefined &&
+      this.attr.name == other.attr.name &&
+      this.attr.normalizer(this.value) == this.attr.normalizer(other.value)
+    );
   }
 }
 
@@ -198,10 +197,8 @@ export class Attribute extends Element {
   }
 
   get normalizer(): (a: string) => string | number {
-    return (
-      this.normalizers[this.equality || "octetStringMatch"] ||
-      this.normalizers.octetStringMatch
-    )!;
+    return (this.normalizers[this.equality || "octetStringMatch"] ||
+      this.normalizers.octetStringMatch)!;
   }
 
   get binary(): boolean | undefined {

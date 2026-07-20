@@ -1,12 +1,21 @@
 <template>
-  <card v-if="modelValue && oc" :title="oc.name || ''" class="ml-4" @close="emit('update:modelValue')">
+  <card
+    v-if="modelValue && oc"
+    :title="oc.name || ''"
+    class="ml-4"
+    @close="emit('update:modelValue')"
+  >
     <div class="header">{{ oc.desc }}</div>
 
     <div v-if="oc.sup?.length" class="mt-2">
       <i>Superclasses:</i>
       <ul class="list-disc">
         <li v-for="name in oc.sup" :key="name">
-          <span class="cursor-pointer" @click="emit('update:modelValue', name)">{{ name }}</span>
+          <span
+            class="cursor-help"
+            @click="emit('update:modelValue', name)"
+            >{{ name }}</span
+          >
         </li>
       </ul>
     </div>
@@ -15,7 +24,7 @@
       <i>Required attributes:</i>
       <ul class="list-disc">
         <li v-for="name in oc.$collect('must')" :key="name">
-          <span class="cursor-pointer" @click="emit('show-attr', name)">{{
+          <span class="cursor-help" @click="emit('show-attr', name)">{{
             name
           }}</span>
         </li>
@@ -26,7 +35,7 @@
       <i>Optional attributes:</i>
       <ul class="list-disc">
         <li v-for="name in oc.$collect('may')" :key="name">
-          <span class="cursor-pointer" @click="emit('show-attr', name)">{{
+          <span class="cursor-help" @click="emit('show-attr', name)">{{
             name
           }}</span>
         </li>
@@ -38,7 +47,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import Card from "../ui/Card.vue";
-import { state } from "../../state"
+import { state } from "@/state";
 
 const props = defineProps<{ modelValue?: string }>(),
   oc = computed(() => state.schema?.oc(props.modelValue)),

@@ -16,8 +16,8 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from "vue";
 import Modal from "../ui/Modal.vue";
-import type { Entry } from "../../generated/types.gen";
-import { state } from "../../state";
+import type { Entry } from "@/generated";
+import { state } from "@/state";
 
 const props = defineProps<{
     entry: Entry;
