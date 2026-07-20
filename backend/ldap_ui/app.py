@@ -86,7 +86,7 @@ def handle_ldap_error(request: Request, exc: LDAPException) -> Response:
 
     if exc_type not in LDAP_ERROR_TO_STATUS:
         # Unknown error --> log it since FastApi won't do it for us
-        logging.exception("Error in %s %s:", request.method, request.url)
+        logging.exception("Error in %s %s:", request.method, request.url, exc_info=exc)
 
     if isinstance(exc, LDAPOperationResult):
         desc = camel_case_split(exc.description) or "LDAP error"

@@ -3,12 +3,15 @@ import unittest
 from base64 import b64decode
 from http import HTTPStatus
 
-import httpx
+import httpx2
 from fastapi.testclient import TestClient
+from ldap_ui import settings
 from ldap_ui.app import app
 from ldap_ui.entities import Attributes
 from ldap_ui.schema import Schema
 from ldif import LDIFParser
+from testcontainers.core.container import DockerContainer
+from testcontainers.core.waiting_utils import wait_for_logs
 
 AUTH = ("admin", "bedrock")
 
@@ -36,6 +39,21 @@ JPEG = b64decode(
     b"/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA="
 )
 
+LDAP = DockerContainer("dnknth/ldap-demo").with_exposed_ports(389)
+
+
+def setUpModule():
+    settings.config.environ["BIND_DN"] = "cn=admin,o=Flintstones"
+    settings.config.environ["BIND_PASSWORD"] = "bedrock"
+
+    LDAP.start()
+    wait_for_logs(LDAP, "slapd starting")
+    settings.LDAP_URL = f"ldap://localhost:{LDAP.get_exposed_port(389)}"
+
+
+def tearDownModule():
+    LDAP.stop()
+
 
 def parse_ldif(ldif: bytes) -> dict[str, Attributes]:
     return {k: dict(v) for k, v in LDIFParser(io.BytesIO(ldif)).parse()}
@@ -55,7 +73,7 @@ class ReadOnlyTest(unittest.TestCase):
     client = TestClient(app)
 
     def assertHTTPStatus(
-        self, result: httpx.Response, status_code=HTTPStatus.OK
+        self, result: httpx2.Response, status_code=HTTPStatus.OK
     ) -> None:
         self.assertEqual(result.status_code, status_code, result.text)
 
@@ -129,7 +147,7 @@ class ModificationTest(unittest.TestCase):
     client = TestClient(app)
 
     def assertHTTPStatus(
-        self, result: httpx.Response, status_code=HTTPStatus.OK
+        self, result: httpx2.Response, status_code=HTTPStatus.OK
     ) -> None:
         self.assertEqual(result.status_code, status_code, result.text)
 

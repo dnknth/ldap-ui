@@ -24,7 +24,8 @@ dynamic = ["version"]
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28.1",
+    "httpx2>=2.7.0",
+    "testcontainers>=4.14.2",
     "types-ldap3>=2.9.13.20260402",
 ]
 

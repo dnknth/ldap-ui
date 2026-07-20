@@ -15,9 +15,12 @@ DEBUG = config("DEBUG", cast=lambda x: bool(x), default=False)
 PREFERRED_URL_SCHEME = "https"
 SECRET_KEY = os.urandom(16)
 
+
 #
 # LDAP settings
 #
+
+
 LDAP_URL = config("LDAP_URL", default="ldap:///")
 
 # Directory base DN.
@@ -34,18 +37,11 @@ BASE_DN = config("BASE_DN", default=None)
 # Otherwise, manual configuration is required.
 SCHEMA_DN = config("SCHEMA_DN", default=None)
 
-USE_TLS = config(
-    "USE_TLS",
-    cast=lambda x: str(x).lower() in ("true", "yes", "1"),
-    default=LDAP_URL.startswith("ldaps://"),
-)
+USE_TLS = config("USE_TLS", cast=_boolean, default=LDAP_URL.startswith("ldaps://"))
 
 # DANGEROUS: Disable TLS host name verification.
-INSECURE_TLS = config(
-    "INSECURE_TLS",
-    cast=lambda x: x.lower() in ("true", "yes", "1"),
-    default="false",
-)
+INSECURE_TLS = config("INSECURE_TLS", cast=_boolean, default=False)
+
 
 #
 # Binding
@@ -94,6 +90,7 @@ def GET_BIND_PASSWORD() -> Optional[str]:
 #
 # Search
 #
+
 
 # Attribute to search for user names
 LOGIN_ATTR = config("LOGIN_ATTR", default="uid")
