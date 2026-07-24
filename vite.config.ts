@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import { fileURLToPath, URL } from "node:url";
 import viteCompression from "vite-plugin-compression";
@@ -25,6 +26,15 @@ export default defineConfig({
       "/api/": {
         target: "http://127.0.0.1:5000/",
       },
+    },
+  },
+
+  test: {
+    coverage: {
+      provider: "v8",
+      enabled: true,
+      include: ["src/**/*.ts", "src/**/*.vue"],
+      reporter: ["text", "lcov", "html"],
     },
   },
 });

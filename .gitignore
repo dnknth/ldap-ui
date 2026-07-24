@@ -34,3 +34,7 @@ pnpm-debug.log*
 
 # OpenAPI
 generated
+
+# Coverage
+.coverage
+coverage

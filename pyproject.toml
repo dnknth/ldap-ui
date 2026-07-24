@@ -27,6 +27,7 @@ dev = [
     "httpx2>=2.7.0",
     "testcontainers>=4.14.2",
     "types-ldap3>=2.9.13.20260402",
+    "coverage>=7.0",
 ]
 
 [project.scripts]
@@ -46,6 +47,14 @@ where = ["backend"]
 
 [tool.setuptools.package-data]
 ldap_ui = ["statics/*", "statics/assets/*"]
+
+[tool.coverage.run]
+source = ["ldap_ui"]
+include = ["backend/ldap_ui/*"]
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "def __repr__", "raise NotImplementedError"]
+omit = ["backend/ldap_ui/statics/*"]
 
 [tool.uv]
 package = true
