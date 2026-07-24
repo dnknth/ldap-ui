@@ -15,7 +15,7 @@ Features:
 * Asynchronous LDAP backend with decent scalability
 * Available as [Docker image](https://hub.docker.com/r/dnknth/ldap-ui/)
 
-The app always requires authentication, even if the directory permits anonymous access. User credentials are validated through a simple `bind` on the directory (SASL is not supported). What a particular user can see (and edit) is governed entirely by directory access rules. The app shows the directory contents, nothing less and nothing more.
+The app always requires authentication, even if the directory permits anonymous access. User credentials are validated through a simple `bind` on the directory (SASL is not supported). What a particular user can see (and edit) is governed entirely by directory access rules. The app shows the directory contents, nothing less, nothing more.
 
 ## Usage
 
@@ -29,7 +29,7 @@ LDAP access is controlled by the following optional environment variables, possi
 * `LOGIN_ATTR`: User name attribute, defaults to `uid`.
 * `USE_TLS`: Enable TLS, defaults to true for `ldaps` connections. Set it to a non-empty string to force `STARTTLS` on `ldap` connections.
 
-if `BASE_DN` or `SCHEMA_DN` are not provided explicitly, auto-detection from the root DSA is attempted.
+If `BASE_DN` or `SCHEMA_DN` are not provided explicitly, auto-detection from the root DSA is attempted.
 For this, the root DSA must be readable anonymously, e.g. with the following ACL line for OpenLDAP:
 
 ```text
@@ -66,7 +66,7 @@ source .venv/bin/activate
 pip3 install ldap-ui
 ```
 
-Possibly after a shell `rehash`, it is available as `ldap-ui`:
+After a shell `rehash` (if needed), the command `ldap-ui` becomes available:
 
 ```text
 Usage: ldap-ui [OPTIONS]
@@ -94,11 +94,11 @@ Prerequisites:
 * [uv](https://docs.astral.sh/uv/)
 * [GNU make](https://www.gnu.org/software/make/)
 
-`ldap-ui` consists of a Vue frontend and a Python backend that roughly translates a subset of the LDAP protocol to a stateless ReST API.
+`ldap-ui` consists of a Vue frontend and a Python backend that translates a subset of the LDAP protocol to a stateless ReST API.
 
 `pnpm build` assembles the frontend in `backend/ldap_ui/statics`.
 
-Review the configuration in [settings.py](settings.py). It is short and mostly self-explaining (also see notes below).
+Review the configuration in [settings.py](settings.py). It is short and mostly self-explanatory (also see notes below).
 Most settings can (and should) be overridden by environment variables or settings in a `.env` file; see [env.demo](env.demo) or [env.example](env.example).
 
 The backend can be run locally with `make`, which will also install dependencies and build the frontend if needed.
@@ -115,7 +115,7 @@ The UI always uses a simple `bind` operation to authenticate with the LDAP direc
 
 ### Searching
 
-Search uses a (configurable) set of criteria#
+Search uses a configurable set of criteria
 (default: `cn`, `gn`, `sn`, and `uid`) if the query does not contain `=`.
 Wildcards are supported, e.g. `f*` will match all `cn`, `gn`, `sn`, and `uid` starting with `f`.
 Additionally, arbitrary attributes can be searched with an LDAP filter specification, for example `sn=F*`.
@@ -125,7 +125,7 @@ searches are also performed in the entry editor for any DN-valued input field.
 
 ### Keyboard navigation
 
-The editor and modal dialogs focus the first input when opening, so you can the ⇥ key to navigate the form.
+The editor and modal dialogs focus the first input when opening, so you can use the ⇥ key to navigate the form.
 Save or dismiss with the ↩ key.
 
 The following [access keys](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/accesskey#try_it) are defined:
@@ -133,16 +133,16 @@ The following [access keys](https://developer.mozilla.org/en-US/docs/Web/HTML/Re
 | Access Key | UI Element                |
 |------------|---------------------------|
 | K          | Global search at page top |
-| A          | Add an atrribute          |
+| A          | Add an attribute           |
 | O          | Add an object class       |
 | R          | Reset entry modifications |
 | S          | Save an entry (same as ↩) |
 
 ### Caveats
 
-* The software works with [OpenLdap](http://www.openldap.org) using simple bind. Other directories have not been tested much, although [389 DS](https://www.port389.org) works to some extent.
+* The software works with [OpenLDAP](http://www.openldap.org) using simple bind. Other directories have not been tested much, although [389 DS](https://www.port389.org) works to some extent.
 * SASL authentication schemes are presently not supported.
-* Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLdap 2.4 does). I strongly recommend to expose the app through a TLS-enabled web server.
+* Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLDAP 2.4 does). I strongly recommend to expose the app through a TLS-enabled web server.
 * HTTP *Basic Authentication* is triggered unless the `AUTHORIZATION` request variable is already set by some upstream HTTP server.
 
 ## Q&A
