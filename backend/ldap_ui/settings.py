@@ -9,6 +9,22 @@ def _boolean(b) -> bool:
     return b if isinstance(b, bool) else str(b).lower() in ("true", "yes", "1")
 
 
+def escape_ldap_filter(value: str, allow_wildcards: bool = False) -> str:
+    """Escape special characters in an LDAP filter value per RFC 4515.
+
+    Characters that must be escaped: * ( ) \\ and NUL.
+    """
+    if not allow_wildcards:
+        value = value.replace("*", "\\2A")
+
+    return (
+        value.replace("\\", "\\5C")
+        .replace("(", "\\28")
+        .replace(")", "\\29")
+        .replace("\x00", "\\00")
+    )
+
+
 # App settings
 DEBUG = config("DEBUG", cast=lambda x: bool(x), default=False)
 PREFERRED_URL_SCHEME = "https"
@@ -66,12 +82,12 @@ def GET_BIND_PATTERN(username: str | None) -> str | None:
     that do not allow anonymous users to search.
     """
     if config("BIND_PATTERN", default=None) and username:
-        return config("BIND_PATTERN") % username
+        return config("BIND_PATTERN") % escape_ldap_filter(username)
 
 
 def GET_BIND_DN_FILTER(username: str) -> str:
     "Produce a LDAP search filter for the login DN"
-    return SEARCH_PATTERNS[0] % username
+    return SEARCH_PATTERNS[0] % escape_ldap_filter(username)
 
 
 def GET_BIND_PASSWORD() -> str | None:
@@ -96,7 +112,7 @@ LOGIN_ATTR = config("LOGIN_ATTR", default="uid")
 
 # Search users by a number of common attributes
 SEARCH_PATTERNS = (
-    "(%s=%%s)" % LOGIN_ATTR,
+    f"({LOGIN_ATTR}=%s)",
     "(cn=%s*)",
     "(gn=%s*)",
     "(sn=%s*)",

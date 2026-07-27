@@ -59,6 +59,7 @@ from .entities import (
 )
 from .ldap_helpers import ResponseEntry, empty, get_responses, unique
 from .schema import Schema
+from .settings import escape_ldap_filter
 
 NO_CONTENT = Response(status_code=HTTPStatus.NO_CONTENT)
 
@@ -540,15 +541,19 @@ async def search(query: str, connection: AuthenticatedConnection) -> list[Search
         return []
 
     if "=" in query:  # Search specific attributes
-        if "(" not in query:
-            query = f"({query})"
+        # Validate: split on first '=' and escape the value portion
+        attr, _, val = query.partition("=")
+        val = escape_ldap_filter(val, allow_wildcards=True)
+        query = f"({attr}={val})"
     else:  # Build default query
+        escaped = escape_ldap_filter(query)
         if "*" in query:
-            # use exact match patterns (strip the implicit prefix wildcard)
-            exact_patterns = [p.replace("*", "") for p in settings.SEARCH_PATTERNS]
-            query = "(|%s)" % "".join(p % query for p in exact_patterns)
+            # use exact match patterns (strip the implicit wildcard suffix)
+            query = "(|%s)" % "".join(
+                p.replace("*", "") % escaped for p in settings.SEARCH_PATTERNS
+            )
         else:
-            query = "(|%s)" % "".join(p % query for p in settings.SEARCH_PATTERNS)
+            query = "(|%s)" % "".join(p % escaped for p in settings.SEARCH_PATTERNS)
 
     # Collect results
     res = []
