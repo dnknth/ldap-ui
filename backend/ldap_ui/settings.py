@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 
 from ldap3.utils.conv import escape_filter_chars
-from ldap3.utils.dn import escape_rdn
 from starlette.config import Config
 
 config = Config(".env")
@@ -83,7 +82,7 @@ def GET_BIND_PATTERN(username: str | None) -> str | None:
     pattern = config("BIND_PATTERN", default=None)
 
     if pattern is None or username is None:
-        return None
+        return
 
     if pattern.count("%s") != 1:
         raise ValueError("BIND_PATTERN must contain exactly one '%s' placeholder.")

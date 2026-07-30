@@ -10,9 +10,10 @@ like retrieving a unique result or waiting for an
 operation to complete without results.
 """
 
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Any, AsyncGenerator
+from typing import Any
 
 from anyio import sleep
 from fastapi import HTTPException
@@ -20,7 +21,6 @@ from ldap3 import Connection, SchemaInfo
 from ldap3.core.exceptions import LDAPResponseTimeoutError
 
 from .schema import OCTET_STRING, Syntax
-
 
 
 @dataclass(frozen=True)
@@ -54,9 +54,8 @@ class ResponseEntry:
             raise ValueError(f"Attribute '{attr}' not found in schema")
         if not attr_type.syntax or attr_type.syntax == OCTET_STRING:
             try:
-                return any(
-                    not val.decode("UTF-8").isprintable()
-                    for val in self.raw_attributes[attr]
+                return not all(
+                    val.decode().isprintable() for val in self.raw_attributes[attr]
                 )
             except UnicodeDecodeError:
                 return True
@@ -64,6 +63,13 @@ class ResponseEntry:
         # Check human-readable flag
         syntax = schema.ldap_syntaxes.get(attr_type.syntax)
         return syntax is None or Syntax.of(syntax).not_human_readable
+
+    def is_updateable(self, attr: str, schema: SchemaInfo) -> bool:
+        return (
+            attr not in self.attributes
+            # FIXME Handle binary attributes properly
+            or not self.is_binary(attr, schema)
+        )
 
 
 async def get_responses(
@@ -74,7 +80,7 @@ async def get_responses(
     assert type(msgid) is int, "Expected async operation"
     while True:
         try:
-            entries, result = connection.get_response(
+            entries, _result = connection.get_response(
                 msgid, timeout=0, get_request=False
             )
             for response in entries:

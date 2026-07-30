@@ -110,9 +110,16 @@ class ReadOnlyTest(unittest.TestCase, LdapMixin):
             self.assertHTTPStatus(result)
             self.assertGreaterEqual(len(result.json()), 4)
 
-    def test_search_fred(self):
+    def test_default_search(self):
         with self.client:
             result = self.client.get("/api/search/fred", auth=AUTH)
+            self.assertHTTPStatus(result)
+            self.assertEqual(1, len(result.json()))
+            self.assertEqual(FRED_DN, result.json()[0]["dn"])
+
+    def test_attribute_search(self):
+        with self.client:
+            result = self.client.get("/api/search/gn=fred", auth=AUTH)
             self.assertHTTPStatus(result)
             self.assertEqual(1, len(result.json()))
             self.assertEqual(FRED_DN, result.json()[0]["dn"])

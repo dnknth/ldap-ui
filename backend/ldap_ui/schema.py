@@ -19,7 +19,9 @@ from ldap3.protocol.rfc4512 import (
 from ldap3.utils.ciDict import CaseInsensitiveDict
 from pydantic import BaseModel, Field, computed_field
 
+# Special syntaxes
 OCTET_STRING = "1.3.6.1.4.1.1466.115.121.1.40"
+INTEGER = "1.3.6.1.4.1.1466.115.121.1.27"
 
 
 class _Element(BaseModel):

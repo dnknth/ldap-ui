@@ -25,7 +25,7 @@ class Entry(BaseModel):
 
     @classmethod
     def _format_attrs(
-        cls, entry: ResponseEntry, binary: set, schema: SchemaInfo
+        cls, entry: ResponseEntry, binary: set[str], schema: SchemaInfo
     ) -> Attributes:
         result = {}
         for k in sorted(entry.raw_attributes):
@@ -45,11 +45,11 @@ class Entry(BaseModel):
         "Decode an LDAP entry for transmission"
 
         binary = sorted(
-            set(
+            {
                 attr
                 for attr in entry.raw_attributes
                 if entry.is_binary(attr, schema) and entry.is_modifiable(attr, schema)
-            )
+            }
         )
         return cls(
             attrs=cls._format_attrs(entry, set(binary), schema),

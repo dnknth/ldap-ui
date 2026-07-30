@@ -3,8 +3,7 @@ from unittest.mock import MagicMock
 
 from ldap_ui.entities import Entry, TreeItem
 from ldap_ui.ldap_helpers import ResponseEntry
-
-OCTET_STRING = "1.3.6.1.4.1.1466.115.121.1.40"
+from ldap_ui.schema import OCTET_STRING
 
 
 def _make_attr_type(no_user_mod=False, syntax=None):

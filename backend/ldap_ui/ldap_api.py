@@ -62,17 +62,13 @@ from .entities import (
     TreeItem,
 )
 from .ldap_helpers import ResponseEntry, empty, get_responses, unique
-from .schema import Schema
+from .schema import INTEGER, Schema
 
 NO_CONTENT = Response(status_code=HTTPStatus.NO_CONTENT)
 
 # Special fields
 PHOTOS = ("jpegPhoto", "thumbnailPhoto")
 PASSWORDS = ("userPassword",)
-PWD_POLICY_DN = "pwdPolicySubentry"
-
-# Special syntaxes
-INTEGER = "1.3.6.1.4.1.1466.115.121.1.27"
 
 # Default search filter
 ANY = "(objectClass=*)"
@@ -374,30 +370,28 @@ def get_modifications(
     attributes: Attributes,
     schema: SchemaInfo,
 ) -> dict[str, list[Modification]]:
-    # Re-filter non-modifiable attributes (mirrors Entry.of logic)
-    attributes = {
-        attr: list(filter(None, (attributes[attr])))
+    return {
+        attr: modification
         for attr in attributes
-        if attr not in PASSWORDS
-        and (
-            attr not in entry.raw_attributes
-            # FIXME Handle binary attributes properly
-            or not entry.is_binary(attr, schema)
+        if (
+            attr not in PASSWORDS
+            and entry.is_updateable(attr, schema)
+            and (modification := get_modification(attr, attributes[attr], entry))
+            is not None
         )
     }
 
-    modifications = {}
-    for attr, values in attributes.items():
-        if not values:
-            modifications[attr] = (MODIFY_DELETE, [])
-        elif attr not in entry.attributes:
-            modifications[attr] = (MODIFY_ADD, values)
-        else:
-            new_values = {s.encode("UTF-8") for s in values}
-            old_values = set(entry.raw_attributes[attr])
-            if new_values != old_values:
-                modifications[attr] = (MODIFY_REPLACE, values)
-    return modifications
+
+def get_modification(
+    attr: str, values: list[str], entry: ResponseEntry
+) -> Modification:
+    values = list(filter(None, values))
+    if not values:
+        return (MODIFY_DELETE, [])
+    elif attr not in entry.attributes:
+        return (MODIFY_ADD, values)
+    elif set(entry.raw_attributes[attr]) != set(to_raw(values)):
+        return (MODIFY_REPLACE, values)
 
 
 @api.put("/entry/{dn:path}", tags=[Tag.EDITING], operation_id="put_entry")
@@ -670,7 +664,6 @@ async def upload_ldif(request: Request, connection: AuthenticatedConnection) -> 
 @api.get("/search/{query:path}", tags=[Tag.NAVIGATION], operation_id="search")
 async def search(query: str, connection: AuthenticatedConnection) -> list[SearchResult]:
     "Search the directory"
-
     if len(query) < settings.SEARCH_QUERY_MIN:
         return []
 
@@ -696,7 +689,7 @@ async def search(query: str, connection: AuthenticatedConnection) -> list[Search
     # Collect results
     res = []
     async for entry in get_responses(
-        connection, connection.search(settings.BASE_DN, search_filter=query)
+        connection, connection.search(settings.BASE_DN, search_filter=search_filter)
     ):
         res.append(
             SearchResult(
@@ -707,6 +700,27 @@ async def search(query: str, connection: AuthenticatedConnection) -> list[Search
         if len(res) >= settings.SEARCH_MAX:
             break
     return res
+
+
+def get_attribute_filter(query: str) -> str:
+    attr, _, val = query.partition("=")
+    return f"({attr}={escape_search_filter(val)})"
+
+
+def get_default_filter(query: str) -> str:
+    escaped = escape_search_filter(query)
+    patterns = (
+        # strip wildcard suffix from SEARCH_PATTERNS
+        (p.replace("*", "") % escaped for p in settings.SEARCH_PATTERNS)
+        if "*" in query
+        else (p % escaped for p in settings.SEARCH_PATTERNS)
+    )
+    return f"(|{''.join(patterns)})"
+
+
+def escape_search_filter(query: str) -> str:
+    # '*' is safe in search -> unescape
+    return WILDCARD.sub("*", escape_filter_chars(query))
 
 
 @api.get("/whoami", tags=[Tag.MISC], operation_id="get_who_am_i")
