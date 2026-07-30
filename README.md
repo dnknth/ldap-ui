@@ -1,42 +1,27 @@
 # A fast and versatile LDAP editor
 
+[![Docker](https://img.shields.io/docker/v/dnknth/ldap-ui?label=Docker&logo=docker)](https://hub.docker.com/r/dnknth/ldap-ui)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 This is a *minimal* web interface for LDAP directories. Docker images for `linux/amd64` and `linux/arm64/v8` are [available](https://hub.docker.com/r/dnknth/ldap-ui).
 
 ![Screenshot](https://github.com/dnknth/ldap-ui/blob/main/screenshot.png?raw=true)
 
-Features:
+## Features:
 
-* Directory tree view
-* Entry creation / modification / deletion
-* LDIF import / export
-* Image support for the `jpegPhoto` and `thumbnailPhoto` attributes
-* Schema aware
-* Simple search (configurable)
-* Asynchronous LDAP backend with decent scalability
-* Available as [Docker image](https://hub.docker.com/r/dnknth/ldap-ui/)
+- Directory tree view
+- Entry creation / modification / deletion
+- LDIF import / export
+- Image support for the `jpegPhoto` and `thumbnailPhoto` attributes
+- Schema aware
+- Simple search (configurable)
+- Asynchronous LDAP backend with decent scalability
+- Available as [Docker image](https://hub.docker.com/r/dnknth/ldap-ui)
 
 The app always requires authentication, even if the directory permits anonymous access. User credentials are validated through a simple `bind` on the directory (SASL is not supported). What a particular user can see (and edit) is governed entirely by directory access rules. The app shows the directory contents, nothing less, nothing more.
 
 ## Usage
 
-### Environment variables
-
-LDAP access is controlled by the following optional environment variables, possibly from a `.env` file:
-
-* `LDAP_URL`: Connection URL in RFC 4516 format, defaults to `ldap:///`.
-* `BASE_DN`: Optional search base, e.g. `dc=example,dc=org`, can also be specified as part of the `LDAP_URL`.
-* `SCHEMA_DN`: Optional DN to obtain the directory schema, e.g. `cn=subSchema`.
-* `LOGIN_ATTR`: User name attribute, defaults to `uid`.
-* `USE_TLS`: Enable TLS, defaults to true for `ldaps` connections. Set it to a non-empty string to force `STARTTLS` on `ldap` connections.
-
-If `BASE_DN` or `SCHEMA_DN` are not provided explicitly, auto-detection from the root DSA is attempted.
-For this, the root DSA must be readable anonymously, e.g. with the following ACL line for OpenLDAP:
-
-```text
-access to dn.base="" by * read
-```
-
-For finer-grained control, see [settings.py](settings.py).
 
 ### Docker
 
@@ -84,15 +69,34 @@ Options:
   --help                          Show this message and exit.
 ```
 
+### Environment variables
+
+LDAP access is controlled by the following optional environment variables, possibly from a `.env` file:
+
+- `LDAP_URL`: Connection URL in RFC 4516 format, defaults to `ldap:///`.
+- `BASE_DN`: Optional search base, e.g. `dc=example,dc=org`, can also be specified as part of the `LDAP_URL`.
+- `SCHEMA_DN`: Optional DN to obtain the directory schema, e.g. `cn=subSchema`.
+- `LOGIN_ATTR`: User name attribute, defaults to `uid`.
+- `USE_TLS`: Enable TLS, defaults to true for `ldaps` connections. Set it to a non-empty string to force `STARTTLS` on `ldap` connections.
+
+If `BASE_DN` or `SCHEMA_DN` are not provided explicitly, auto-detection from the root DSA is attempted.
+For this, the root DSA must be readable anonymously, e.g. with the following ACL line for OpenLDAP:
+
+```text
+access to dn.base="" by * read
+```
+
+For finer-grained control, see [settings.py](settings.py).
+
 ## Development
 
 Prerequisites:
 
-* [node.js](https://nodejs.dev) LTS version with NPM
-* [pnpm](https://pnpm.io)
-* [Python](https://www.python.org) ≥ 3.12
-* [uv](https://docs.astral.sh/uv/)
-* [GNU make](https://www.gnu.org/software/make/)
+- [node.js](https://nodejs.dev) LTS version with NPM
+- [pnpm](https://pnpm.io)
+- [Python](https://www.python.org) ≥ 3.10
+- [uv](https://docs.astral.sh/uv/)
+- [GNU make](https://www.gnu.org/software/make/)
 
 `ldap-ui` consists of a Vue frontend and a Python backend that translates a subset of the LDAP protocol to a stateless ReST API.
 
@@ -101,7 +105,12 @@ Prerequisites:
 Review the configuration in [settings.py](settings.py). It is short and mostly self-explanatory (also see notes below).
 Most settings can (and should) be overridden by environment variables or settings in a `.env` file; see [env.demo](env.demo) or [env.example](env.example).
 
-The backend can be run locally with `make`, which will also install dependencies and build the frontend if needed.
+Run the backend locally:
+
+- `make` — installs dependencies, builds the frontend if needed, and starts the server.
+- `make debug` — starts the server in reload mode on port 5000 with `DEBUG=true`.
+
+The frontend can be developed independently with hot-reload support using `pnpm dev`.
 
 ## Notes
 
@@ -140,17 +149,17 @@ The following [access keys](https://developer.mozilla.org/en-US/docs/Web/HTML/Re
 
 ### Caveats
 
-* The software works with [OpenLDAP](http://www.openldap.org) using simple bind. Other directories have not been tested much, although [389 DS](https://www.port389.org) works to some extent.
-* SASL authentication schemes are presently not supported.
-* Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLDAP 2.4 does). I strongly recommend to expose the app through a TLS-enabled web server.
-* HTTP *Basic Authentication* is triggered unless the `AUTHORIZATION` request variable is already set by some upstream HTTP server.
+- The software works with [OpenLDAP](http://www.openldap.org) using simple bind. Other directories have not been tested much, although [389 DS](https://www.port389.org) works to some extent.
+- SASL authentication schemes are presently not supported.
+- Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLDAP 2.4 does). I strongly recommend to expose the app through a TLS-enabled web server.
+- HTTP *Basic Authentication* is triggered unless the `AUTHORIZATION` request variable is already set by some upstream HTTP server.
 
 ## Q&A
 
-* Q: Why are some fields not editable?
-  * A: The RDN of an entry is read-only. To change it, rename the entry with a different RDN, then change the old RDN and rename back. To change passwords, click on the question mark icon on the right side. Binary fields (as per schema) are read-only. You do not want to modify them accidentally.
-* Q: Why did you write this?
-  * A: [PHPLdapAdmin](http://phpldapadmin.sf.net/) is no longer actively maintained. I needed a replacement, and wanted to try Vue.
+- Q: Why are some fields not editable?
+  - A: The RDN of an entry is read-only. To change it, rename the entry with a different RDN, then change the old RDN and rename back. To change passwords, click on the question mark icon on the right side. Binary fields (as per schema) are read-only. You do not want to modify them accidentally.
+- Q: Why did you write this?
+  - A: [PHPLdapAdmin](http://phpldapadmin.sf.net/) is no longer actively maintained. I needed a replacement, and wanted to try Vue.
 
 ## Acknowledgements
 

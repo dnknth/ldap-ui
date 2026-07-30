@@ -93,6 +93,6 @@ class TreeItem(BaseModel):
     def of(cls, entry: ResponseEntry):
         return cls(
             dn=entry.dn,
-            structuralObjectClass=entry.attributes["structuralObjectClass"],
+            structuralObjectClass=entry.raw_attributes["structuralObjectClass"][0],
             hasSubordinates=entry.hasSubordinates,
         )

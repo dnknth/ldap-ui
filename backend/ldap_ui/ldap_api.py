@@ -31,14 +31,15 @@ from fastapi import (
 )
 from fastapi.responses import PlainTextResponse
 from ldap3 import (
-    ALL,
     ALL_ATTRIBUTES,
     ASYNC,
     BASE,
+    DSA,
     LEVEL,
     MODIFY_ADD,
     MODIFY_DELETE,
     MODIFY_REPLACE,
+    NONE,
     Connection,
     SchemaInfo,
     Server,
@@ -48,6 +49,7 @@ from ldap3.core.exceptions import (
     LDAPOperationResult,
     LDAPResponseTimeoutError,
 )
+from ldap3.utils.conv import escape_filter_chars, to_raw
 from ldap3.utils.dn import parse_dn, safe_dn
 from ldif import LDIFParser
 
@@ -87,35 +89,25 @@ URL_PATTERN = re.compile(
 SAFE_FILENAME_RE = re.compile(r"[^a-z0-9._-]", re.IGNORECASE)
 LDAP_ATTRIBUTE_RE = re.compile(r"^[a-z][a-z0-9-]*$", re.IGNORECASE)
 
+WILDCARD = re.compile(r"\\2A", re.IGNORECASE)
+
+# Schema cache
+SCHEMA: SchemaInfo | None = None
+
 
 api = APIRouter(prefix="/api")
-
-
-def parse_url(url: str) -> tuple[str, str | None]:
-    "Extract a base URL and optional base DN from a RFC 4516 URL"
-    if match := URL_PATTERN.match(url):
-        parts = match.groupdict()
-        scheme = parts["scheme"]
-        host = parts["host"]
-        if not host or host == "/":
-            if scheme == "ldapi":
-                raise ValueError("Missing LDAPI domain socket path")
-            else:
-                host = "localhost"
-        # ldap3 is not particularly smart with server URLs
-        url = f"{scheme}://{host.rstrip('/')}"
-        if scheme != "ldapi" and parts["port"]:
-            url += f":{parts['port']}"
-        return url, parts["dn"]
-
-    raise ValueError(f"Invalid URL: {url}")
 
 
 async def ldap_connect() -> Connection:
     "Open an anonymous LDAP connection"
 
     url, base_dn = parse_url(settings.LDAP_URL)
-    server = Server(url, get_info=ALL)
+    info = (
+        DSA
+        if (settings.BASE_DN is None and not base_dn) or settings.SCHEMA_DN is None
+        else NONE
+    )
+    server = Server(url, get_info=info)
     connection = Connection(server, client_strategy=ASYNC, raise_exceptions=True)
 
     # Negotiate StartTLS before binding. Otherwise the bind and the root DSE
@@ -139,7 +131,7 @@ async def ldap_connect() -> Connection:
             settings.BASE_DN = base_dns[0]
 
     elif base_dn and base_dn != settings.BASE_DN:
-        raise ValueError(f"Contradicting base DNs: {base_dn} vs. {settings.BASE_DN}")
+        raise ValueError(f"Contradictory base DNs: {base_dn} vs. {settings.BASE_DN}")
 
     if not settings.SCHEMA_DN:
         if not dsa_info.schema_entry:
@@ -147,6 +139,26 @@ async def ldap_connect() -> Connection:
         settings.SCHEMA_DN = dsa_info.schema_entry[0]
 
     return connection
+
+
+def parse_url(url: str) -> tuple[str, str | None]:
+    "Extract a base URL and optional base DN from a RFC 4516 URL"
+    if match := URL_PATTERN.match(url):
+        parts = match.groupdict()
+        scheme = parts["scheme"]
+        host = parts["host"]
+        if not host or host == "/":
+            if scheme == "ldapi":
+                raise ValueError("Missing LDAPI domain socket path")
+            else:
+                host = "localhost"
+        # ldap3 is not particularly smart with server URLs
+        url = f"{scheme}://{host.rstrip('/')}"
+        if scheme != "ldapi" and parts["port"]:
+            url += f":{parts['port']}"
+        return url, parts["dn"]
+
+    raise ValueError(f"Invalid URL: {url}")
 
 
 async def authenticated(
@@ -185,6 +197,10 @@ async def authenticated(
 
     try:
         connection.rebind(user=dn, password=password)
+        global SCHEMA
+        if SCHEMA is None:
+            SCHEMA = await get_schema(connection)
+
         yield connection
     finally:
         # Always close the LDAP connection.
@@ -236,7 +252,7 @@ async def anonymous_user_search(connection: Connection, username: str) -> str | 
         )
         return bind_user.dn
     except HTTPException:
-        return None
+        pass
 
 
 def build_content_disposition(filename: str) -> dict[str, str]:
@@ -252,6 +268,19 @@ def build_content_disposition(filename: str) -> dict[str, str]:
         "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff",
     }
+
+
+async def get_schema(connection: Connection) -> SchemaInfo:
+    response = await unique(
+        connection,
+        connection.search(
+            settings.SCHEMA_DN,
+            search_scope=BASE,
+            get_operational_attributes=True,
+            search_filter="(objectClass=*)",
+        ),
+    )
+    return SchemaInfo(response, response.attributes, response.raw_attributes)
 
 
 AuthenticatedConnection = Annotated[Connection, Depends(authenticated)]
@@ -324,10 +353,7 @@ async def get_tree(basedn: str, connection: AuthenticatedConnection) -> list[Tre
 @api.get("/entry/{dn:path}", tags=[Tag.EDITING], operation_id="get_entry")
 async def get_entry(dn: str, connection: AuthenticatedConnection) -> Entry:
     "Retrieve a directory entry by DN"
-    return Entry.of(
-        await get_entry_by_dn(connection, dn),
-        connection.server.schema,
-    )
+    return Entry.of(await get_entry_by_dn(connection, dn), SCHEMA)
 
 
 @api.delete(
@@ -356,7 +382,7 @@ async def post_entry(
     dn: str, attributes: Attributes, connection: AuthenticatedConnection
 ) -> AttributeNames:
     entry = await get_entry_by_dn(connection, dn)
-    if modifications := get_modifications(entry, attributes, connection.server.schema):
+    if modifications := get_modifications(entry, attributes, SCHEMA):
         # Apply changes and send changed keys back
         await empty(connection, connection.modify(dn, modifications))
     return sorted(modifications)
@@ -689,7 +715,7 @@ async def search(query: str, connection: AuthenticatedConnection) -> list[Search
     # Collect results
     res = []
     async for entry in get_responses(
-        connection, connection.search(settings.BASE_DN, search_filter=search_filter)
+        connection, connection.search(settings.BASE_DN, search_filter=query)
     ):
         res.append(
             SearchResult(
@@ -757,12 +783,11 @@ async def list_subtree(
 async def attribute_range(attribute: str, connection: AuthenticatedConnection) -> Range:
     "List all values for a numeric attribute of an objectClass like uidNumber or gidNumber"
 
-    schema = connection.server.schema
     validate_attribute_name(attribute)
-    obj = schema.attribute_types[attribute]
+    obj = SCHEMA.attribute_types[attribute]
 
     values = {
-        int(entry.attributes[attribute])
+        int(entry.raw_attributes[attribute][0])
         async for entry in get_responses(
             connection,
             connection.search(
@@ -796,6 +821,6 @@ async def attribute_range(attribute: str, connection: AuthenticatedConnection) -
 )
 async def ldap_schema(connection: AuthenticatedConnection) -> Schema:
     "Dump the LDAP schema as JSON"
-    if not settings.SCHEMA_DN:
-        raise ValueError("An LDAP schema DN is required!")
-    return Schema.of(connection.server.schema)
+    if SCHEMA is None:
+        raise ValueError("An LDAP schema is required!")
+    return Schema.of(SCHEMA)

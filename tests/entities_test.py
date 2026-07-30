@@ -255,7 +255,10 @@ class TreeItemTest(unittest.TestCase):
             raw_dn=b"cn=alice,dc=example,dc=com",
             dn="cn=alice,dc=example,dc=com",
             attributes={"structuralObjectClass": "person"},
-            raw_attributes={"hasSubordinates": [b"TRUE"]},
+            raw_attributes={
+                "hasSubordinates": [b"TRUE"],
+                "structuralObjectClass": [b"person"],
+            },
             type="searchResultEntry",
         )
 
@@ -270,7 +273,7 @@ class TreeItemTest(unittest.TestCase):
             raw_dn=b"cn=bob,dc=example,dc=com",
             dn="cn=bob,dc=example,dc=com",
             attributes={"structuralObjectClass": "person"},
-            raw_attributes={},
+            raw_attributes={"structuralObjectClass": [b"person"]},
             type="searchResultEntry",
         )
 

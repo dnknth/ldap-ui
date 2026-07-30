@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 from ldap3.utils.conv import escape_filter_chars
+from ldap3.utils.dn import escape_rdn
 from starlette.config import Config
 
 config = Config(".env")
