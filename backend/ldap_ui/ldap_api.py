@@ -10,9 +10,12 @@ Asynchronous LDAP operations are used as much as possible.
 import base64
 import io
 import re
+from binascii import Error as BinasciiError
+from collections.abc import AsyncGenerator
 from enum import StrEnum
 from http import HTTPStatus
-from typing import Annotated, AsyncGenerator, cast
+from typing import Annotated, cast
+from urllib.parse import quote
 
 from anyio import sleep
 from fastapi import (
@@ -45,6 +48,7 @@ from ldap3.core.exceptions import (
     LDAPOperationResult,
     LDAPResponseTimeoutError,
 )
+from ldap3.utils.dn import parse_dn, safe_dn
 from ldif import LDIFParser
 
 from . import settings
@@ -59,7 +63,6 @@ from .entities import (
 )
 from .ldap_helpers import ResponseEntry, empty, get_responses, unique
 from .schema import Schema
-from .settings import escape_ldap_filter
 
 NO_CONTENT = Response(status_code=HTTPStatus.NO_CONTENT)
 
@@ -74,6 +77,7 @@ INTEGER = "1.3.6.1.4.1.1466.115.121.1.27"
 # Default search filter
 ANY = "(objectClass=*)"
 
+# Connection URLs
 URL_PATTERN = re.compile(
     r"""^(?P<scheme>ldap|ldapi|ldaps)://
          (?P<host>[/A-Za-z0-9_.-]*)
@@ -82,6 +86,11 @@ URL_PATTERN = re.compile(
          .*""",
     re.IGNORECASE | re.VERBOSE,
 )
+
+# Safety
+SAFE_FILENAME_RE = re.compile(r"[^a-z0-9._-]", re.IGNORECASE)
+LDAP_ATTRIBUTE_RE = re.compile(r"^[a-z][a-z0-9-]*$", re.IGNORECASE)
+
 
 api = APIRouter(prefix="/api")
 
@@ -158,31 +167,69 @@ async def authenticated(
     # Search for basic auth user
     if not dn and authorization:
         username, password = get_basic_credentials(authorization)
+
+        if username is None or username == "":
+            raise LDAPInvalidCredentialsResult([{"desc": "Username is required"}])
+
+        # Prevent unauthenticated binds (RFC4513)
+        if password is None or password == "":
+            raise LDAPInvalidCredentialsResult(
+                [{"desc": "Empty passwords are not allowed."}]
+            )
+
         dn = settings.GET_BIND_PATTERN(username) or await anonymous_user_search(
             connection, username
         )
 
     if not dn:  # Log in
+        connection.unbind()
         raise LDAPInvalidCredentialsResult(
             [{"desc": f"Invalid credentials for DN: {dn}"}]
         )
 
-    connection.rebind(user=dn, password=password)
-    yield connection
-    connection.unbind()
+    try:
+        connection.rebind(user=dn, password=password)
+        yield connection
+    finally:
+        # Always close the LDAP connection.
+        try:
+            connection.unbind()
+        except Exception:  # noqa: BLE001, S110
+            pass
 
 
-def get_basic_credentials(authorization: str) -> list[str]:
-    scheme, credentials = authorization.split(maxsplit=1)
-    if scheme.lower() == "basic":
-        return base64.b64decode(credentials).decode().split(":", maxsplit=1)
+def get_basic_credentials(authorization: str) -> tuple[str, str]:
+    """
+    Parse a HTTP Basic Authorization header.
 
-    raise LDAPInvalidCredentialsResult(
-        [{"desc": f"Unsupported authorization scheme: {scheme}"}]
-    )
+    Raises LDAPInvalidCredentialsResult for malformed headers.
+    """
+    try:
+        scheme, credentials = authorization.split(maxsplit=1)
+    except ValueError:
+        raise LDAPInvalidCredentialsResult([{"desc": "Malformed Authorization header"}])
+
+    if scheme.lower() != "basic":
+        raise LDAPInvalidCredentialsResult(
+            [{"desc": f"Unsupported authorization scheme: {scheme}"}]
+        )
+
+    try:
+        decoded = base64.b64decode(credentials, validate=True).decode("utf-8")
+    except (UnicodeDecodeError, BinasciiError):
+        raise LDAPInvalidCredentialsResult([{"desc": "Invalid Authorization header"}])
+
+    if ":" not in decoded:
+        raise LDAPInvalidCredentialsResult([{"desc": "Malformed Basic credentials"}])
+
+    username, password = decoded.split(":", 1)
+    return username, password
 
 
 async def anonymous_user_search(connection: Connection, username: str) -> str | None:
+    if not username:
+        return None
+
     try:
         bind_user = await unique(
             connection,
@@ -193,7 +240,22 @@ async def anonymous_user_search(connection: Connection, username: str) -> str | 
         )
         return bind_user.dn
     except HTTPException:
-        pass  # No unique result
+        return None
+
+
+def build_content_disposition(filename: str) -> dict[str, str]:
+    """
+    Build a RFC6266 compliant Content-Disposition header.
+    """
+
+    safe = SAFE_FILENAME_RE.sub("_", filename)[:255]
+
+    return {
+        "Content-Disposition": f'attachment; filename="{safe}"; '
+        f"filename*=UTF-8''{quote(filename)}",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+    }
 
 
 AuthenticatedConnection = Annotated[Connection, Depends(authenticated)]
@@ -366,8 +428,14 @@ async def rename_entry(
     "Rename an entry"
     entry = await get_entry_by_dn(connection, dn)
 
-    parent_dn = dn.split(",", 1)[1]
-    new_dn = f"{rdn},{parent_dn}"
+    try:
+        new_dn = f"{rdn},{parent_dn(dn)}"
+    except ValueError as exc:
+        raise HTTPException(
+            HTTPStatus.BAD_REQUEST,
+            str(exc),
+        ) from exc
+
     await empty(connection, connection.add(new_dn, attributes=entry.raw_attributes))
     try:
         await empty(connection, connection.delete(dn))
@@ -375,6 +443,21 @@ async def rename_entry(
         # Cannot delete Entry with subordinates -> Undo
         await empty(connection, connection.delete(new_dn))
         raise
+
+
+def parent_dn(dn: str) -> str:
+    """
+    Return the parent DN.
+
+    Works correctly even with escaped commas.
+    """
+
+    parsed = parse_dn(dn)
+
+    if len(parsed) < 2:
+        raise ValueError("DN has no parent")
+
+    return safe_dn(["{}={}{}".format(*part) for part in parsed[1:]])
 
 
 @api.get(
@@ -388,6 +471,7 @@ async def get_blob(
 ) -> Response:
     "Retrieve a binary attribute"
 
+    validate_attribute_name(attr)
     entry = await get_entry_by_dn(connection, dn)
 
     if attr not in entry.raw_attributes or len(entry.raw_attributes[attr]) <= index:
@@ -400,6 +484,22 @@ async def get_blob(
         media_type="application/octet-stream",
         headers={"Content-Disposition": f'attachment; filename="{attr}-{index:d}.bin"'},
     )
+
+
+def validate_attribute_name(attribute: str) -> None:
+    """
+    Validate a user-supplied LDAP attribute name.
+
+    Prevent malformed filters such as:
+
+        (cn=foo)
+        (uid=bar)
+    """
+
+    if not LDAP_ATTRIBUTE_RE.fullmatch(attribute):
+        raise HTTPException(
+            HTTPStatus.BAD_REQUEST, detail=f"Invalid LDAP attribute: {attribute}"
+        )
 
 
 @api.put(
@@ -416,6 +516,7 @@ async def put_blob(
     connection: AuthenticatedConnection,
 ) -> None:
     "Upload a binary attribute"
+    validate_attribute_name(attr)
     data = await blob.read(cast(int, blob.size))
     await empty(
         connection,
@@ -433,6 +534,7 @@ async def delete_blob(
     attr: str, index: int, dn: str, connection: AuthenticatedConnection
 ) -> None:
     "Remove a binary attribute"
+    validate_attribute_name(attr)
     entry = await get_entry_by_dn(connection, dn)
     if attr not in entry.raw_attributes or len(entry.raw_attributes[attr]) <= index:
         raise HTTPException(
@@ -489,18 +591,43 @@ async def export_ldif(dn: str, connection: AuthenticatedConnection) -> Response:
         raise TypeError("Expected async operation")
     while True:
         try:
-            entries, result = connection.get_response(msgid, timeout=0)
+            entries, _result = connection.get_response(msgid, timeout=0)
             out.write("# ")
             out.writelines(connection.response_to_ldif(entries))
             break
         except LDAPResponseTimeoutError:
             await sleep(0.01)
 
-    file_name = dn.split(",")[0].split("=")[1]
+    file_name = first_rdn_value(dn)
     return PlainTextResponse(
-        out.getvalue(),
-        headers={"Content-Disposition": f'attachment; filename="{file_name}.ldif"'},
+        out.getvalue(), headers=build_content_disposition(f"{file_name}.ldif")
     )
+
+
+def first_rdn_value(dn: str) -> str:
+    """
+    Return the value of the first RDN.
+
+    Example:
+
+        cn=John Doe,ou=People,dc=example,dc=com
+
+    returns
+
+        John Doe
+    """
+
+    parsed = parse_dn(dn)
+
+    if not parsed:
+        raise ValueError("Invalid Distinguished Name")
+
+    #
+    # ldap3 returns tuples like:
+    #
+    # ('cn', 'John Doe', ',')
+    #
+    return parsed[0][1]
 
 
 @api.put(
@@ -525,7 +652,14 @@ async def export_ldif(dn: str, connection: AuthenticatedConnection) -> Response:
 async def upload_ldif(request: Request, connection: AuthenticatedConnection) -> None:
     "Import LDIF"
 
-    parser = LDIFParser(io.BytesIO(await request.body()))
+    body = await request.body()
+
+    if len(body) > settings.MAX_LDIF_SIZE:
+        raise HTTPException(
+            HTTPStatus.REQUEST_ENTITY_TOO_LARGE, detail="LDIF too large"
+        )
+
+    parser = LDIFParser(io.BytesIO(body))
     try:
         for dn, record in parser.parse():
             await empty(connection, connection.add(dn, attributes=record))
@@ -543,17 +677,21 @@ async def search(query: str, connection: AuthenticatedConnection) -> list[Search
     if "=" in query:  # Search specific attributes
         # Validate: split on first '=' and escape the value portion
         attr, _, val = query.partition("=")
-        val = escape_ldap_filter(val, allow_wildcards=True)
+        validate_attribute_name(attr)
+
+        val = settings.escape_search_value(val, allow_wildcards=True)
         query = f"({attr}={val})"
     else:  # Build default query
-        escaped = escape_ldap_filter(query)
+        escaped = settings.escape_search_value(query)
         if "*" in query:
             # use exact match patterns (strip the implicit wildcard suffix)
-            query = "(|%s)" % "".join(
-                p.replace("*", "") % escaped for p in settings.SEARCH_PATTERNS
+            query = "(|{})".format(
+                "".join(p.replace("*", "") % escaped for p in settings.SEARCH_PATTERNS)
             )
         else:
-            query = "(|%s)" % "".join(p % escaped for p in settings.SEARCH_PATTERNS)
+            query = "(|{})".format(
+                "".join(p % escaped for p in settings.SEARCH_PATTERNS)
+            )
 
     # Collect results
     res = []
@@ -606,22 +744,21 @@ async def attribute_range(attribute: str, connection: AuthenticatedConnection) -
     "List all values for a numeric attribute of an objectClass like uidNumber or gidNumber"
 
     schema = connection.server.schema
+    validate_attribute_name(attribute)
     obj = schema.attribute_types[attribute]
 
-    values = set(
-        [
-            int(entry.attributes[attribute])
-            async for entry in get_responses(
-                connection,
-                connection.search(
-                    settings.BASE_DN,
-                    search_filter=f"({attribute}=*)",
-                    attributes=(attribute,),
-                ),
-            )
-            if obj and obj.syntax == INTEGER
-        ]
-    )
+    values = {
+        int(entry.attributes[attribute])
+        async for entry in get_responses(
+            connection,
+            connection.search(
+                settings.BASE_DN,
+                search_filter=f"({attribute}=*)",
+                attributes=(attribute,),
+            ),
+        )
+        if obj and obj.syntax == INTEGER
+    }
 
     if not values:
         raise HTTPException(

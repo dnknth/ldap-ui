@@ -1,34 +1,31 @@
 import os
+from pathlib import Path
 
+from ldap3.utils.conv import escape_filter_chars
+from ldap3.utils.dn import escape_rdn
 from starlette.config import Config
 
 config = Config(".env")
+
+
+#
+# Generic helpers
+#
 
 
 def _boolean(b) -> bool:
     return b if isinstance(b, bool) else str(b).lower() in ("true", "yes", "1")
 
 
-def escape_ldap_filter(value: str, allow_wildcards: bool = False) -> str:
-    """Escape special characters in an LDAP filter value per RFC 4515.
-
-    Characters that must be escaped: * ( ) \\ and NUL.
-    """
-    if not allow_wildcards:
-        value = value.replace("*", "\\2A")
-
-    return (
-        value.replace("\\", "\\5C")
-        .replace("(", "\\28")
-        .replace(")", "\\29")
-        .replace("\x00", "\\00")
-    )
-
-
 # App settings
 DEBUG = config("DEBUG", cast=lambda x: bool(x), default=False)
 PREFERRED_URL_SCHEME = "https"
 SECRET_KEY = os.urandom(16)
+MAX_LDIF_SIZE = config(
+    "MAX_LDIF_SIZE",
+    cast=int,
+    default=10 * 1024 * 1024,
+)
 
 
 #
@@ -80,14 +77,23 @@ def GET_BIND_PATTERN(username: str | None) -> str | None:
     e.g. "uid=%s,ou=people,dc=example,dc=com".
     This can be used to authenticate with directories
     that do not allow anonymous users to search.
+    User supplied values are escaped according to RFC4514 because
+    the resulting string is a Distinguished Name.
     """
-    if config("BIND_PATTERN", default=None) and username:
-        return config("BIND_PATTERN") % escape_ldap_filter(username)
+    pattern = config("BIND_PATTERN", default=None)
+
+    if pattern is None or username is None:
+        return None
+
+    if pattern.count("%s") != 1:
+        raise ValueError("BIND_PATTERN must contain exactly one '%s' placeholder.")
+
+    return pattern % escape_rdn(username)
 
 
 def GET_BIND_DN_FILTER(username: str) -> str:
     "Produce a LDAP search filter for the login DN"
-    return SEARCH_PATTERNS[0] % escape_ldap_filter(username)
+    return SEARCH_PATTERNS[0] % escape_search_value(username)
 
 
 def GET_BIND_PASSWORD() -> str | None:
@@ -98,8 +104,9 @@ def GET_BIND_PASSWORD() -> str | None:
 
     pw_file = config("BIND_PASSWORD_FILE", default=None)
     if pw_file is not None:
-        with open(pw_file) as file:
-            return file.read().rstrip("\n")
+        return Path(pw_file).read_text().rstrip("\n")
+
+    return None
 
 
 #
@@ -124,8 +131,25 @@ SEARCH_QUERY_MIN = config(
     default=2,
 )
 
-SEARCH_MAX = config(
-    "SEARCH_MAX",  # Maximum number of results
-    cast=int,
-    default=50,
+SEARCH_MAX = min(
+    config(
+        "SEARCH_MAX",  # Maximum number of results
+        cast=int,
+        default=50,
+    ),
+    1000,
 )
+
+
+def escape_search_value(value: str, allow_wildcards: bool = False) -> str:
+    """
+    Escape an LDAP search filter value according to RFC4515.
+
+    Wildcards may optionally be preserved.
+    """
+    escaped = escape_filter_chars(value)
+
+    if allow_wildcards:
+        escaped = escaped.replace(r"\2a", "*").replace(r"\2A", "*")
+
+    return escaped

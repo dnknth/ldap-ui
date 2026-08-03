@@ -39,20 +39,23 @@ JPEG = b64decode(
     b"/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA="
 )
 
-LDAP = DockerContainer("dnknth/ldap-demo").with_exposed_ports(389)
-
 
 def setUpModule():
     settings.config.environ["BIND_DN"] = "cn=admin,o=Flintstones"
     settings.config.environ["BIND_PASSWORD"] = "bedrock"
 
-    LDAP.start()
-    wait_for_logs(LDAP, "slapd starting")
-    settings.LDAP_URL = f"ldap://localhost:{LDAP.get_exposed_port(389)}"
 
+class LdapMixin:
+    LDAP = DockerContainer("dnknth/ldap-demo").with_exposed_ports(389)
 
-def tearDownModule():
-    LDAP.stop()
+    @classmethod
+    def setUpClass(cls):
+        cls.LDAP.start()
+        wait_for_logs(cls.LDAP, "slapd starting")
+        settings.LDAP_URL = f"ldap://localhost:{cls.LDAP.get_exposed_port(389)}"
+
+    def tearDownClass(cls):
+        cls.LDAP.stop()
 
 
 def parse_ldif(ldif: bytes) -> dict[str, Attributes]:
@@ -67,7 +70,7 @@ def normalize_entry(attributes: Attributes) -> Attributes:
     }
 
 
-class ReadOnlyTest(unittest.TestCase):
+class ReadOnlyTest(unittest.TestCase, LdapMixin):
     "Test directory read access"
 
     client = TestClient(app)
@@ -143,7 +146,7 @@ class ReadOnlyTest(unittest.TestCase):
             self.assertHTTPStatus(result, HTTPStatus.NOT_FOUND)
 
 
-class ModificationTest(unittest.TestCase):
+class ModificationTest(unittest.TestCase, LdapMixin):
     client = TestClient(app)
 
     def assertHTTPStatus(
@@ -166,7 +169,7 @@ class ModificationTest(unittest.TestCase):
                 auth=AUTH,
                 json=TEST_PERSON,
             )
-            if not result.status_code == HTTPStatus.CONFLICT:  # stale previous test run
+            if result.status_code != HTTPStatus.CONFLICT:  # stale previous test run
                 self.assertHTTPStatus(result)
                 self.assertEqual(["dn"], result.json())
             self.assertEntryEqual(TEST_DN, TEST_PERSON)

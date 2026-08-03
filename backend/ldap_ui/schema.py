@@ -38,13 +38,13 @@ class _Element(BaseModel):
 
     @staticmethod
     def args(info: BaseObjectInfo) -> dict[str, Any]:
-        return dict(
-            oid=info.oid,
-            names=info.name,
-            desc=info.description,
-            obsolete=info.obsolete,
-            sup=sorted(info.superior or []),
-        )
+        return {
+            "oid": info.oid,
+            "names": info.name,
+            "desc": info.description,
+            "obsolete": info.obsolete,
+            "sup": sorted(info.superior or []),
+        }
 
 
 class Attribute(_Element):
