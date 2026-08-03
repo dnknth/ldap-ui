@@ -1,28 +1,109 @@
 import os
+import re
+from pathlib import Path
+from typing import Optional
 
+from ldap3.utils.conv import escape_filter_chars
+from ldap3.utils.dn import escape_rdn, parse_dn, safe_dn
 from starlette.config import Config
 
 config = Config(".env")
+
+
+#
+# Generic helpers
+#
+
+
+SAFE_FILENAME_RE = re.compile(r"[^A-Za-z0-9._-]")
+LDAP_ATTRIBUTE_RE = re.compile(r"^[A-Za-z][A-Za-z0-9-]*$")
 
 
 def _boolean(b) -> bool:
     return b if isinstance(b, bool) else str(b).lower() in ("true", "yes", "1")
 
 
-def escape_ldap_filter(value: str, allow_wildcards: bool = False) -> str:
-    """Escape special characters in an LDAP filter value per RFC 4515.
-
-    Characters that must be escaped: * ( ) \\ and NUL.
+def escape_search_value(value: str, allow_wildcards: bool = False) -> str:
     """
-    if not allow_wildcards:
-        value = value.replace("*", "\\2A")
+    Escape an LDAP search filter value according to RFC4515.
 
-    return (
-        value.replace("\\", "\\5C")
-        .replace("(", "\\28")
-        .replace(")", "\\29")
-        .replace("\x00", "\\00")
-    )
+    Wildcards may optionally be preserved.
+    """
+    escaped = escape_filter_chars(value)
+
+    if allow_wildcards:
+        escaped = escaped.replace(r"\2a", "*").replace(r"\2A", "*")
+
+    return escaped
+
+
+def validate_attribute_name(attribute: str) -> str:
+    """
+    Validate a LDAP attribute name.
+
+    Prevent malformed filters such as:
+
+        (cn=foo)
+        (uid=bar)
+
+    where the attribute itself is user supplied.
+    """
+
+    if not LDAP_ATTRIBUTE_RE.fullmatch(attribute):
+        raise ValueError(f"Invalid LDAP attribute: {attribute}")
+
+    return attribute
+
+
+def first_rdn_value(dn: str) -> str:
+    """
+    Return the value of the first RDN.
+
+    Example:
+
+        cn=John Doe,ou=People,dc=example,dc=com
+
+    returns
+
+        John Doe
+    """
+
+    parsed = parse_dn(dn)
+
+    if not parsed:
+        raise ValueError("Invalid Distinguished Name")
+
+    #
+    # ldap3 returns tuples like:
+    #
+    # ('cn', 'John Doe', ',')
+    #
+    return parsed[0][1]
+
+
+def parent_dn(dn: str) -> str:
+    """
+    Return the parent DN.
+
+    Works correctly even with escaped commas.
+    """
+
+    parsed = parse_dn(dn)
+
+    if len(parsed) < 2:
+        raise ValueError("DN has no parent")
+
+    return safe_dn(parsed[1:])
+
+
+def sanitize_filename(name: str) -> str:
+    """
+    Produce a filename suitable for HTTP headers.
+    """
+
+    name = SAFE_FILENAME_RE.sub("_", name)
+
+    return name[:255]
 
 
 # App settings
@@ -80,17 +161,26 @@ def GET_BIND_PATTERN(username: str | None) -> str | None:
     e.g. "uid=%s,ou=people,dc=example,dc=com".
     This can be used to authenticate with directories
     that do not allow anonymous users to search.
+    User supplied values are escaped according to RFC4514 because
+    the resulting string is a Distinguished Name.
     """
-    if config("BIND_PATTERN", default=None) and username:
-        return config("BIND_PATTERN") % escape_ldap_filter(username)
+    pattern = config("BIND_PATTERN", default=None)
+
+    if pattern is None or username is None:
+        return None
+
+    if pattern.count("%s") != 1:
+        raise ValueError("BIND_PATTERN must contain exactly one '%s' placeholder.")
+
+    return pattern % escape_rdn(username)
 
 
 def GET_BIND_DN_FILTER(username: str) -> str:
     "Produce a LDAP search filter for the login DN"
-    return SEARCH_PATTERNS[0] % escape_ldap_filter(username)
+    return SEARCH_PATTERNS[0] % escape_search_value(username)
 
 
-def GET_BIND_PASSWORD() -> str | None:
+def GET_BIND_PASSWORD() -> Optional[str]:
     "Try to determine the login password from the environment or request"
     pw = config("BIND_PASSWORD", default=None)
     if pw is not None:
@@ -98,8 +188,9 @@ def GET_BIND_PASSWORD() -> str | None:
 
     pw_file = config("BIND_PASSWORD_FILE", default=None)
     if pw_file is not None:
-        with open(pw_file) as file:
-            return file.read().rstrip("\n")
+        return Path(pw_file).read_text().rstrip("\n")
+
+    return None
 
 
 #
@@ -124,8 +215,19 @@ SEARCH_QUERY_MIN = config(
     default=2,
 )
 
-SEARCH_MAX = config(
-    "SEARCH_MAX",  # Maximum number of results
+SEARCH_MAX = min(
+    config(
+        "SEARCH_MAX",  # Maximum number of results
+        cast=int,
+        default=50,
+    ),
+    1000
+)
+
+
+# Upload limits
+MAX_LDIF_SIZE = config(
+    "MAX_LDIF_SIZE",
     cast=int,
-    default=50,
+    default=10 * 1024 * 1024,
 )
