@@ -72,22 +72,29 @@ class ResponseEntry:
         )
 
 
+async def get_raw_responses(
+    connection: Connection, msgid: int
+) -> AsyncGenerator[list[dict], None]:
+    "Stream raw LDAP result entries without blocking other tasks"
+
+    assert type(msgid) is int, "Expected async operation"
+    while True:
+        try:
+            entries, _result = connection.get_response(msgid, timeout=0)
+            yield entries
+            return
+        except LDAPResponseTimeoutError:
+            await sleep(0.01)
+
+
 async def get_responses(
     connection: Connection, msgid: int
 ) -> AsyncGenerator[ResponseEntry, None]:
     "Stream LDAP result entries without blocking other tasks"
 
-    assert type(msgid) is int, "Expected async operation"
-    while True:
-        try:
-            entries, _result = connection.get_response(
-                msgid, timeout=0, get_request=False
-            )
-            for response in entries:
-                yield ResponseEntry(**response)
-            return
-        except LDAPResponseTimeoutError:
-            await sleep(0.01)
+    async for entries in get_raw_responses(connection, msgid):
+        for response in entries:
+            yield ResponseEntry(**response)
 
 
 async def unique(

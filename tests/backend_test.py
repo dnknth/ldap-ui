@@ -10,8 +10,9 @@ from ldap_ui.app import app
 from ldap_ui.entities import Attributes
 from ldap_ui.schema import Schema
 from ldif import LDIFParser
+from testcontainers.core.config import testcontainers_config
 from testcontainers.core.container import DockerContainer
-from testcontainers.core.waiting_utils import wait_for_logs
+from testcontainers.core.wait_strategies import LogMessageWaitStrategy
 
 AUTH = ("admin", "bedrock")
 
@@ -44,16 +45,25 @@ def setUpModule():
     settings.config.environ["BIND_DN"] = "cn=admin,o=Flintstones"
     settings.config.environ["BIND_PASSWORD"] = "bedrock"
 
+    # Give Docker more time to spin up the LDAP container on slow hosts:
+    # the default 120 s timeout is often too short.
+    testcontainers_config.max_tries = 240
+
+    # Skip testcontainers/ryuk: its port-mapping readiness race is flaky on
+    # Docker Desktop (the port is not yet mapped even though the container is
+    # running). The tests clean up their own container in tearDownClass.
+    testcontainers_config.ryuk_disabled = True
+
 
 class LdapMixin:
     LDAP = DockerContainer("dnknth/ldap-demo").with_exposed_ports(389)
 
     @classmethod
     def setUpClass(cls):
-        cls.LDAP.start()
-        wait_for_logs(cls.LDAP, "slapd starting")
-        settings.LDAP_URL = f"ldap://localhost:{cls.LDAP.get_exposed_port(389)}"
+        cls.LDAP.waiting_for(LogMessageWaitStrategy("slapd starting")).start()
+        settings.LDAP_URL = f"ldap://127.0.0.1:{cls.LDAP.get_exposed_port(389)}"
 
+    @classmethod
     def tearDownClass(cls):
         cls.LDAP.stop()
 
@@ -70,7 +80,7 @@ def normalize_entry(attributes: Attributes) -> Attributes:
     }
 
 
-class ReadOnlyTest(unittest.TestCase, LdapMixin):
+class ReadOnlyTest(LdapMixin, unittest.TestCase):
     "Test directory read access"
 
     client = TestClient(app)
@@ -153,7 +163,7 @@ class ReadOnlyTest(unittest.TestCase, LdapMixin):
             self.assertHTTPStatus(result, HTTPStatus.NOT_FOUND)
 
 
-class ModificationTest(unittest.TestCase, LdapMixin):
+class ModificationTest(LdapMixin, unittest.TestCase):
     client = TestClient(app)
 
     def assertHTTPStatus(

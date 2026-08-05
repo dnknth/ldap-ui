@@ -38,13 +38,18 @@ app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
 
 
 @app.middleware("http")
-async def cache_buster(request: Request, call_next) -> Response:
-    "Forbid caching of API responses"
+async def http_headers(request: Request, call_next) -> Response:
     response = await call_next(request)
+
+    # Forbid caching of API responses
     if request.url.path.startswith("/api"):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
+
+    # Always add security headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
     return response
 
 
@@ -86,7 +91,7 @@ def handle_ldap_error(request: Request, exc: LDAPException) -> Response:
 
     if exc_type not in LDAP_ERROR_TO_STATUS:
         # Unknown error --> log it since FastApi won't do it for us
-        logging.getLogger("app").exception(
+        logging.getLogger(__name__).exception(
             "Error in %s %s:", request.method, request.url, exc_info=exc
         )
 

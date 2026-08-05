@@ -14,7 +14,8 @@ from binascii import Error as BinasciiError
 from collections.abc import AsyncGenerator
 from enum import StrEnum
 from http import HTTPStatus
-from typing import Annotated, cast
+from random import random
+from typing import Annotated
 from urllib.parse import quote
 
 from anyio import sleep
@@ -47,7 +48,6 @@ from ldap3 import (
 from ldap3.core.exceptions import (
     LDAPInvalidCredentialsResult,
     LDAPOperationResult,
-    LDAPResponseTimeoutError,
 )
 from ldap3.utils.conv import escape_filter_chars, to_raw
 from ldap3.utils.dn import parse_dn, safe_dn
@@ -63,7 +63,7 @@ from .entities import (
     SearchResult,
     TreeItem,
 )
-from .ldap_helpers import ResponseEntry, empty, get_responses, unique
+from .ldap_helpers import ResponseEntry, empty, get_raw_responses, get_responses, unique
 from .schema import INTEGER, Schema
 
 NO_CONTENT = Response(status_code=HTTPStatus.NO_CONTENT)
@@ -537,7 +537,9 @@ async def put_blob(
 ) -> None:
     "Upload a binary attribute"
     validate_attribute_name(attr)
-    data = await blob.read(cast(int, blob.size))
+    data = await blob.read(settings.MAX_BLOB_SIZE)
+    if len(data) >= settings.MAX_BLOB_SIZE:
+        raise HTTPException(413, "Blob too large")
     await empty(
         connection,
         connection.modify(dn, {attr: (MODIFY_ADD, [data])}),
@@ -576,6 +578,7 @@ async def check_password(
         connection.rebind(user=dn, password=check)
         return True
     except LDAPInvalidCredentialsResult:
+        await sleep(0.5 + random() / 10)
         return False
 
 
@@ -607,16 +610,9 @@ async def export_ldif(dn: str, connection: AuthenticatedConnection) -> Response:
     out = io.StringIO()
 
     msgid = connection.search(dn, search_filter=ANY, attributes=ALL_ATTRIBUTES)
-    if not isinstance(msgid, int):
-        raise TypeError("Expected async operation")
-    while True:
-        try:
-            entries, _result = connection.get_response(msgid, timeout=0)
-            out.write("# ")
-            out.writelines(connection.response_to_ldif(entries))
-            break
-        except LDAPResponseTimeoutError:
-            await sleep(0.01)
+    async for entries in get_raw_responses(connection, msgid):
+        out.write("# ")
+        out.writelines(connection.response_to_ldif(entries))
 
     file_name = first_rdn_value(dn)
     return PlainTextResponse(
@@ -698,10 +694,10 @@ async def search(query: str, connection: AuthenticatedConnection) -> list[Search
         attr, _, val = query.partition("=")
         validate_attribute_name(attr)
 
-        val = settings.escape_search_value(val, allow_wildcards=True)
+        val = escape_search_value(val, allow_wildcards=True)
         query = f"({attr}={val})"
     else:  # Build default query
-        escaped = settings.escape_search_value(query)
+        escaped = escape_search_value(query)
         if "*" in query:
             # use exact match patterns (strip the implicit wildcard suffix)
             query = "(|{})".format(
@@ -728,25 +724,14 @@ async def search(query: str, connection: AuthenticatedConnection) -> list[Search
     return res
 
 
-def get_attribute_filter(query: str) -> str:
-    attr, _, val = query.partition("=")
-    return f"({attr}={escape_search_filter(val)})"
+def escape_search_value(value: str, allow_wildcards: bool = False) -> str:
+    """
+    Escape an LDAP search filter value according to RFC4515.
 
-
-def get_default_filter(query: str) -> str:
-    escaped = escape_search_filter(query)
-    patterns = (
-        # strip wildcard suffix from SEARCH_PATTERNS
-        (p.replace("*", "") % escaped for p in settings.SEARCH_PATTERNS)
-        if "*" in query
-        else (p % escaped for p in settings.SEARCH_PATTERNS)
-    )
-    return f"(|{''.join(patterns)})"
-
-
-def escape_search_filter(query: str) -> str:
-    # '*' is safe in search -> unescape
-    return WILDCARD.sub("*", escape_filter_chars(query))
+    Wildcards may optionally be preserved.
+    """
+    escaped = escape_filter_chars(value)
+    return WILDCARD.sub("*", escaped) if allow_wildcards else escaped
 
 
 @api.get("/whoami", tags=[Tag.MISC], operation_id="get_who_am_i")

@@ -61,7 +61,7 @@
           >
         </span>
         <span
-          v-if="attr.name == 'objectClass'"
+          v-else-if="attr.name == 'objectClass'"
           @click="emit('show-oc', val)"
           class="cursor-help oc"
         >

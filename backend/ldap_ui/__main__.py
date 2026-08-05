@@ -74,6 +74,7 @@ def main(base_dn, host, port, ldap_url, log_level, reload):
     logging.basicConfig(level=LOG_LEVELS[log_level])
     rootHandler = logging.getLogger().handlers[0]
     rootHandler.setFormatter(ColourizedFormatter(fmt="%(levelprefix)s %(message)s"))
+    settings.log_warnings()
 
     if base_dn is not None:
         settings.BASE_DN = base_dn
