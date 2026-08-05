@@ -14,7 +14,8 @@ from binascii import Error as BinasciiError
 from collections.abc import AsyncGenerator
 from enum import StrEnum
 from http import HTTPStatus
-from typing import Annotated, cast
+from random import random
+from typing import Annotated
 from urllib.parse import quote
 
 from anyio import sleep
@@ -169,7 +170,7 @@ async def authenticated(
     connection = await ldap_connect()
 
     # Hard-wired credentials
-    dn = settings.GET_BIND_DN()
+    dn = settings.BIND_DN
     password = settings.GET_BIND_PASSWORD()
 
     # Search for basic auth user
@@ -537,7 +538,9 @@ async def put_blob(
 ) -> None:
     "Upload a binary attribute"
     validate_attribute_name(attr)
-    data = await blob.read(cast(int, blob.size))
+    data = await blob.read(settings.MAX_BLOB_SIZE)
+    if len(data) >= settings.MAX_BLOB_SIZE:
+        raise HTTPException(413, "Blob too large")
     await empty(
         connection,
         connection.modify(dn, {attr: (MODIFY_ADD, [data])}),
@@ -576,6 +579,7 @@ async def check_password(
         connection.rebind(user=dn, password=check)
         return True
     except LDAPInvalidCredentialsResult:
+        await sleep(0.5 + random() / 10)
         return False
 
 

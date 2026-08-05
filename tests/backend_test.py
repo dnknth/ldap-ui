@@ -54,6 +54,7 @@ class LdapMixin:
         wait_for_logs(cls.LDAP, "slapd starting")
         settings.LDAP_URL = f"ldap://localhost:{cls.LDAP.get_exposed_port(389)}"
 
+    @classmethod
     def tearDownClass(cls):
         cls.LDAP.stop()
 
@@ -70,7 +71,7 @@ def normalize_entry(attributes: Attributes) -> Attributes:
     }
 
 
-class ReadOnlyTest(unittest.TestCase, LdapMixin):
+class ReadOnlyTest(LdapMixin, unittest.TestCase):
     "Test directory read access"
 
     client = TestClient(app)
@@ -153,7 +154,7 @@ class ReadOnlyTest(unittest.TestCase, LdapMixin):
             self.assertHTTPStatus(result, HTTPStatus.NOT_FOUND)
 
 
-class ModificationTest(unittest.TestCase, LdapMixin):
+class ModificationTest(LdapMixin, unittest.TestCase):
     client = TestClient(app)
 
     def assertHTTPStatus(

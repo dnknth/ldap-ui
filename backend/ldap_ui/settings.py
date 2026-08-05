@@ -1,30 +1,33 @@
-import os
+import logging
 from pathlib import Path
 
 from ldap3.utils.conv import escape_filter_chars
 from ldap3.utils.dn import escape_rdn
 from starlette.config import Config
 
+#
+# App settings
+#
+
+
 config = Config(".env")
-
-
-#
-# Generic helpers
-#
 
 
 def _boolean(b) -> bool:
     return b if isinstance(b, bool) else str(b).lower() in ("true", "yes", "1")
 
 
-# App settings
 DEBUG = config("DEBUG", cast=lambda x: bool(x), default=False)
 PREFERRED_URL_SCHEME = "https"
-SECRET_KEY = os.urandom(16)
 MAX_LDIF_SIZE = config(
     "MAX_LDIF_SIZE",
     cast=int,
     default=10 * 1024 * 1024,
+)
+MAX_BLOB_SIZE = config(
+    "MAX_BLOB_SIZE",
+    cast=int,
+    default=1024 * 1024,
 )
 
 
@@ -54,20 +57,15 @@ USE_TLS = config("USE_TLS", cast=_boolean, default=LDAP_URL.startswith("ldaps://
 # DANGEROUS: Disable TLS host name verification.
 INSECURE_TLS = config("INSECURE_TLS", cast=_boolean, default=False)
 
-
 #
 # Binding
 #
 
 
-def GET_BIND_DN() -> str | None:
-    """
-    Try to find a hard-wired DN from in the environment.
-    If this is present and GET_BIND_PASSWORD returns something,
-    the UI will NOT ask for a login.
-    You need to secure it otherwise!
-    """
-    return config("BIND_DN", default=None)
+# Demo mode: If a hard-wired DN from in the environment is present
+# and GET_BIND_PASSWORD returns something, the UI will NOT ask for a login.
+# You need to secure it otherwise!
+BIND_DN = config("BIND_DN", default=None)
 
 
 def GET_BIND_PATTERN(username: str | None) -> str | None:
@@ -93,7 +91,7 @@ def GET_BIND_PATTERN(username: str | None) -> str | None:
 
 def GET_BIND_DN_FILTER(username: str) -> str:
     "Produce a LDAP search filter for the login DN"
-    return SEARCH_PATTERNS[0] % escape_search_value(username)
+    return SEARCH_PATTERNS[0] % escape_filter_chars(username)
 
 
 def GET_BIND_PASSWORD() -> str | None:
@@ -140,16 +138,14 @@ SEARCH_MAX = min(
     1000,
 )
 
+#
+# Security
+#
 
-def escape_search_value(value: str, allow_wildcards: bool = False) -> str:
-    """
-    Escape an LDAP search filter value according to RFC4515.
 
-    Wildcards may optionally be preserved.
-    """
-    escaped = escape_filter_chars(value)
-
-    if allow_wildcards:
-        escaped = escaped.replace(r"\2a", "*").replace(r"\2A", "*")
-
-    return escaped
+def log_warnings():
+    log = logging.getLogger(__name__)
+    if BIND_DN and GET_BIND_PASSWORD():
+        log.warning("Dangerous: Hard-wired authentication")
+    if INSECURE_TLS or not USE_TLS:
+        log.warning("Insecure LDAP connection, check TLS settings")
