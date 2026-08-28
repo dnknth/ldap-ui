@@ -119,7 +119,9 @@
             "type": "string"
           }
         },
-        "required": ["blob"],
+        "required": [
+          "blob"
+        ],
         "title": "Body_put_blob",
         "type": "object"
       },
@@ -135,7 +137,10 @@
             "type": "string"
           }
         },
-        "required": ["old", "new1"],
+        "required": [
+          "old",
+          "new1"
+        ],
         "title": "ChangePasswordRequest",
         "type": "object"
       },
@@ -183,7 +188,13 @@
             "type": "boolean"
           }
         },
-        "required": ["dn", "attrs", "binary", "autoFilled", "changed"],
+        "required": [
+          "dn",
+          "attrs",
+          "binary",
+          "autoFilled",
+          "changed"
+        ],
         "title": "Entry",
         "type": "object"
       },
@@ -289,7 +300,11 @@
             "type": "integer"
           }
         },
-        "required": ["min", "max", "next"],
+        "required": [
+          "min",
+          "max",
+          "next"
+        ],
         "title": "Range",
         "type": "object"
       },
@@ -317,7 +332,11 @@
             "type": "object"
           }
         },
-        "required": ["attributes", "objectClasses", "syntaxes"],
+        "required": [
+          "attributes",
+          "objectClasses",
+          "syntaxes"
+        ],
         "title": "Schema",
         "type": "object"
       },
@@ -333,7 +352,10 @@
             "type": "string"
           }
         },
-        "required": ["dn", "name"],
+        "required": [
+          "dn",
+          "name"
+        ],
         "title": "SearchResult",
         "type": "object"
       },
@@ -353,7 +375,11 @@
             "type": "string"
           }
         },
-        "required": ["oid", "desc", "not_human_readable"],
+        "required": [
+          "oid",
+          "desc",
+          "not_human_readable"
+        ],
         "title": "Syntax",
         "type": "object"
       },
@@ -373,7 +399,11 @@
             "type": "string"
           }
         },
-        "required": ["dn", "structuralObjectClass", "hasSubordinates"],
+        "required": [
+          "dn",
+          "structuralObjectClass",
+          "hasSubordinates"
+        ],
         "title": "TreeItem",
         "type": "object"
       },
@@ -419,7 +449,11 @@
             "type": "string"
           }
         },
-        "required": ["loc", "msg", "type"],
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
         "title": "ValidationError",
         "type": "object"
       }
@@ -496,7 +530,9 @@
           }
         },
         "summary": "Delete Blob",
-        "tags": ["Editing"]
+        "tags": [
+          "Editing"
+        ]
       },
       "put": {
         "description": "Upload a binary attribute",
@@ -572,7 +608,9 @@
           }
         },
         "summary": "Put Blob",
-        "tags": ["Editing"]
+        "tags": [
+          "Editing"
+        ]
       }
     },
     "/api/change-password/{dn}": {
@@ -632,7 +670,9 @@
           }
         },
         "summary": "Change Password",
-        "tags": ["Editing"]
+        "tags": [
+          "Editing"
+        ]
       }
     },
     "/api/check-password/{dn}": {
@@ -701,7 +741,9 @@
           }
         },
         "summary": "Check Password",
-        "tags": ["Editing"]
+        "tags": [
+          "Editing"
+        ]
       }
     },
     "/api/entry/{dn}": {
@@ -750,7 +792,9 @@
           }
         },
         "summary": "Delete Entry",
-        "tags": ["Editing"]
+        "tags": [
+          "Editing"
+        ]
       },
       "get": {
         "description": "Retrieve a directory entry by DN",
@@ -805,7 +849,9 @@
           }
         },
         "summary": "Get Entry",
-        "tags": ["Editing"]
+        "tags": [
+          "Editing"
+        ]
       },
       "post": {
         "operationId": "post_entry",
@@ -880,7 +926,9 @@
           }
         },
         "summary": "Post Entry",
-        "tags": ["Editing"]
+        "tags": [
+          "Editing"
+        ]
       },
       "put": {
         "operationId": "put_entry",
@@ -955,7 +1003,9 @@
           }
         },
         "summary": "Put Entry",
-        "tags": ["Editing"]
+        "tags": [
+          "Editing"
+        ]
       }
     },
     "/api/ldif": {
@@ -1007,7 +1057,9 @@
           }
         },
         "summary": "Upload Ldif",
-        "tags": ["Editing"]
+        "tags": [
+          "Editing"
+        ]
       }
     },
     "/api/range/{attribute}": {
@@ -1064,7 +1116,9 @@
           }
         },
         "summary": "Attribute Range",
-        "tags": ["Misc"]
+        "tags": [
+          "Misc"
+        ]
       }
     },
     "/api/rename/{dn}": {
@@ -1125,7 +1179,9 @@
           }
         },
         "summary": "Rename Entry",
-        "tags": ["Editing"]
+        "tags": [
+          "Editing"
+        ]
       }
     },
     "/api/schema": {
@@ -1173,7 +1229,9 @@
           }
         },
         "summary": "Ldap Schema",
-        "tags": ["Misc"]
+        "tags": [
+          "Misc"
+        ]
       }
     },
     "/api/search/{query}": {
@@ -1234,7 +1292,9 @@
           }
         },
         "summary": "Search",
-        "tags": ["Navigation"]
+        "tags": [
+          "Navigation"
+        ]
       }
     },
     "/api/subtree/{root_dn}": {
@@ -1295,7 +1355,9 @@
           }
         },
         "summary": "List Subtree",
-        "tags": ["Misc"]
+        "tags": [
+          "Misc"
+        ]
       }
     },
     "/api/tree/{basedn}": {
@@ -1356,7 +1418,9 @@
           }
         },
         "summary": "Get Tree",
-        "tags": ["Navigation"]
+        "tags": [
+          "Navigation"
+        ]
       }
     },
     "/api/whoami": {
@@ -1405,7 +1469,9 @@
           }
         },
         "summary": "Whoami",
-        "tags": ["Misc"]
+        "tags": [
+          "Misc"
+        ]
       }
     }
   }

@@ -14,11 +14,9 @@ from binascii import Error as BinasciiError
 from collections.abc import AsyncGenerator
 from enum import StrEnum
 from http import HTTPStatus
-from random import random
 from typing import Annotated
 from urllib.parse import quote
 
-from anyio import sleep
 from fastapi import (
     APIRouter,
     Body,
@@ -33,9 +31,7 @@ from fastapi import (
 from fastapi.responses import PlainTextResponse
 from ldap3 import (
     ALL_ATTRIBUTES,
-    ASYNC,
     BASE,
-    DSA,
     LEVEL,
     MODIFY_ADD,
     MODIFY_DELETE,
@@ -43,12 +39,8 @@ from ldap3 import (
     NONE,
     Connection,
     SchemaInfo,
-    Server,
 )
-from ldap3.core.exceptions import (
-    LDAPInvalidCredentialsResult,
-    LDAPOperationResult,
-)
+from ldap3.core.exceptions import LDAPInvalidCredentialsResult, LDAPOperationResult
 from ldap3.utils.conv import escape_filter_chars, to_raw
 from ldap3.utils.dn import parse_dn, safe_dn
 from ldif import LDIFParser
@@ -63,6 +55,7 @@ from .entities import (
     SearchResult,
     TreeItem,
 )
+from .ldap_connection import bound, ldap_connect, open, parse_url
 from .ldap_helpers import ResponseEntry, empty, get_raw_responses, get_responses, unique
 from .schema import INTEGER, Schema
 
@@ -75,20 +68,9 @@ PASSWORDS = ("userPassword",)
 # Default search filter
 ANY = "(objectClass=*)"
 
-# Connection URLs
-URL_PATTERN = re.compile(
-    r"""^(?P<scheme>ldap|ldapi|ldaps)://
-         (?P<host>[/A-Za-z0-9_.-]*)
-         (:(?P<port>[0-9]+))?
-         (/(?P<dn>[^?]+))?
-         .*""",
-    re.IGNORECASE | re.VERBOSE,
-)
-
 # Safety
 SAFE_FILENAME_RE = re.compile(r"[^a-z0-9._-]", re.IGNORECASE)
 LDAP_ATTRIBUTE_RE = re.compile(r"^[a-z][a-z0-9-]*$", re.IGNORECASE)
-
 WILDCARD = re.compile(r"\\2A", re.IGNORECASE)
 
 # Schema cache
@@ -98,75 +80,11 @@ SCHEMA: SchemaInfo | None = None
 api = APIRouter(prefix="/api")
 
 
-async def ldap_connect() -> Connection:
-    "Open an anonymous LDAP connection"
-
-    url, base_dn = parse_url(settings.LDAP_URL)
-    info = (
-        DSA
-        if (settings.BASE_DN is None and not base_dn) or settings.SCHEMA_DN is None
-        else NONE
-    )
-    server = Server(url, get_info=info)
-    connection = Connection(server, client_strategy=ASYNC, raise_exceptions=True)
-
-    # Negotiate StartTLS before binding. Otherwise the bind and the root DSE
-    # lookup below are sent in clear text, and directories that mandate
-    # confidentiality (e.g. OpenLDAP `olcSecurity: tls=1`) reject every
-    # operation attempted before TLS is in place. See RFC 4513, §3.1.1.
-    if settings.USE_TLS and url.startswith("ldap://"):
-        connection.open(read_server_info=False)
-        connection.start_tls()
-
-    connection.bind()
-    dsa_info = connection.server.info
-
-    if not settings.BASE_DN:
-        if base_dn:
-            settings.BASE_DN = base_dn
-        else:
-            base_dns = dsa_info.naming_contexts
-            if len(base_dns) != 1:
-                raise ValueError(f"No unique base DN: {base_dns}")
-            settings.BASE_DN = base_dns[0]
-
-    elif base_dn and base_dn != settings.BASE_DN:
-        raise ValueError(f"Contradictory base DNs: {base_dn} vs. {settings.BASE_DN}")
-
-    if not settings.SCHEMA_DN:
-        if not dsa_info.schema_entry:
-            raise ValueError("Cannot determine LDAP schema")
-        settings.SCHEMA_DN = dsa_info.schema_entry[0]
-
-    return connection
-
-
-def parse_url(url: str) -> tuple[str, str | None]:
-    "Extract a base URL and optional base DN from a RFC 4516 URL"
-    if match := URL_PATTERN.match(url):
-        parts = match.groupdict()
-        scheme = parts["scheme"]
-        host = parts["host"]
-        if not host or host == "/":
-            if scheme == "ldapi":
-                raise ValueError("Missing LDAPI domain socket path")
-            else:
-                host = "localhost"
-        # ldap3 is not particularly smart with server URLs
-        url = f"{scheme}://{host.rstrip('/')}"
-        if scheme != "ldapi" and parts["port"]:
-            url += f":{parts['port']}"
-        return url, parts["dn"]
-
-    raise ValueError(f"Invalid URL: {url}")
-
-
 async def authenticated(
+    connection: Annotated[Connection, Depends(ldap_connect)],
     authorization: Annotated[str | None, Header()] = None,
 ) -> AsyncGenerator[Connection, None]:
     "Authenticate against the directory"
-
-    connection = await ldap_connect()
 
     # Hard-wired credentials
     dn = settings.GET_BIND_DN()
@@ -195,19 +113,12 @@ async def authenticated(
             [{"desc": f"Invalid credentials for DN: {dn}"}]
         )
 
-    try:
-        connection.rebind(user=dn, password=password)
+    async with bound(connection, dn, password):
         global SCHEMA
         if SCHEMA is None:
             SCHEMA = await get_schema(connection)
 
         yield connection
-    finally:
-        # Always close the LDAP connection.
-        try:
-            connection.unbind()
-        except Exception:  # noqa: BLE001, S110
-            pass
 
 
 def get_basic_credentials(authorization: str) -> tuple[str, str]:
@@ -570,15 +481,19 @@ async def delete_blob(
     "/check-password/{dn:path}", tags=[Tag.EDITING], operation_id="post_check_password"
 )
 async def check_password(
-    dn: str, check: Annotated[str, Body()], connection: AuthenticatedConnection
+    dn: str,
+    check: Annotated[str, Body()],
+    _auth: AuthenticatedConnection,  # Always demand authentication
 ) -> bool:
     "Verify a password"
 
+    url, _ = parse_url(settings.LDAP_URL)
+    connection = open(url, NONE)
+
     try:
-        connection.rebind(user=dn, password=check)
-        return True
+        async with bound(connection, dn, check):
+            return True
     except LDAPInvalidCredentialsResult:
-        await sleep(0.5 + random() / 10)
         return False
 
 
