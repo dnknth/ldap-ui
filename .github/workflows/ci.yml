@@ -1,0 +1,30 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/setup@v2
+        with:
+          version: "^11.0.0"
+      - name: Build frontend
+        run: |
+          pnpm audit --prod
+          pnpm build
+          pnpm test --reporter=junit --outputFile.junit=TEST-vitest-results.xml
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: "latest"
+      - name: Run tests
+        run: |
+          uv run -w unittest-xml-reporting -m xmlrunner discover -s tests -p '*_test.py'
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        with:
+          name: Tests
+          path: "TEST-*.xml"
+          reporter: java-junit
