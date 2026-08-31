@@ -28,6 +28,12 @@ class State {
       .replace(/<[^>]+>/g, " ");
     this.showError(text);
   }
+
+  reset() {
+    this.baseDn = undefined;
+    this.alert = undefined;
+    this.schema = undefined;
+  }
 }
 
 export const state = reactive(new State());

@@ -18,6 +18,4 @@ services:
     environment:
       LDAP_URL: "${LDAP_URL:-ldap://ldap/}"
       USE_TLS: ${USE_TLS:-}
-      BIND_DN: "${BIND_DN:-cn=Fred Flintstone,ou=People,o=Flintstones}"
-      BIND_PASSWORD: "${BIND_PASSWORD:-yabbadabbado}"
     restart: unless-stopped

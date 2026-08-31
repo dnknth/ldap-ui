@@ -82,12 +82,12 @@ def handle_ldap_error(request: Request, exc: LDAPException) -> Response:
 
     exc_type = type(exc)
     if exc_type is LDAPInvalidCredentialsResult:
-        return Response(
-            status_code=HTTPStatus.UNAUTHORIZED,
-            headers={
-                "WWW-Authenticate": 'Basic realm="Please log in", charset="UTF-8"'
-            },
-        )
+        # Return 401 without the WWW-Authenticate header: the header would
+        # make the browser open its own native Basic-auth dialog whenever the
+        # login form submits invalid credentials. The frontend only needs the
+        # status code to reject and show its own error, so the header adds
+        # only the unwanted native prompt.
+        return Response(status_code=HTTPStatus.UNAUTHORIZED)
 
     if exc_type not in LDAP_ERROR_TO_STATUS:
         # Unknown error --> log it since FastApi won't do it for us

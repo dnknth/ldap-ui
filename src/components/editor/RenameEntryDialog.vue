@@ -43,8 +43,17 @@ function onOk() {
   const rdnAttr = props.entry.attrs[rdn.value || ""];
   if (rdnAttr && rdnAttr[0]) {
     emit("update:modal");
-    emit("ok", rdn.value + "=" + rdnAttr[0]);
+    emit("ok", rdn.value + "=" + escapeRdn(rdnAttr[0]));
   }
+}
+
+// Escape an attribute value for use in an RDN (RFC 4514).
+const specials = /[\\,+"<>;=]/g;
+function escapeRdn(value: string): string {
+  let rdn = value.replace(specials, "\\$&");
+  if (rdn[0] === "#" || rdn[0] === " ") rdn = "\\" + rdn;
+  if (rdn[rdn.length - 1] === " ") rdn = rdn.slice(0, -1) + "\\ ";
+  return rdn;
 }
 
 function ok(key: string) {

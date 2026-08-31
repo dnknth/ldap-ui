@@ -16,7 +16,7 @@
     >
       <div
         v-if="open"
-        @click.self="onCancel"
+        @click.self="onBackdrop"
         @keydown.esc="onCancel"
         class="fixed w-full h-full top-0 left-0 flex items-center justify-center z-30"
       >
@@ -28,12 +28,18 @@
               <div
                 v-if="title"
                 class="flex justify-between items-center px-4 py-1"
+                :class="dismissible ? '' : 'bg-primary/50'"
               >
-                <h3 class="ui-modal-header text-xl font-bold leading-normal">
+                <h3 class="text-xl font-bold leading-normal">
                   <slot name="header">{{ title }}</slot>
                 </h3>
 
-                <div class="control text-xl" @click="onCancel" title="close">
+                <div
+                  v-if="dismissible"
+                  class="control text-xl"
+                  @click="onCancel"
+                  title="close"
+                >
                   ⊗
                 </div>
               </div>
@@ -48,6 +54,7 @@
               >
                 <slot name="footer">
                   <button
+                    v-if="dismissible"
                     id="ui-modal-cancel"
                     @click="onCancel"
                     type="button"
@@ -86,6 +93,11 @@ const props = defineProps({
     cancelTitle: { type: String, default: "Cancel" },
     cancelClasses: { type: String, default: "bg-secondary" },
     hideFooter: { type: Boolean, default: false },
+    // Whether the modal can be dismissed (cancel button, close symbol, and
+    // backdrop click). False makes it modal-only, e.g. an auth gate.
+    dismissible: { type: Boolean, default: true },
+    // Allow the backdrop click to emit "cancel" (no effect when dismissible)
+    closeOnBackdrop: { type: Boolean, default: true },
     returnTo: String,
   }),
   emit = defineEmits<{
@@ -99,6 +111,10 @@ const props = defineProps({
 
 function onOk() {
   if (props.open) emit("ok");
+}
+
+function onBackdrop() {
+  if (props.open && props.closeOnBackdrop) onCancel();
 }
 
 function onCancel() {

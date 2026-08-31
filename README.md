@@ -18,7 +18,7 @@ This is a *minimal* web interface for LDAP directories. Docker images for `linux
 - Asynchronous LDAP backend with decent scalability
 - Available as [Docker image](https://hub.docker.com/r/dnknth/ldap-ui)
 
-The app always requires authentication, even if the directory permits anonymous access. User credentials are validated through a simple `bind` on the directory (SASL is not supported). What a particular user can see (and edit) is governed entirely by directory access rules. The app shows the directory contents, nothing less, nothing more.
+The app always requires authentication, even if the directory permits anonymous access. Credentials are validated through a simple `bind` on the directory (SASL is not supported). What a user can see and edit is governed entirely by directory access rules.
 
 ## Usage
 
@@ -39,7 +39,12 @@ For the even more impatient: Start a demo with
 docker compose up -d
 ```
 
-and go to <http://localhost:5000/>. You are automatically logged in as `Fred Flintstone`.
+then go to <http://localhost:5000/> and log in with one of the following accounts:
+
+| UID     | Password       | Role                              |
+| ------- | -------------- | --------------------------------- |
+| `admin` | `bedrock`      | Admin (full access)               |
+| `fred`  | `yabbadabbado` | User (read + self-password-write) |
 
 ### Pip
 
@@ -102,8 +107,7 @@ Prerequisites:
 
 `pnpm build` assembles the frontend in `backend/ldap_ui/statics`.
 
-Review the configuration in [settings.py](settings.py). It is short and mostly self-explanatory (also see notes below).
-Most settings can (and should) be overridden by environment variables or settings in a `.env` file; see [env.demo](env.demo) or [env.example](env.example).
+Review the configuration in [settings.py](settings.py); it is short and mostly self-explanatory (also see notes below). Most settings can be overridden by environment variables or settings in a `.env` file.
 
 Run the backend locally:
 
@@ -118,19 +122,14 @@ The frontend can be developed independently with hot-reload support using `pnpm 
 
 The UI always uses a simple `bind` operation to authenticate with the LDAP directory. How the `bind` DN is obtained from a given user name depends on a combination of OS environment variables, possibly from a `.env` file:
 
-1. Search by some attribute. By default, this is the `uid`, which can be overridden by the environment variable `LOGIN_ATTR`, e.g. `LOGIN_ATTR=cn`.
-2. If the environment variable `BIND_PATTERN` is set, then no search is performed. Login with a full DN can be configured with `BIND_PATTERN=%s`, which for example allows to login as user `cn=admin,dc=example,dc=org`. If a partial DN like `BIND_PATTERN=%s,dc=example,dc=org` is configured, the corresponding login would be `cn=admin`. If a specific pattern like `BIND_PATTERN=cn=%s,dc=example,dc=org` is configured, the login name is just `admin`.
-3. If security is no concern, then a fixed `BIND_DN` and `BIND_PASSWORD` can be set in the environment. This is for demo purposes only, and probably a very bad idea if access to the UI is not restricted by any other means.
+1. Search by some attribute. By default this is `uid` (overridable via `LOGIN_ATTR`, e.g. `LOGIN_ATTR=cn`). The search is anonymous, so the directory must grant anonymous read access to the search attribute within the search base. To avoid that, use `BIND_PATTERN` (item 2) or require a full-DN login.
+2. If `BIND_PATTERN` is set, no search is performed. `BIND_PATTERN=%s` requires a full DN (e.g. login `cn=admin,dc=example,dc=org`); `BIND_PATTERN=%s,dc=example,dc=org` allows `cn=admin`; `BIND_PATTERN=cn=%s,dc=example,dc=org` allows `admin`.
 
 ### Searching
 
-Search uses a configurable set of criteria
-(default: `cn`, `gn`, `sn`, and `uid`) if the query does not contain `=`.
-Wildcards are supported, e.g. `f*` will match all `cn`, `gn`, `sn`, and `uid` starting with `f`.
-Additionally, arbitrary attributes can be searched with an LDAP filter specification, for example `sn=F*`.
+Search uses a configurable set of criteria (default: `cn`, `gn`, `sn`, and `uid`) if the query does not contain `=`. Wildcards are supported, e.g. `f*` matches all `cn`, `gn`, `sn`, and `uid` starting with `f`. Arbitrary attributes can also be searched with an LDAP filter, e.g. `sn=F*`.
 
-Apart from the search field in the navigation bar,
-searches are also performed in the entry editor for any DN-valued input field.
+Apart from the search field in the navigation bar, searches are also performed in the entry editor for any DN-valued input field.
 
 ### Keyboard navigation
 
@@ -151,8 +150,9 @@ The following [access keys](https://developer.mozilla.org/en-US/docs/Web/HTML/Re
 
 - The software works with [OpenLDAP](http://www.openldap.org) using simple bind. Other directories have not been tested much, although [389 DS](https://www.port389.org) works to some extent.
 - SASL authentication schemes are presently not supported.
-- Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLDAP 2.4 does). I strongly recommend to expose the app through a TLS-enabled web server.
-- HTTP *Basic Authentication* is triggered unless the `AUTHORIZATION` request variable is already set by some upstream HTTP server.
+- Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLDAP 2.4 does). I strongly recommend exposing the app through a TLS-enabled web server.
+- HTTP *Basic Authentication* is performed by the app: the login dialog collects credentials and a request interceptor (`src/auth.ts`) attaches `Authorization: Basic` to every request once logged in. On startup the app probes `/api/whoami`; if an upstream HTTP server (or a native browser Basic challenge) already supplied the `AUTHORIZATION` request variable, the session is treated as authenticated and the login dialog is skipped. Otherwise the dialog credentials are used, replacing any upstream-provided header.
+- LDIF export never includes plaintext passwords: `userPassword` values without an RFC&nbsp;2307 scheme prefix (`{SSHA}`, `{SHA}`, `{MD5}`, …) — or explicitly marked `{CLEARTEXT}`/`{PLAIN}` — are omitted even when the *Include sensitive (hashed passwords)* option is enabled (`?include_sensitive=true`). Only hashed values with a scheme prefix can be exported, so a directory that stores passwords in plaintext cannot leak them through an export.
 
 ## Q&A
 

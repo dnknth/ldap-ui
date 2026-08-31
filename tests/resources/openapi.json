@@ -119,28 +119,30 @@
             "type": "string"
           }
         },
-        "required": [
-          "blob"
-        ],
+        "required": ["blob"],
         "title": "Body_put_blob",
         "type": "object"
       },
       "ChangePasswordRequest": {
         "description": "Change a password",
         "properties": {
+          "old": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old"
+          },
           "new1": {
             "title": "New1",
             "type": "string"
-          },
-          "old": {
-            "title": "Old",
-            "type": "string"
           }
         },
-        "required": [
-          "old",
-          "new1"
-        ],
+        "required": ["new1"],
         "title": "ChangePasswordRequest",
         "type": "object"
       },
@@ -188,13 +190,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "dn",
-          "attrs",
-          "binary",
-          "autoFilled",
-          "changed"
-        ],
+        "required": ["dn", "attrs", "binary", "autoFilled", "changed"],
         "title": "Entry",
         "type": "object"
       },
@@ -285,26 +281,28 @@
         "type": "object"
       },
       "Range": {
-        "description": "Numeric attribute range",
+        "description": "Numeric attribute range, bounded to 0..RANGE_LIMIT",
         "properties": {
           "max": {
+            "maximum": 60000.0,
+            "minimum": 0.0,
             "title": "Max",
             "type": "integer"
           },
           "min": {
+            "maximum": 60000.0,
+            "minimum": 0.0,
             "title": "Min",
             "type": "integer"
           },
           "next": {
+            "maximum": 60000.0,
+            "minimum": 0.0,
             "title": "Next",
             "type": "integer"
           }
         },
-        "required": [
-          "min",
-          "max",
-          "next"
-        ],
+        "required": ["min", "max", "next"],
         "title": "Range",
         "type": "object"
       },
@@ -332,11 +330,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "attributes",
-          "objectClasses",
-          "syntaxes"
-        ],
+        "required": ["attributes", "objectClasses", "syntaxes"],
         "title": "Schema",
         "type": "object"
       },
@@ -352,10 +346,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "dn",
-          "name"
-        ],
+        "required": ["dn", "name"],
         "title": "SearchResult",
         "type": "object"
       },
@@ -375,11 +366,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "oid",
-          "desc",
-          "not_human_readable"
-        ],
+        "required": ["oid", "desc", "not_human_readable"],
         "title": "Syntax",
         "type": "object"
       },
@@ -399,11 +386,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "dn",
-          "structuralObjectClass",
-          "hasSubordinates"
-        ],
+        "required": ["dn", "structuralObjectClass", "hasSubordinates"],
         "title": "TreeItem",
         "type": "object"
       },
@@ -449,19 +432,21 @@
             "type": "string"
           }
         },
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError",
         "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBasic": {
+        "scheme": "basic",
+        "type": "http"
       }
     }
   },
   "info": {
     "title": "LDAP UI",
-    "version": "0.13.8"
+    "version": "0.15.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -529,10 +514,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Delete Blob",
-        "tags": [
-          "Editing"
-        ]
+        "tags": ["Editing"]
       },
       "put": {
         "description": "Upload a binary attribute",
@@ -607,10 +595,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Put Blob",
-        "tags": [
-          "Editing"
-        ]
+        "tags": ["Editing"]
       }
     },
     "/api/change-password/{dn}": {
@@ -669,10 +660,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Change Password",
-        "tags": [
-          "Editing"
-        ]
+        "tags": ["Editing"]
       }
     },
     "/api/check-password/{dn}": {
@@ -740,10 +734,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Check Password",
-        "tags": [
-          "Editing"
-        ]
+        "tags": ["Editing"]
       }
     },
     "/api/entry/{dn}": {
@@ -791,10 +788,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Delete Entry",
-        "tags": [
-          "Editing"
-        ]
+        "tags": ["Editing"]
       },
       "get": {
         "description": "Retrieve a directory entry by DN",
@@ -848,10 +848,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Get Entry",
-        "tags": [
-          "Editing"
-        ]
+        "tags": ["Editing"]
       },
       "post": {
         "operationId": "post_entry",
@@ -925,10 +928,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Post Entry",
-        "tags": [
-          "Editing"
-        ]
+        "tags": ["Editing"]
       },
       "put": {
         "operationId": "put_entry",
@@ -1002,10 +1008,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Put Entry",
-        "tags": [
-          "Editing"
-        ]
+        "tags": ["Editing"]
       }
     },
     "/api/ldif": {
@@ -1056,15 +1065,18 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Upload Ldif",
-        "tags": [
-          "Editing"
-        ]
+        "tags": ["Editing"]
       }
     },
     "/api/range/{attribute}": {
       "get": {
-        "description": "List all values for a numeric attribute of an objectClass like uidNumber or gidNumber",
+        "description": "List all values for a numeric attribute of an objectClass like uidNumber or gidNumber.\n\nThe returned range is bounded to 0..60000: min/max are clamped into that window,\nand 'next' is a free value within it (or the upper bound when the window is full).",
         "operationId": "get_range",
         "parameters": [
           {
@@ -1115,10 +1127,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Attribute Range",
-        "tags": [
-          "Misc"
-        ]
+        "tags": ["Misc"]
       }
     },
     "/api/rename/{dn}": {
@@ -1178,10 +1193,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Rename Entry",
-        "tags": [
-          "Editing"
-        ]
+        "tags": ["Editing"]
       }
     },
     "/api/schema": {
@@ -1228,10 +1246,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Ldap Schema",
-        "tags": [
-          "Misc"
-        ]
+        "tags": ["Misc"]
       }
     },
     "/api/search/{query}": {
@@ -1291,10 +1312,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Search",
-        "tags": [
-          "Navigation"
-        ]
+        "tags": ["Navigation"]
       }
     },
     "/api/subtree/{root_dn}": {
@@ -1354,10 +1378,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "List Subtree",
-        "tags": [
-          "Misc"
-        ]
+        "tags": ["Misc"]
       }
     },
     "/api/tree/{basedn}": {
@@ -1417,10 +1444,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Get Tree",
-        "tags": [
-          "Navigation"
-        ]
+        "tags": ["Navigation"]
       }
     },
     "/api/whoami": {
@@ -1468,10 +1498,13 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
         "summary": "Whoami",
-        "tags": [
-          "Misc"
-        ]
+        "tags": ["Misc"]
       }
     }
   }

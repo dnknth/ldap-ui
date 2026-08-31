@@ -15,8 +15,8 @@
       ></i>
       <node-label
         oc="person"
-        v-if="user"
-        :dn="user"
+        v-if="userDn"
+        :dn="userDn"
         @select-dn="emit('update:activeDn', $event)"
         class="text-lg"
       />
@@ -61,27 +61,35 @@
           :query="query"
         />
       </form>
+
+      <i
+        v-if="!externalAuth"
+        class="fa fa-sign-out cursor-pointer pl-2"
+        title="Log out"
+        @click="emit('logout')"
+      ></i>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, onMounted, useTemplateRef } from "vue";
+import { nextTick, onMounted, ref, useTemplateRef } from "vue";
 import DropdownMenu from "./ui/DropdownMenu.vue";
 import NodeLabel from "./NodeLabel.vue";
 import SearchResults from "./SearchResults.vue";
 import { state } from "@/state";
-import { getWhoAmI } from "@/generated";
+import { isExternalAuthenticated } from "@/auth";
 
-const user = ref<string | null>(null),
-  input = useTemplateRef("input"),
+const input = useTemplateRef("input"),
   query = ref(""),
   collapsed = ref(false),
+  externalAuth = isExternalAuthenticated(),
   emit = defineEmits<{
     "update:activeDn": [dn?: string];
     "update:modal": [name: string];
     "update:oc": [name: string];
     "update:treeOpen": [open: boolean];
+    logout: [];
   }>();
 
 defineProps<{
@@ -89,15 +97,8 @@ defineProps<{
   modal?: string;
   oc?: string;
   treeOpen: boolean;
+  userDn?: string;
 }>();
-
-onMounted(async () => {
-  // Get the DN of the current user
-  const response = await getWhoAmI();
-  if (response.data) {
-    user.value = response.data;
-  }
-});
 
 function search() {
   query.value = "";
@@ -105,4 +106,11 @@ function search() {
     query.value = input?.value?.value || "";
   });
 }
+
+// The navbar is mounted fresh after login (v-else-if="ready" in App.vue);
+// autofocus is not reliably honored for dynamically inserted elements, so
+// focus the search box explicitly.
+onMounted(() => {
+  nextTick(() => input?.value?.focus());
+});
 </script>

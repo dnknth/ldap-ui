@@ -6,9 +6,11 @@ to determine how individual attributes should be presented
 to the user.
 """
 
+import re
 from enum import StrEnum
 from typing import Any, Self
 
+from ldap3.core.exceptions import LDAPInvalidDnError
 from ldap3.protocol.rfc4512 import (
     AttributeTypeInfo,
     BaseObjectInfo,
@@ -17,11 +19,70 @@ from ldap3.protocol.rfc4512 import (
     SchemaInfo,
 )
 from ldap3.utils.ciDict import CaseInsensitiveDict
+from ldap3.utils.dn import parse_dn
 from pydantic import BaseModel, Field, computed_field
 
 # Special syntaxes
 OCTET_STRING = "1.3.6.1.4.1.1466.115.121.1.40"
 INTEGER = "1.3.6.1.4.1.1466.115.121.1.27"
+
+#
+# DN comparison
+#
+
+_CHAR_ESCAPE = re.compile(r"\\([,+#;<=>\"\\ ])")
+_HEX_ESCAPE = re.compile(r"\\([0-9A-Fa-f]{2})")
+
+
+def _unescape_rdn(value: str) -> str:
+    "Decode RFC 4514 escapes (\\X and \\XX) in an RDN component to the literal character"
+    value = _CHAR_ESCAPE.sub(r"\1", value)
+    return _HEX_ESCAPE.sub(lambda m: chr(int(m.group(1), 16)), value)
+
+
+def canonical_attribute_type(attr: str, schema: SchemaInfo | None) -> str:
+    """
+    Resolve an attribute type name to a canonical form via the schema's OID.
+
+    Raises LDAPInvalidDnError when a schema is available and the attribute
+    type is not defined in it. Only falls back to the lowercased name when no
+    schema is available at all.
+    """
+    if schema is not None and schema.attribute_types is not None:
+        try:
+            return schema.attribute_types[attr].oid
+        except (KeyError, AttributeError) as exc:
+            raise LDAPInvalidDnError(
+                f"Unknown attribute type: {attr}"
+            ) from exc
+    return _unescape_rdn(attr).lower()
+
+
+def normalize_dn(dn: str, schema: SchemaInfo | None = None) -> list[tuple[str, str]]:
+    """
+    Structural form of a DN for equality comparison.
+
+    ldap3 ships no DN matching function (its dn helpers only parse/serialize),
+    so the DN is decomposed with its RFC 4514 parser and compared component-wise:
+
+    - attribute types are resolved through the directory schema when available,
+      so aliases (gn == givenName) and case variants (RFC 4512) match; an
+      attribute type not defined in the schema is an invalid DN and raises
+      LDAPInvalidDnError;
+    - separator (`,`/`+`) ordering is ignored (RFC 4514);
+    - `\\X` and `\\XX` escapes are decoded so equivalent encodings compare equal.
+
+    Values are compared case-insensitively: the common DN attribute syntaxes
+    (Directory String, IA5 String) match case-insensitively, and resolving the
+    exact matching rule per attribute syntax would require the matching rules
+    in the schema. This biases toward the components being "the same", which
+    keeps is_self fail-closed: a self DN is then treated as self, and the old
+    password is required instead of being silently omitted.
+    """
+    return [
+        (canonical_attribute_type(attr, schema), _unescape_rdn(value).lower())
+        for attr, value, _ in parse_dn(dn)
+    ]
 
 
 class _Element(BaseModel):

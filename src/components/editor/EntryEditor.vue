@@ -85,7 +85,23 @@
           <li @click="modal = 'new-entry'" role="menuitem">Add child…</li>
           <li @click="modal = 'copy-entry'" role="menuitem">Copy…</li>
           <li @click="modal = 'rename-entry'" role="menuitem">Rename…</li>
-          <li role="menuitem"><a :href="'api/ldif/' + entry.dn">Export</a></li>
+          <li role="menuitem">
+            <label class="cursor-pointer inline-flex items-center">
+              <input
+                v-model="exportSensitive"
+                type="checkbox"
+                class="mr-2"
+              />
+              Include sensitive (hashed passwords)
+            </label>
+          </li>
+          <li role="menuitem">
+            <a
+              :href="'api/ldif/' + entry.dn + (exportSensitive ? '?include_sensitive=true' : '')"
+            >
+              Export
+            </a>
+          </li>
           <li
             @click="modal = 'delete-entry'"
             class="text-danger"
@@ -221,6 +237,7 @@ const inputTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"],
   entry = ref<Entry>(), // entry in editor
   focused = ref<string>(), // currently focused input
   invalid = ref<string[]>([]), // field IDs with validation errors
+  exportSensitive = ref(false), // include userPassword/userPKCS12 on LDIF export
   modal = ref<string>(), // pop-up dialog
   keys = computed(() => {
     const keys = Object.keys(entry.value?.attrs || {});

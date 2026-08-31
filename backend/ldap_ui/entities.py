@@ -1,16 +1,21 @@
 "Data types for ReST endpoints"
 
 from base64 import b64encode
-from typing import Self
+from typing import Annotated, Self
 
 from ldap3 import SchemaInfo
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .ldap_helpers import ResponseEntry
 
 Attributes = dict[str, list[str]]
 
 AttributeNames = list[str]  # Names of modified attributes
+
+# Upper bound for the numeric attribute range reported by /api/range.
+# Kept small so the next-free computation is bounded, and documented in the
+# OpenAPI schema via the Range model constraints.
+RANGE_LIMIT = 60000
 
 
 class Entry(BaseModel):
@@ -63,7 +68,7 @@ class Entry(BaseModel):
 class ChangePasswordRequest(BaseModel):
     "Change a password"
 
-    old: str
+    old: str | None = None
     new1: str
 
 
@@ -75,11 +80,11 @@ class SearchResult(BaseModel):
 
 
 class Range(BaseModel):
-    "Numeric attribute range"
+    "Numeric attribute range, bounded to 0..RANGE_LIMIT"
 
-    min: int
-    max: int
-    next: int
+    min: Annotated[int, Field(ge=0, le=RANGE_LIMIT)]
+    max: Annotated[int, Field(ge=0, le=RANGE_LIMIT)]
+    next: Annotated[int, Field(ge=0, le=RANGE_LIMIT)]
 
 
 class TreeItem(BaseModel):

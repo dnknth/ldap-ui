@@ -1,21 +1,31 @@
+import asyncio
 import io
 import unittest
 from base64 import b64decode
 from http import HTTPStatus
+from typing import cast
 
 import httpx2
+from anyio import Lock
 from fastapi.testclient import TestClient
-from ldap_ui import settings
+from ldap3 import SchemaInfo
+from ldap3.core.connection import Connection
+from ldap3.core.exceptions import LDAPInvalidDnError
+from ldap_ui import ldap_api, settings
 from ldap_ui.app import app
-from ldap_ui.entities import Attributes
-from ldap_ui.schema import Schema
+from ldap_ui.entities import Attributes, Range
+from ldap_ui.ldap_api import (
+    bounded_range,
+    is_hashed_password,
+    sanitize_export_entries,
+)
+from ldap_ui.schema import Schema, normalize_dn
 from ldif import LDIFParser
 from testcontainers.core.config import testcontainers_config
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.wait_strategies import LogMessageWaitStrategy
 
 AUTH = ("admin", "bedrock")
-
 BASE_DN = "o=Flintstones"
 ADMIN_DN = f"cn=admin,{BASE_DN}"
 TEST_DN = f"cn=test,{BASE_DN}"
@@ -42,9 +52,6 @@ JPEG = b64decode(
 
 
 def setUpModule():
-    settings.config.environ["BIND_DN"] = "cn=admin,o=Flintstones"
-    settings.config.environ["BIND_PASSWORD"] = "bedrock"
-
     # Give Docker more time to spin up the LDAP container on slow hosts:
     # the default 120 s timeout is often too short.
     testcontainers_config.max_tries = 240
@@ -80,6 +87,235 @@ def normalize_entry(attributes: Attributes) -> Attributes:
     }
 
 
+class NormalizeDnTest(unittest.TestCase):
+    "Unit tests for normalize_dn (#2) — no directory required"
+
+    def test_normalize_dn_case_insensitive(self):
+        # Attribute types and values match case-insensitively (RFC 4512/4514).
+        self.assertEqual(
+            normalize_dn("CN=Admin,OU=People,DC=demo,DC=com"),
+            normalize_dn("cn=admin,ou=people,dc=demo,dc=com"),
+        )
+
+    def test_normalize_dn_distinct(self):
+        self.assertNotEqual(
+            normalize_dn("cn=admin,dc=demo"),
+            normalize_dn("cn=other,dc=demo"),
+        )
+
+    def test_normalize_dn_value_case(self):
+        # Name values are matched case-insensitively (the common directory
+        # equality behavior for cn/uid etc.).
+        self.assertEqual(
+            normalize_dn("Cn=Fred Flintstone,O=Flintstones"),
+            normalize_dn("cn=FRED FLINTSTONE,o=flintstones"),
+        )
+
+    def test_normalize_dn_escape_equivalence(self):
+        # RFC 4514: \\, and \\2C are equivalent encodings of the same value.
+        self.assertEqual(
+            normalize_dn("cn=John\\, Doe,ou=People,dc=demo"),
+            normalize_dn("cn=John\\2C Doe,ou=People,dc=demo"),
+        )
+
+    def test_normalize_dn_attribute_alias(self):
+        # Attribute aliases (gn == givenName) resolve through the schema's
+        # CaseInsensitiveWithAliasDict (CASE_INSENSITIVE_SCHEMA_NAMES defaults
+        # to True); without a schema they fall back to the lowercased name and
+        # do not match.
+        schema = SchemaInfo(
+            "cn=schema",
+            {
+                "attributeTypes": [
+                    "( 2.5.4.42 NAME ( 'givenName' 'gn' ) SUP name )"
+                ]
+            },
+            {},
+        )
+        self.assertEqual(
+            normalize_dn("gn=Fred", schema),
+            normalize_dn("givenName=Fred", schema),
+        )
+        self.assertNotEqual(
+            normalize_dn("gn=Fred"),
+            normalize_dn("givenName=Fred"),
+        )
+
+    def test_normalize_dn_unknown_attribute_type(self):
+        # An attribute type not defined in the schema is an invalid DN: it
+        # raises LDAPInvalidDnError, which is_self catches and treats as
+        # "not self" (fail-closed), requiring the old password.
+        schema = SchemaInfo(
+            "cn=schema",
+            {
+                "attributeTypes": [
+                    "( 2.5.4.42 NAME ( 'givenName' 'gn' ) SUP name )"
+                ]
+            },
+            {},
+        )
+        with self.assertRaises(LDAPInvalidDnError):
+            normalize_dn("zzz=whatever", schema)
+
+
+class RangeTest(unittest.TestCase):
+    "Unit tests for bounded_range (#4) — no directory required"
+
+    def test_bounded_range_printable(self):
+        self.assertEqual(
+            Range(min=3, max=5, next=6), bounded_range({3, 4, 5})
+        )
+
+    def test_bounded_range_fills_gap(self):
+        self.assertEqual(
+            Range(min=1, max=4, next=2), bounded_range({1, 3, 4})
+        )
+
+    def test_bounded_range_clamps_high_values(self):
+        self.assertEqual(
+            Range(min=1, max=60000, next=2),
+            bounded_range({1, 60001}),
+        )
+
+    def test_bounded_range_all_values_outside_bound(self):
+        # Every value exceeds the limit: the window collapses onto the upper
+        # bound instead of allocating an unbounded range.
+        self.assertEqual(
+            Range(min=60000, max=60000, next=60000),
+            bounded_range({100001, 200001}),
+        )
+
+    def test_bounded_range_negative_values(self):
+        self.assertEqual(
+            Range(min=0, max=3, next=0), bounded_range({-5, 1, 2, 3})
+        )
+
+    def test_bounded_range_all_negative_collapses_to_zero(self):
+        self.assertEqual(
+            Range(min=0, max=0, next=0), bounded_range({-100, -200})
+        )
+
+    def test_bounded_range_full_window(self):
+        # A full window has no free value: 'next' falls back to the upper
+        # bound and never exceeds RANGE_LIMIT.
+        self.assertEqual(
+            Range(min=0, max=2, next=2), bounded_range({0, 1, 2, 3, 4}, limit=2)
+        )
+
+
+class StripSensitiveTest(unittest.TestCase):
+    "Unit tests for sanitize_export_entries / is_hashed_password (#1) — no directory"
+
+    def entry(self, raw):
+        return [{"type": "searchResEntry", "dn": "cn=x", "raw_attributes": raw}]
+
+    def test_is_hashed_password(self):
+        self.assertTrue(is_hashed_password(b"{SSHA}abc"))
+        self.assertTrue(is_hashed_password(b"{SHA}def"))
+        self.assertTrue(is_hashed_password("{MD5}ghi"))
+        self.assertFalse(is_hashed_password(b"plaintext"))
+        self.assertFalse(is_hashed_password(b"{CLEARTEXT}plain"))
+        self.assertFalse(is_hashed_password(b"{PLAIN}plain"))
+
+    def test_default_strips_sensitive(self):
+        entries = self.entry(
+            {
+                "userPassword": [b"{SSHA}abc"],
+                "userPKCS12": [b"pkcs"],
+                "cn": [b"x"],
+            }
+        )
+        result = sanitize_export_entries(entries, include_sensitive=False)
+        self.assertEqual(result[0]["raw_attributes"], {"cn": [b"x"]})
+
+    def test_sensitive_keeps_hashed_password(self):
+        entries = self.entry(
+            {"userPassword": [b"{SSHA}abc"], "cn": [b"x"]}
+        )
+        result = sanitize_export_entries(entries, include_sensitive=True)
+        self.assertEqual(result[0]["raw_attributes"], {"userPassword": [b"{SSHA}abc"], "cn": [b"x"]})
+
+    def test_sensitive_never_exports_plaintext(self):
+        # Plaintext passwords are dropped even when explicitly requested (#1).
+        entries = self.entry(
+            {"userPassword": [b"secret"], "cn": [b"x"]}
+        )
+        result = sanitize_export_entries(entries, include_sensitive=True)
+        self.assertEqual(result[0]["raw_attributes"], {"cn": [b"x"]})
+
+    def test_sensitive_mixed_values(self):
+        # Hashed values are kept, plaintext ones are dropped.
+        entries = self.entry(
+            {"userPassword": [b"{SSHA}abc", b"plain"], "cn": [b"x"]}
+        )
+        result = sanitize_export_entries(entries, include_sensitive=True)
+        self.assertEqual(result[0]["raw_attributes"], {"userPassword": [b"{SSHA}abc"], "cn": [b"x"]})
+
+    def test_cleartext_scheme_never_exported(self):
+        entries = self.entry(
+            {"userPassword": [b"{CLEARTEXT}plain"], "cn": [b"x"]}
+        )
+        result = sanitize_export_entries(entries, include_sensitive=True)
+        self.assertEqual(result[0]["raw_attributes"], {"cn": [b"x"]})
+
+    def test_base64_encoded_plaintext_never_exported(self):
+        # Even when the value would be emitted as base64 in the LDIF (output
+        # encoding relies on the raw value), a plaintext password is dropped.
+        entries = self.entry(
+            {"userPassword": [b"plain"], "cn": [b"x"]}
+        )
+        result = sanitize_export_entries(entries, include_sensitive=True)
+        self.assertEqual(result[0]["raw_attributes"], {"cn": [b"x"]})
+
+    def test_preserves_non_sensitive(self):
+        entries = self.entry({"cn": [b"x"]})
+        result = sanitize_export_entries(entries, include_sensitive=True)
+        self.assertIs(result[0], entries[0])
+
+
+class SchemaCacheTest(unittest.IsolatedAsyncioTestCase):
+    "Ensure the schema is fetched only once under concurrency (#4)"
+
+    def monkeypatch_schema(self):
+        schema = SchemaInfo(
+            "cn=schema",
+            {"attributeTypes": ["( 2.5.4.42 NAME ( 'givenName' 'gn' ) SUP name )"]},
+            {},
+        )
+        calls = [0]
+
+        async def fake_get_schema(connection):
+            calls[0] += 1
+            await asyncio.sleep(0.01)  # widen the race window
+            return schema
+
+        original = (
+            ldap_api.SCHEMA,
+            ldap_api._SCHEMA_LOCK,
+            ldap_api.get_schema,
+        )
+        ldap_api.SCHEMA = None
+        ldap_api._SCHEMA_LOCK = Lock()
+        ldap_api.get_schema = fake_get_schema
+        return calls, original
+
+    async def test_ensure_schema_fetches_once(self):
+        calls, (schema, lock, get_schema) = self.monkeypatch_schema()
+        connection = cast(Connection, object())  # unused by the fake
+        try:
+            results = await asyncio.gather(
+                *[ldap_api.ensure_schema(connection) for _ in range(20)]
+            )
+        finally:
+            ldap_api.SCHEMA, ldap_api._SCHEMA_LOCK, ldap_api.get_schema = (
+                schema,
+                lock,
+                get_schema,
+            )
+        self.assertEqual(calls[0], 1)
+        self.assertEqual(len(results), 20)
+
+
 class ReadOnlyTest(LdapMixin, unittest.TestCase):
     "Test directory read access"
 
@@ -95,6 +331,36 @@ class ReadOnlyTest(LdapMixin, unittest.TestCase):
             result = self.client.get("/api/whoami", auth=AUTH)
             self.assertHTTPStatus(result)
             self.assertEqual(ADMIN_DN.lower(), result.json().lower())
+
+    def test_get_whoami_anonymous(self):
+        # whoami is a soft endpoint: without credentials it returns an empty
+        # DN (200) rather than a 401 challenge, so the frontend probe never
+        # triggers the browser's native Basic-auth popup.
+        with self.client:
+            result = self.client.get("/api/whoami")
+            self.assertHTTPStatus(result)
+            self.assertEqual("", result.json())
+
+    def test_get_whoami_unknown_user_soft(self):
+        # whoami is a soft endpoint: an unknown user is reported as no user
+        # (200 + empty DN), never a 401 challenge.
+        with self.client:
+            result = self.client.get("/api/whoami", auth=("ghost", "password"))
+            self.assertHTTPStatus(result)
+            self.assertEqual("", result.json())
+
+    def test_get_schema_unknown_user(self):
+        # On authenticated endpoints, a user that does not exist must be
+        # rejected with a 401 (rate-limited, #2).
+        with self.client:
+            result = self.client.get("/api/schema", auth=("ghost", "password"))
+            self.assertHTTPStatus(result, HTTPStatus.UNAUTHORIZED)
+
+    def test_get_schema_wrong_password(self):
+        # A real user with the wrong password must also be rejected.
+        with self.client:
+            result = self.client.get("/api/schema", auth=(AUTH[0], "wrong"))
+            self.assertHTTPStatus(result, HTTPStatus.UNAUTHORIZED)
 
     def test_get_schema(self):
         with self.client:
@@ -274,6 +540,61 @@ class ModificationTest(LdapMixin, unittest.TestCase):
             )
             self.assertHTTPStatus(result, HTTPStatus.NO_CONTENT)
 
+    def test_091_self_change_password_requires_old(self):
+        # Changing your own password demands the old one (#2): the directory's
+        # password-modify operation silently skips verification when the old
+        # password is omitted.
+        with self.client:
+            result = self.client.post(
+                f"/api/change-password/{ADMIN_DN}",
+                auth=AUTH,
+                json={"old": "", "new1": "whatever"},
+            )
+            self.assertHTTPStatus(result, HTTPStatus.BAD_REQUEST)
+
+    def test_092_change_password_failure_surfaced(self):
+        # A failed password change is reported, not silently swallowed as 204.
+        with self.client:
+            result = self.client.post(
+                "/api/change-password/cn=ghost,o=Flintstones",
+                auth=AUTH,
+                json={"old": "", "new1": "whatever"},
+            )
+            self.assertHTTPStatus(result, HTTPStatus.NOT_FOUND)
+
+    def test_095_reject_rdn_injection(self):
+        # RDN validation (#1): crafted or malformed RDNs must be rejected
+        # without mutating the entry.
+        for rdn in ("cn=a,dc=evil", "cn=a+sn=b", "cn="):
+            with self.client:
+                result = self.client.post(
+                    f"/api/rename/{TEST_DN}", auth=AUTH, json=rdn
+                )
+                self.assertHTTPStatus(result, HTTPStatus.BAD_REQUEST)
+        self.assertStillAt(TEST_DN)
+
+    def assertStillAt(self, dn: str) -> None:
+        with self.client:
+            result = self.client.get(f"/api/entry/{dn}", auth=AUTH)
+            self.assertHTTPStatus(result)
+
+    def test_095_reject_invalid_attribute_name(self):
+        # #5: malformed attribute names in entry modifications are rejected
+        # with a 400 instead of being passed to the directory.
+        with self.client:
+            result = self.client.post(
+                f"/api/entry/{TEST_DN}",
+                auth=AUTH,
+                json={"(cn=foo)": ["x"]},
+            )
+            self.assertHTTPStatus(result, HTTPStatus.BAD_REQUEST)
+            result = self.client.put(
+                f"/api/entry/{TEST_DN}",
+                auth=AUTH,
+                json={"(uid=bar)": ["y"]},
+            )
+            self.assertHTTPStatus(result, HTTPStatus.BAD_REQUEST)
+
     def test_100_rename_entry(self):
         with self.client:
             result = self.client.post(
@@ -312,6 +633,29 @@ class ModificationTest(LdapMixin, unittest.TestCase):
                     for dn, attrs in parse_ldif(result.content).items()
                 },
             )
+
+    def test_131_ldif_hides_password_by_default(self):
+        # #1: LDIF export excludes userPassword unless explicitly requested.
+        with self.client:
+            result = self.client.get(f"/api/ldif/{TEST_DN}", auth=AUTH)
+            self.assertHTTPStatus(result)
+            dn_attrs = parse_ldif(result.content).get(TEST_DN)
+            self.assertTrue(dn_attrs is not None)
+            assert dn_attrs is not None  # typing narrow
+            self.assertNotIn("userPassword", dn_attrs)
+
+    def test_132_ldif_never_exports_plaintext_password(self):
+        # #1: even with include_sensitive, a plaintext-stored userPassword
+        # (no RFC 2307 scheme prefix) is never exported.
+        with self.client:
+            result = self.client.get(
+                f"/api/ldif/{TEST_DN}", params={"include_sensitive": "true"}, auth=AUTH
+            )
+            self.assertHTTPStatus(result)
+            dn_attrs = parse_ldif(result.content).get(TEST_DN)
+            self.assertTrue(dn_attrs is not None)
+            assert dn_attrs is not None  # typing narrow
+            self.assertNotIn("userPassword", dn_attrs)
 
     def test_140_delete_ldif(self):
         with self.client:

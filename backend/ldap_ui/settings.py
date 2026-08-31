@@ -9,8 +9,11 @@ from starlette.config import Config
 # App settings
 #
 
-
-config = Config(".env")
+# Only load a .env file if one is present, so we avoid starlette's
+# "Config file '.env' not found" warning in clean checkouts.
+_env = Path(".env")
+config = Config(_env) if _env.is_file() else Config()
+del _env
 
 
 def _boolean(b) -> bool:
@@ -61,14 +64,6 @@ INSECURE_TLS = config("INSECURE_TLS", cast=_boolean, default=False)
 #
 
 
-# Demo mode: If a hard-wired DN from in the environment is present
-# and GET_BIND_PASSWORD returns something, the UI will NOT ask for a login.
-# You need to secure it otherwise!
-def GET_BIND_DN() -> str | None:
-    "Try to find a hard-wired DN from in the environment."
-    return config("BIND_DN", default=None)
-
-
 def GET_BIND_PATTERN(username: str | None) -> str | None:
     """
     Apply an optional user DN pattern for authentication
@@ -93,19 +88,6 @@ def GET_BIND_PATTERN(username: str | None) -> str | None:
 def GET_BIND_DN_FILTER(username: str) -> str:
     "Produce a LDAP search filter for the login DN"
     return SEARCH_PATTERNS[0] % escape_filter_chars(username)
-
-
-def GET_BIND_PASSWORD() -> str | None:
-    "Try to determine the login password from the environment or request"
-    pw = config("BIND_PASSWORD", default=None)
-    if pw is not None:
-        return pw
-
-    pw_file = config("BIND_PASSWORD_FILE", default=None)
-    if pw_file is not None:
-        return Path(pw_file).read_text().rstrip("\n")
-
-    return None
 
 
 #
@@ -145,8 +127,7 @@ SEARCH_MAX = min(
 
 
 def log_warnings():
-    log = logging.getLogger(__name__)
-    if GET_BIND_DN() and GET_BIND_PASSWORD():
-        log.warning("Dangerous: Hard-wired authentication")
     if INSECURE_TLS or not USE_TLS:
-        log.warning("Insecure LDAP connection, check TLS settings")
+        logging.getLogger(__name__).warning(
+            "Insecure LDAP connection, check TLS settings"
+        )

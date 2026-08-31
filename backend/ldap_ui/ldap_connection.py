@@ -100,6 +100,11 @@ async def ldap_connect() -> Connection:
     return connection
 
 
+async def rate_limit() -> None:
+    "Delay a response on authentication failure, with jitter to defeat timing attacks"
+    await sleep(0.5 + random() / 5)
+
+
 @asynccontextmanager
 async def bound(connection: Connection, dn: str, password: str | None):
     "Bind a connection as the given user, rate-limiting failures, always unbinding on exit"
@@ -108,9 +113,7 @@ async def bound(connection: Connection, dn: str, password: str | None):
         try:
             connection.rebind(user=dn, password=password)
         except LDAPInvalidCredentialsResult:
-            # Rate limit: Delay response on invalid credentials
-            # Add randomness to defeat timing attacks
-            await sleep(0.5 + random() / 5)
+            await rate_limit()
             raise
         yield
     finally:
