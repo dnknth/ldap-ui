@@ -23,7 +23,7 @@
     "@tsconfig/node24": "latest",
     "@types/node": "latest",
     "@vitejs/plugin-vue": "latest",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "@vue/eslint-config-prettier": "latest",
     "@vue/eslint-config-typescript": "latest",
     "@vue/tsconfig": "latest",

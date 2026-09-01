@@ -1,4 +1,5 @@
-allowBuilds:
-  esbuild: set this to true or false
+minimumReleaseAgeExclude:
+  - '@rolldown/binding-freebsd-x64@1.2.6'
+  - '@rolldown/binding-openharmony-arm64@1.2.6'
 onlyBuiltDependencies:
   - esbuild
