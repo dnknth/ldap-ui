@@ -1,8 +1,9 @@
 import logging
 from pathlib import Path
 
+from ldap3.core.exceptions import LDAPInvalidDnError
 from ldap3.utils.conv import escape_filter_chars
-from ldap3.utils.dn import escape_rdn
+from ldap3.utils.dn import escape_rdn, parse_dn
 from starlette.config import Config
 
 #
@@ -71,8 +72,12 @@ def GET_BIND_PATTERN(username: str | None) -> str | None:
     e.g. "uid=%s,ou=people,dc=example,dc=com".
     This can be used to authenticate with directories
     that do not allow anonymous users to search.
-    User supplied values are escaped according to RFC4514 because
-    the resulting string is a Distinguished Name.
+
+    A user name that already parses as a (partial) DN is inserted unchanged:
+    this is what makes `BIND_PATTERN=%s` accept a full DN, and
+    `BIND_PATTERN=%s,ou=...` accept a partial RDN like `cn=admin`. Anything
+    else is treated as a bare attribute value and escaped according to
+    RFC4514, because the resulting string is a Distinguished Name.
     """
     pattern = config("BIND_PATTERN", default=None)
 
@@ -82,7 +87,14 @@ def GET_BIND_PATTERN(username: str | None) -> str | None:
     if pattern.count("%s") != 1:
         raise ValueError("BIND_PATTERN must contain exactly one '%s' placeholder.")
 
-    return pattern % escape_rdn(username)
+    try:
+        parse_dn(username)
+    except LDAPInvalidDnError:
+        value = escape_rdn(username)
+    else:
+        value = username
+
+    return pattern % value
 
 
 def GET_BIND_DN_FILTER(username: str) -> str:

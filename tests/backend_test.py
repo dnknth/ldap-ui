@@ -76,7 +76,11 @@ class LdapMixin:
 
 
 def parse_ldif(ldif: bytes) -> dict[str, Attributes]:
-    return {k: dict(v) for k, v in LDIFParser(io.BytesIO(ldif)).parse()}
+    return {
+        k: dict(v)
+        for k, v in LDIFParser(io.BytesIO(ldif)).parse()
+        if k is not None
+    }
 
 
 def normalize_entry(attributes: Attributes) -> Attributes:
@@ -273,6 +277,63 @@ class StripSensitiveTest(unittest.TestCase):
         self.assertIs(result[0], entries[0])
 
 
+class BindPatternTest(unittest.TestCase):
+    "Unit tests for GET_BIND_PATTERN (#181) — no directory required"
+
+    def _bind(self, pattern: str | None, username: str) -> str | None:
+        "Apply the given BIND_PATTERN to username, isolating settings.config."
+        orig = settings.config
+        try:
+            settings.config = (
+                lambda k, default=None: pattern
+                if k == "BIND_PATTERN"
+                else orig(k, default=None)
+            )
+            return settings.GET_BIND_PATTERN(username)
+        finally:
+            settings.config = orig
+
+    def test_unset_returns_none(self):
+        self.assertIsNone(self._bind(None, "admin"))
+
+    def test_malformed_pattern_raises(self):
+        with self.assertRaises(ValueError):
+            self._bind("no-placeholder", "admin")
+        with self.assertRaises(ValueError):
+            self._bind("cn=%s%s,o=x", "admin")
+
+    def test_full_dn_unescaped(self):
+        # Regression for #181: with BIND_PATTERN=%s, a full DN used to be
+        # mangled by escape_rdn (the '=' and ',' got escaped), producing an
+        # invalid bind DN. A parseable DN must be inserted unchanged.
+        self.assertEqual(
+            self._bind("%s", "cn=admin,o=Flintstones"),
+            "cn=admin,o=Flintstones",
+        )
+
+    def test_partial_dn_unescaped(self):
+        # BIND_PATTERN=%s,ou=... with a partial RDN (cn=admin) keeps its
+        # structure; the suffix is appended.
+        self.assertEqual(
+            self._bind("%s,o=Flintstones", "cn=admin"),
+            "cn=admin,o=Flintstones",
+        )
+
+    def test_bare_value_interpolated(self):
+        self.assertEqual(
+            self._bind("cn=%s,o=Flintstones", "admin"),
+            "cn=admin,o=Flintstones",
+        )
+
+    def test_bare_value_escaped(self):
+        # A bare value that is not a DN is escaped per RFC 4514 so it cannot
+        # inject a stray attribute into the RDN.
+        self.assertEqual(
+            self._bind("cn=%s,o=Flintstones", "a+b"),
+            "cn=a\\+b,o=Flintstones",
+        )
+
+
 class SchemaCacheTest(unittest.IsolatedAsyncioTestCase):
     "Ensure the schema is fetched only once under concurrency (#4)"
 
@@ -427,6 +488,66 @@ class ReadOnlyTest(LdapMixin, unittest.TestCase):
         with self.client:
             result = self.client.get("/api/range/cn", auth=AUTH)
             self.assertHTTPStatus(result, HTTPStatus.NOT_FOUND)
+
+
+class LoginModeTest(LdapMixin, unittest.TestCase):
+    "End-to-end login for every authentication mode documented in the README"
+
+    client = TestClient(app)
+
+    def setUp(self):
+        self._orig_config = settings.config
+
+    def tearDown(self):
+        settings.config = self._orig_config
+
+    def _set_bind_pattern(self, pattern: str | None):
+        settings.config = (
+            lambda k, default=None: pattern
+            if k == "BIND_PATTERN"
+            else self._orig_config(k, default=None)
+        )
+
+    def _whoami(self, user: str, password: str) -> httpx2.Response:
+        with self.client:
+            return self.client.get("/api/whoami", auth=(user, password))
+
+    def test_search_mode(self):
+        # No BIND_PATTERN: the anonymous search finds uid=admin and binds.
+        self._set_bind_pattern(None)
+        result = self._whoami("admin", "bedrock")
+        self.assertEqual(200, result.status_code, result.text)
+        self.assertEqual(ADMIN_DN.lower(), result.json().lower())
+
+    def test_full_dn_bind_pattern(self):
+        # BIND_PATTERN=%s: the user name is the full bind DN itself (#181).
+        self._set_bind_pattern("%s")
+        result = self._whoami(ADMIN_DN, "bedrock")
+        self.assertEqual(200, result.status_code, result.text)
+        self.assertEqual(ADMIN_DN.lower(), result.json().lower())
+
+    def test_full_dn_bind_pattern_wrong_password(self):
+        # Under BIND_PATTERN=%s a wrong password is plain bad credentials
+        # (401), not a 500 invalid-DN crash (#181).
+        self._set_bind_pattern("%s")
+        result = self._whoami(ADMIN_DN, "wrong")
+        self.assertEqual(
+            HTTPStatus.UNAUTHORIZED, result.status_code, result.text
+        )
+
+    def test_partial_dn_bind_pattern(self):
+        # BIND_PATTERN=%s,o=Flintstones: a partial RDN (cn=admin) is suffixed.
+        self._set_bind_pattern(f"%s,{BASE_DN}")
+        result = self._whoami("cn=admin", "bedrock")
+        self.assertEqual(200, result.status_code, result.text)
+        self.assertEqual(ADMIN_DN.lower(), result.json().lower())
+
+    def test_attribute_value_bind_pattern(self):
+        # BIND_PATTERN=cn=%s,o=Flintstones: a bare value fills the RDN.
+        self._set_bind_pattern(f"cn=%s,{BASE_DN}")
+        result = self._whoami("admin", "bedrock")
+        self.assertEqual(200, result.status_code, result.text)
+        self.assertEqual(ADMIN_DN.lower(), result.json().lower())
 
 
 class ModificationTest(LdapMixin, unittest.TestCase):
