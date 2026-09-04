@@ -8,7 +8,7 @@ to the user.
 
 import re
 from enum import StrEnum
-from typing import Any, Self
+from typing import Any, Self, cast
 
 from ldap3.core.exceptions import LDAPInvalidDnError
 from ldap3.protocol.rfc4512 import (
@@ -106,7 +106,8 @@ class _Element(BaseModel):
             "names": info.name,
             "desc": info.description,
             "obsolete": info.obsolete,
-            "sup": sorted(info.superior or []),
+            # absent from ldap3's type stubs
+            "sup": sorted(getattr(info, "superior", None) or []),
         }
 
 
@@ -134,7 +135,14 @@ class Attribute(_Element):
             # FIXME avoid null values below
             equality=attr.equality[0] if attr.equality else None,
             syntax=attr.syntax,
-            substr=attr.substr[0] if hasattr(attr, "substr") else None,
+            # `substr` is not in ldap3's type stubs but exists on some schema
+            # attribute types; guard with hasattr and cast to Any to satisfy
+            # the type checker without a getattr-literal (ruff B009).
+            substr=(
+                (cast(Any, attr).substr or [None])[0]
+                if hasattr(attr, "substr")
+                else None
+            ),
             ordering=attr.ordering[0] if attr.ordering else None,
             **_Element.args(attr),
         )

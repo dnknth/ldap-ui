@@ -7,6 +7,7 @@ import {
   clearPendingCredentials,
   credentials,
   isAuthenticated,
+  isExternalAuthBroken,
   isExternalAuthenticated,
   registerAuthInterceptor,
   setCredentials,
@@ -143,5 +144,61 @@ describe("auth interceptor", () => {
     expect(out.headers.get("Authorization")).toBe(
       `Basic ${basicToken("fred", "yabbadabbado")}`,
     );
+  });
+
+  // Apply the registered response interceptor to a synthetic Response.
+  const applyResponse = async (res: Response, request: Request) => {
+    const fns = interceptClient.interceptors.response.fns;
+    const fn = fns.find((f) => f !== null);
+    expect(fn).toBeTruthy();
+    return (await fn!(res, request, {} as never)) as Response;
+  };
+
+  test("flags the external-auth trap on 401 of a data endpoint", async () => {
+    clearCredentials();
+    clearExternalAuthenticated();
+    setExternalAuthenticated();
+    await applyResponse(
+      new Response(null, { status: 401 }),
+      new Request("http://localhost/api/schema"),
+    );
+    expect(isExternalAuthBroken()).toBeTruthy();
+    clearExternalAuthenticated(); // reset for other tests
+  });
+
+  test("does not flag when external auth is inactive", async () => {
+    clearCredentials();
+    clearExternalAuthenticated();
+    await applyResponse(
+      new Response(null, { status: 401 }),
+      new Request("http://localhost/api/schema"),
+    );
+    expect(isExternalAuthBroken()).toBeFalsy();
+  });
+
+  test("does not flag whoami 401 (startup probe)", async () => {
+    clearCredentials();
+    clearExternalAuthenticated();
+    setExternalAuthenticated();
+    await applyResponse(
+      new Response(null, { status: 401 }),
+      new Request("http://localhost/api/whoami"),
+    );
+    expect(isExternalAuthBroken()).toBeFalsy();
+    clearExternalAuthenticated();
+  });
+
+  test("does not flag 401 with committed local credentials", async () => {
+    setCredentials("fred", "yabbadabbado");
+    clearExternalAuthenticated();
+    setExternalAuthenticated();
+    await applyResponse(
+      new Response(null, { status: 401 }),
+      new Request("http://localhost/api/schema"),
+    );
+    // local creds present: the 401 is the dialog's verification, not a trap
+    expect(isExternalAuthBroken()).toBeFalsy();
+    clearCredentials();
+    clearExternalAuthenticated();
   });
 });

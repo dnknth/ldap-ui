@@ -46,6 +46,17 @@ async def http_headers(request: Request, call_next) -> Response:
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
+    else:
+        # HTML responses (the SPA): mitigate XSS/clickjacking and keep LDAP
+        # DNs out of the Referer sent to external hosts. Browsers only
+        # interpret these on document responses; they are meaningless on the
+        # JSON API. `img-src data:` is required by the select arrow drawn in
+        # App.vue via a data: URI and does not apply to scripts or styles.
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; img-src 'self' data:; "
+            "frame-ancestors 'none'; base-uri 'self'"
+        )
+        response.headers["Referrer-Policy"] = "no-referrer"
 
     # Always add security headers
     response.headers["X-Content-Type-Options"] = "nosniff"

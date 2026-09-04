@@ -1,4 +1,3 @@
-import asyncio
 import io
 import unittest
 from base64 import b64decode
@@ -6,12 +5,12 @@ from http import HTTPStatus
 from typing import cast
 
 import httpx2
-from anyio import Lock
+from anyio import Lock, create_task_group, sleep
 from fastapi.testclient import TestClient
 from ldap3 import SchemaInfo
 from ldap3.core.connection import Connection
 from ldap3.core.exceptions import LDAPInvalidDnError
-from ldap_ui import ldap_api, settings
+from ldap_ui import ldap_api, ldap_connection, settings
 from ldap_ui.app import app
 from ldap_ui.entities import Attributes, Range
 from ldap_ui.ldap_api import (
@@ -69,6 +68,11 @@ class LdapMixin:
     def setUpClass(cls):
         cls.LDAP.waiting_for(LogMessageWaitStrategy("slapd starting")).start()
         settings.LDAP_URL = f"ldap://127.0.0.1:{cls.LDAP.get_exposed_port(389)}"
+        # Force auto-detection against the test container: a developer's .env
+        # (e.g. BASE_DN=dc=foo) would otherwise be picked up and make every
+        # search 404 with "No Such Object".
+        settings.BASE_DN = None
+        settings.SCHEMA_DN = None
 
     @classmethod
     def tearDownClass(cls):
@@ -77,7 +81,7 @@ class LdapMixin:
 
 def parse_ldif(ldif: bytes) -> dict[str, Attributes]:
     return {
-        k: dict(v)
+k: dict(v)
         for k, v in LDIFParser(io.BytesIO(ldif)).parse()
         if k is not None
     }
@@ -334,6 +338,80 @@ class BindPatternTest(unittest.TestCase):
         )
 
 
+class ProbeTest(unittest.TestCase):
+    "Test the /api/probe LDAP connectivity probe — no directory required"
+
+    client = TestClient(app)
+
+    def setUp(self):
+        self._orig_ldap_url = settings.LDAP_URL
+
+    def tearDown(self):
+        # Restore, so we don't leak the dead-port URL into other test classes.
+        settings.LDAP_URL = self._orig_ldap_url
+
+    def test_probe_unreachable(self):
+        # Point at a closed port; the probe reports ok=false with a diagnostic,
+        # still a 200 HTTP response so the frontend can read the details.
+        with self.client:
+            settings.LDAP_URL = "ldap://127.0.0.1:1/"
+            result = self.client.get("/api/probe")
+            self.assertEqual(result.status_code, HTTPStatus.OK)  # 200
+            body = result.json()
+            self.assertFalse(body["ok"])
+            messages = [d["message"] for d in body["diagnostics"]]
+            self.assertTrue(
+                any("Cannot connect" in m for m in messages),
+                messages,
+            )
+
+    def test_probe_invalid_url(self):
+        with self.client:
+            settings.LDAP_URL = "not-a-url"
+            result = self.client.get("/api/probe")
+            self.assertEqual(result.status_code, HTTPStatus.OK)
+            body = result.json()
+            self.assertFalse(body["ok"])
+            messages = [d["message"] for d in body["diagnostics"]]
+            self.assertTrue(
+                any("Cannot connect" in m for m in messages),
+                messages,
+            )
+
+    def test_probe_insecure_tls_warning(self):
+        with self.client:
+            settings.LDAP_URL = "ldaps://127.0.0.1:1/"
+            settings.INSECURE_TLS = True
+            old = settings.config("INSECURE_TLS", default=False)
+            try:
+                body = self.client.get("/api/probe").json()
+            finally:
+                settings.INSECURE_TLS = old
+            self.assertTrue(
+                any(
+                    d["severity"] == "warning"
+                    and "TLS certificate checking is disabled" in d["message"]
+                    for d in body["diagnostics"]
+                )
+            )
+
+    def test_probe_bind_pattern_warning(self):
+        with self.client:
+            old_config = settings.config
+            try:
+                settings.config = lambda k, default=None: "bad-pattern"
+                body = self.client.get("/api/probe").json()
+            finally:
+                settings.config = old_config
+            self.assertTrue(
+                any(
+                    d["severity"] == "error"
+                    and "BIND_PATTERN setting is malformed" in d["message"]
+                    for d in body["diagnostics"]
+                )
+            )
+
+
 class SchemaCacheTest(unittest.IsolatedAsyncioTestCase):
     "Ensure the schema is fetched only once under concurrency (#4)"
 
@@ -347,28 +425,35 @@ class SchemaCacheTest(unittest.IsolatedAsyncioTestCase):
 
         async def fake_get_schema(connection):
             calls[0] += 1
-            await asyncio.sleep(0.01)  # widen the race window
+            await sleep(0.01)  # widen the race window
             return schema
 
         original = (
-            ldap_api.SCHEMA,
-            ldap_api._SCHEMA_LOCK,
-            ldap_api.get_schema,
+            ldap_connection.SCHEMA,
+            ldap_connection._SCHEMA_LOCK,
+            ldap_connection.get_schema,
         )
-        ldap_api.SCHEMA = None
-        ldap_api._SCHEMA_LOCK = Lock()
-        ldap_api.get_schema = fake_get_schema
+        ldap_connection.SCHEMA = None
+        ldap_connection._SCHEMA_LOCK = Lock()
+        ldap_connection.get_schema = fake_get_schema
         return calls, original
 
     async def test_ensure_schema_fetches_once(self):
         calls, (schema, lock, get_schema) = self.monkeypatch_schema()
         connection = cast(Connection, object())  # unused by the fake
+        results: list[SchemaInfo] = []
+
+        async def _ensure() -> None:
+            results.append(await ldap_api.ensure_schema(connection))
+
         try:
-            results = await asyncio.gather(
-                *[ldap_api.ensure_schema(connection) for _ in range(20)]
-            )
+            # anyio has no gather(); a task group runs the calls concurrently
+            # and the count assertion is what matters (not ordering/results).
+            async with create_task_group() as tg:
+                for _ in range(20):
+                    tg.start_soon(_ensure)
         finally:
-            ldap_api.SCHEMA, ldap_api._SCHEMA_LOCK, ldap_api.get_schema = (
+            ldap_connection.SCHEMA, ldap_connection._SCHEMA_LOCK, ldap_connection.get_schema = (
                 schema,
                 lock,
                 get_schema,
@@ -710,6 +795,11 @@ class ModificationTest(LdapMixin, unittest.TestCase):
                 json="sn=baz",
             )
             self.assertHTTPStatus(result, HTTPStatus.NO_CONTENT)
+            # The renamed attribute must carry the new value (matching the DN),
+            # not the old one from before the rename.
+            renamed = self.client.get(f"/api/entry/sn=baz,{BASE_DN}", auth=AUTH)
+            self.assertHTTPStatus(renamed)
+            self.assertEqual(renamed.json()["attrs"]["sn"], ["baz"])
 
     def test_110_delete_entry(self):
         with self.client:

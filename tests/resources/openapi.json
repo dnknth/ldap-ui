@@ -150,6 +150,29 @@
         "title": "ChangePasswordRequest",
         "type": "object"
       },
+      "Diagnostic": {
+        "description": "A single deployment misconfiguration detected by the probe endpoint",
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "error",
+              "warning"
+            ],
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "severity",
+          "message"
+        ],
+        "title": "Diagnostic",
+        "type": "object"
+      },
       "Entry": {
         "description": "Directory entry",
         "properties": {
@@ -272,6 +295,27 @@
           "name"
         ],
         "title": "ObjectClass",
+        "type": "object"
+      },
+      "ProbeResult": {
+        "description": "Result of the LDAP connectivity probe",
+        "properties": {
+          "diagnostics": {
+            "items": {
+              "$ref": "#/components/schemas/Diagnostic"
+            },
+            "title": "Diagnostics",
+            "type": "array"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "ProbeResult",
         "type": "object"
       },
       "Range": {
@@ -463,7 +507,7 @@
   },
   "info": {
     "title": "LDAP UI",
-    "version": "0.15.1"
+    "version": "0.15.2"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -1039,6 +1083,43 @@
         ]
       }
     },
+    "/api/health": {
+      "get": {
+        "description": "Probe the LDAP directory; 503 when it is unreachable or not usable.",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProbeResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProbeResult"
+                }
+              }
+            },
+            "description": "The LDAP directory is unreachable or not usable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Health",
+        "tags": [
+          "Misc"
+        ]
+      }
+    },
     "/api/ldif": {
       "put": {
         "description": "Import LDIF",
@@ -1095,6 +1176,33 @@
         "summary": "Upload Ldif",
         "tags": [
           "Editing"
+        ]
+      }
+    },
+    "/api/probe": {
+      "get": {
+        "description": "Probe the LDAP directory connectivity and configuration.",
+        "operationId": "probe",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProbeResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "summary": "Probe",
+        "tags": [
+          "Misc"
         ]
       }
     },
