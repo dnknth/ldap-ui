@@ -94,6 +94,16 @@ async function onOk() {
   error.value = "";
 
   const response = await getWhoAmI();
+  // whoami is soft: bad credentials get 200 + an empty DN, never a 401. A
+  // non-200 (or a failed request) means the directory cannot be reached /
+  // configured — that is not the user's credentials, so say so.
+  const status = response.response?.status;
+  if (status && status !== 200) {
+    clearPendingCredentials();
+    error.value =
+      "Cannot reach the LDAP directory. Check the connection and configuration.";
+    return;
+  }
   if (response.error || !response.data) {
     clearPendingCredentials();
     error.value = "Invalid credentials. Please try again.";

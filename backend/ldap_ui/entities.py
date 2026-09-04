@@ -1,7 +1,7 @@
 "Data types for ReST endpoints"
 
 from base64 import b64encode
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 from ldap3 import SchemaInfo
 from pydantic import BaseModel, Field
@@ -16,6 +16,20 @@ AttributeNames = list[str]  # Names of modified attributes
 # Kept small so the next-free computation is bounded, and documented in the
 # OpenAPI schema via the Range model constraints.
 RANGE_LIMIT = 60000
+
+
+class Diagnostic(BaseModel):
+    "A single deployment misconfiguration detected by the probe endpoint"
+
+    severity: Literal["error", "warning"]
+    message: str
+
+
+class ProbeResult(BaseModel):
+    "Result of the LDAP connectivity probe"
+
+    ok: bool
+    diagnostics: list[Diagnostic] = Field(default_factory=list)
 
 
 class Entry(BaseModel):
@@ -94,6 +108,8 @@ class TreeItem(BaseModel):
     def of(cls, entry: ResponseEntry):
         return cls(
             dn=entry.dn,
-            structuralObjectClass=entry.raw_attributes["structuralObjectClass"][0],
+            structuralObjectClass=entry.raw_attributes["structuralObjectClass"][
+                0
+            ].decode(),
             hasSubordinates=entry.hasSubordinates,
         )

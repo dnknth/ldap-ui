@@ -13,14 +13,18 @@ operation to complete without results.
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Any, Self
+from typing import Any, Self, cast
 
-from anyio import sleep
+from anyio import fail_after, sleep
 from fastapi import HTTPException
 from ldap3 import Connection, SchemaInfo
 from ldap3.core.exceptions import LDAPResponseTimeoutError
 
 from .schema import OCTET_STRING, Syntax
+
+# Overall bound for a single LDAP operation (seconds). A stuck directory must
+# not hold a request and a connection slot forever.
+OPERATION_TIMEOUT = 30.0
 
 
 @dataclass(frozen=True)
@@ -67,9 +71,10 @@ class ResponseEntry:
             except UnicodeDecodeError:
                 return True
 
-        # Check human-readable flag
+        # Check human-readable flag.
+        # computed_field getters are typed as callables by pydantic's stubs.
         syntax = schema.ldap_syntaxes.get(attr_type.syntax)
-        return syntax is None or Syntax.of(syntax).not_human_readable
+        return syntax is None or cast(bool, Syntax.of(syntax).not_human_readable)
 
     def is_updateable(self, attr: str, schema: SchemaInfo) -> bool:
         return (
@@ -85,13 +90,24 @@ async def get_raw_responses(
     "Stream raw LDAP result entries without blocking other tasks"
 
     assert type(msgid) is int, "Expected async operation"
-    while True:
+    try:
+        with fail_after(OPERATION_TIMEOUT):
+            while True:
+                try:
+                    entries, _result = connection.get_response(msgid, timeout=0)
+                    yield entries
+                    return
+                except LDAPResponseTimeoutError:
+                    await sleep(0.01)
+    except TimeoutError:
         try:
-            entries, _result = connection.get_response(msgid, timeout=0)
-            yield entries
-            return
-        except LDAPResponseTimeoutError:
-            await sleep(0.01)
+            connection.abandon(msgid)
+        except Exception:  # noqa: BLE001, S110
+            pass
+        raise HTTPException(
+            HTTPStatus.GATEWAY_TIMEOUT,
+            "LDAP operation timed out",
+        )
 
 
 async def get_responses(

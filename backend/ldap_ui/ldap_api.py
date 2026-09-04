@@ -7,17 +7,14 @@ by a hand-knit ReST API, responses are usually converted to JSON.
 Asynchronous LDAP operations are used as much as possible.
 """
 
-import base64
 import io
 import re
-from binascii import Error as BinasciiError
 from collections.abc import AsyncGenerator
 from enum import StrEnum
 from http import HTTPStatus
 from typing import Annotated
 from urllib.parse import quote
 
-from anyio import Lock
 from fastapi import (
     APIRouter,
     Body,
@@ -39,7 +36,6 @@ from ldap3 import (
     MODIFY_ADD,
     MODIFY_DELETE,
     MODIFY_REPLACE,
-    NONE,
     Connection,
     SchemaInfo,
 )
@@ -48,6 +44,7 @@ from ldap3.core.exceptions import (
     LDAPInvalidDnError,
     LDAPOperationResult,
 )
+from ldap3.protocol.rfc3062 import PasswdModifyRequestValue
 from ldap3.utils.conv import escape_filter_chars, to_raw
 from ldap3.utils.dn import parse_dn, safe_dn
 from ldif import LDIFParser
@@ -59,12 +56,25 @@ from .entities import (
     Attributes,
     ChangePasswordRequest,
     Entry,
+    ProbeResult,
     Range,
     SearchResult,
     TreeItem,
 )
-from .ldap_connection import bound, ldap_connect, open, parse_url, rate_limit
+from .ldap_connection import (
+    bound,
+    ensure_schema,
+    find_bind_dn,
+    get_basic_credentials,
+    ldap_connect,
+    open,
+    parse_url,
+    rate_limit,
+    require_base_dn,
+    require_schema,
+)
 from .ldap_helpers import ResponseEntry, empty, get_raw_responses, get_responses, unique
+from .probe import run_probe
 from .schema import INTEGER, Schema, normalize_dn
 
 # Special fields
@@ -85,35 +95,16 @@ PLAINTEXT_SCHEMES = ("CLEARTEXT", "PLAIN")
 # Default search filter
 ANY = "(objectClass=*)"
 
+# RFC 3062 password modify extended operation
+PASSWORD_MODIFY_OID = "1.3.6.1.4.1.4203.1.11.1"
+
 # Safety
 SAFE_FILENAME_RE = re.compile(r"[^a-z0-9._-]", re.IGNORECASE)
 LDAP_ATTRIBUTE_RE = re.compile(r"^[a-z][a-z0-9-]*$", re.IGNORECASE)
 WILDCARD = re.compile(r"\\2A", re.IGNORECASE)
 
-# Schema cache: lazy-initialized once, guarded by a lock because several
-# concurrent requests may hit the empty cache simultaneously.
-SCHEMA: SchemaInfo | None = None
-_SCHEMA_LOCK = Lock()
-
-
-async def ensure_schema(connection: Connection) -> SchemaInfo:
-    """
-    Return the directory schema, loading it once.
-
-    Concurrent requests only perform the schema search a single time: waiters
-    re-check the global after acquiring the lock instead of fetching again.
-    """
-    global SCHEMA
-    if SCHEMA is not None:
-        return SCHEMA
-    async with _SCHEMA_LOCK:
-        if SCHEMA is None:
-            SCHEMA = await get_schema(connection)
-        return SCHEMA
-
 
 async def authenticated(
-    connection: Annotated[Connection, Depends(ldap_connect)],
     authorization: Annotated[str | None, Header()] = None,
 ) -> AsyncGenerator[Connection, None]:
     "Authenticate against the directory"
@@ -132,16 +123,18 @@ async def authenticated(
             [{"desc": "Empty passwords are not allowed."}]
         )
 
-    dn = await find_bind_dn(connection, username)
+    async with ldap_connect() as connection:
+        dn = await find_bind_dn(connection, username)
 
-    if not dn:  # Log in
-        connection.unbind()
-        await rate_limit()
-        raise LDAPInvalidCredentialsResult([{"desc": "Invalid credentials for DN"}])
+        if not dn:  # Log in
+            await rate_limit()
+            raise LDAPInvalidCredentialsResult(
+                [{"desc": "Invalid credentials for DN"}]
+            )
 
-    async with bound(connection, dn, password):
-        await ensure_schema(connection)
-        yield connection
+        async with bound(connection, dn, password):
+            await ensure_schema(connection)
+            yield connection
 
 
 async def optional_authenticated(
@@ -163,70 +156,16 @@ async def optional_authenticated(
         yield None
         return
 
-    connection = await ldap_connect()
+    async with ldap_connect() as connection:
+        dn = await find_bind_dn(connection, username)
 
-    dn = await find_bind_dn(connection, username)
+        if not dn:  # Log in
+            await rate_limit()
+            yield None
+            return
 
-    if not dn:  # Log in
-        connection.unbind()
-        await rate_limit()
-        yield None
-        return
-
-    async with bound(connection, dn, password):
-        yield connection
-
-
-def get_basic_credentials(authorization: str) -> tuple[str, str]:
-    """
-    Parse a HTTP Basic Authorization header.
-
-    Raises LDAPInvalidCredentialsResult for malformed headers.
-    """
-    try:
-        scheme, credentials = authorization.split(maxsplit=1)
-    except ValueError:
-        raise LDAPInvalidCredentialsResult([{"desc": "Malformed Authorization header"}])
-
-    if scheme.lower() != "basic":
-        raise LDAPInvalidCredentialsResult(
-            [{"desc": f"Unsupported authorization scheme: {scheme}"}]
-        )
-
-    try:
-        decoded = base64.b64decode(credentials, validate=True).decode("utf-8")
-    except (UnicodeDecodeError, BinasciiError):
-        raise LDAPInvalidCredentialsResult([{"desc": "Invalid Authorization header"}])
-
-    if ":" not in decoded:
-        raise LDAPInvalidCredentialsResult([{"desc": "Malformed Basic credentials"}])
-
-    username, password = decoded.split(":", 1)
-    return username, password
-
-
-async def anonymous_user_search(connection: Connection, username: str) -> str | None:
-    if not username:
-        return None
-
-    try:
-        bind_user = await unique(
-            connection,
-            connection.search(
-                settings.BASE_DN,
-                search_filter=settings.GET_BIND_DN_FILTER(username),
-            ),
-        )
-        return bind_user.dn
-    except HTTPException:
-        pass
-
-
-async def find_bind_dn(connection: Connection, username: str) -> str | None:
-    "Resolve the user's DN: from BIND_PATTERN, or by searching the directory"
-    return settings.GET_BIND_PATTERN(username) or await anonymous_user_search(
-        connection, username
-    )
+        async with bound(connection, dn, password):
+            yield connection
 
 
 def build_content_disposition(filename: str) -> dict[str, str]:
@@ -242,19 +181,6 @@ def build_content_disposition(filename: str) -> dict[str, str]:
         "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff",
     }
-
-
-async def get_schema(connection: Connection) -> SchemaInfo:
-    response = await unique(
-        connection,
-        connection.search(
-            settings.SCHEMA_DN,
-            search_scope=BASE,
-            get_operational_attributes=True,
-            search_filter="(objectClass=*)",
-        ),
-    )
-    return SchemaInfo(response, response.attributes, response.raw_attributes)
 
 
 AuthenticatedConnection = Annotated[Connection, Depends(authenticated)]
@@ -278,12 +204,10 @@ api = APIRouter(prefix="/api", dependencies=[Security(HTTPBasic(auto_error=False
 async def get_base_entry(connection: AuthenticatedConnection) -> list[TreeItem]:
     "Get the directory base entry"
 
-    if not settings.BASE_DN:
-        raise ValueError("An LDAP base DN is required")
     result = await unique(
         connection,
         connection.search(
-            settings.BASE_DN,
+            require_base_dn(),
             search_filter=ANY,
             search_scope=BASE,
             get_operational_attributes=True,
@@ -330,7 +254,7 @@ async def get_tree(basedn: str, connection: AuthenticatedConnection) -> list[Tre
 @api.get("/entry/{dn:path}", tags=[Tag.EDITING], operation_id="get_entry")
 async def get_entry(dn: str, connection: AuthenticatedConnection) -> Entry:
     "Retrieve a directory entry by DN"
-    return Entry.of(await get_entry_by_dn(connection, dn), SCHEMA)
+    return Entry.of(await get_entry_by_dn(connection, dn), require_schema())
 
 
 @api.delete(
@@ -360,7 +284,7 @@ async def post_entry(
 ) -> AttributeNames:
     validate_attribute_names(attributes)
     entry = await get_entry_by_dn(connection, dn)
-    if modifications := get_modifications(entry, attributes, SCHEMA):
+    if modifications := get_modifications(entry, attributes, require_schema()):
         # Apply changes and send changed keys back
         await empty(connection, connection.modify(dn, modifications))
     return sorted(modifications)
@@ -458,7 +382,14 @@ async def rename_entry(
 
     new_dn = safe_dn([f"{part[0]}={part[1]}" for part in [*new_rdn, *parent]])
 
-    await empty(connection, connection.add(new_dn, attributes=entry.raw_attributes))
+    # The new entry must carry the renamed attribute's value so the RDN and
+    # the attribute stay consistent: renaming cn=test → sn=baz must yield a
+    # new entry whose sn is "baz", not the old value ("test").
+    attrs = dict(entry.raw_attributes)
+    renamed_attr = new_rdn[0][0].lower()
+    attrs[renamed_attr] = [new_rdn[0][1].encode()]
+
+    await empty(connection, connection.add(new_dn, attributes=attrs))
     try:
         await empty(connection, connection.delete(dn))
     except LDAPOperationResult:
@@ -555,7 +486,7 @@ async def check_password(
     "Verify a password"
 
     url, _ = parse_url(settings.LDAP_URL)
-    connection = open(url, NONE)
+    connection = open(url, "NO_INFO")
 
     try:
         async with bound(connection, dn, check):
@@ -590,11 +521,20 @@ async def change_password(
             "The old password is required to change your own password",
         )
 
-    # The modify_password extended operation runs to completion and raises on
-    # failure (e.g. LDAPUnwillingToPerformResult when the old password does
-    # not match, LDAPNoSuchObjectResult for an unknown DN), so failures are
-    # surfaced rather than silently swallowed.
-    connection.extend.standard.modify_password(dn, args.old or None, args.new1)
+    # Issue the password-modify extended op asynchronously (the blocking
+    # modify_password() would stall the event loop); failures raise out of
+    # get_response() and are surfaced by the error handler.
+    value = PasswdModifyRequestValue()
+    if connection.check_names:
+        value["userIdentity"] = safe_dn(dn)
+    else:
+        value["userIdentity"] = dn
+    if args.old:
+        value["oldPasswd"] = args.old
+    value["newPasswd"] = args.new1
+
+    msgid = connection.extended(PASSWORD_MODIFY_OID, value)
+    await empty(connection, msgid)
 
 
 def is_self(connection: Connection, dn: str) -> bool:
@@ -602,7 +542,9 @@ def is_self(connection: Connection, dn: str) -> bool:
     if not connection.user:
         return False
     try:
-        return normalize_dn(connection.user, SCHEMA) == normalize_dn(dn, SCHEMA)
+        return normalize_dn(connection.user, require_schema()) == normalize_dn(
+            dn, require_schema()
+        )
     except LDAPInvalidDnError:
         return False
 
@@ -735,6 +677,14 @@ def first_rdn_value(dn: str) -> str:
 async def upload_ldif(request: Request, connection: AuthenticatedConnection) -> None:
     "Import LDIF"
 
+    # Reject early on the declared size before buffering the body, so a large
+    # upload cannot spike memory past MAX_LDIF_SIZE even if the limit is small.
+    declared = request.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > settings.MAX_LDIF_SIZE:
+        raise HTTPException(
+            HTTPStatus.REQUEST_ENTITY_TOO_LARGE, detail="LDIF too large"
+        )
+
     body = await request.body()
 
     if len(body) > settings.MAX_LDIF_SIZE:
@@ -791,7 +741,7 @@ async def search(query: str, connection: AuthenticatedConnection) -> list[Search
     # Collect results
     res = []
     async for entry in get_responses(
-        connection, connection.search(settings.BASE_DN, search_filter=query)
+        connection, connection.search(require_base_dn(), search_filter=query)
     ):
         res.append(
             SearchResult(
@@ -855,14 +805,14 @@ async def attribute_range(attribute: str, connection: AuthenticatedConnection) -
     """
 
     validate_attribute_name(attribute)
-    obj = SCHEMA.attribute_types[attribute]
+    obj = require_schema().attribute_types[attribute]
 
     values = {
         int(entry.raw_attributes[attribute][0])
         async for entry in get_responses(
             connection,
             connection.search(
-                settings.BASE_DN,
+                require_base_dn(),
                 search_filter=f"({attribute}=*)",
                 attributes=(attribute,),
             ),
@@ -902,6 +852,32 @@ def bounded_range(values: set[int], limit: int = RANGE_LIMIT) -> Range:
     )
 
 
+@api.get("/probe", tags=[Tag.MISC], operation_id="probe", response_model=ProbeResult)
+async def probe() -> ProbeResult:
+    "Probe the LDAP directory connectivity and configuration."
+    return await run_probe()
+
+
+@api.get(
+    "/health",
+    tags=[Tag.MISC],
+    operation_id="health",
+    response_model=ProbeResult,
+    responses={
+        HTTPStatus.SERVICE_UNAVAILABLE: {
+            "description": "The LDAP directory is unreachable or not usable",
+            "model": ProbeResult,
+        }
+    },
+)
+async def health(response: Response) -> ProbeResult:
+    "Probe the LDAP directory; 503 when it is unreachable or not usable."
+    result = await run_probe()
+    if not result.ok:
+        response.status_code = HTTPStatus.SERVICE_UNAVAILABLE
+    return result
+
+
 @api.get(
     "/schema",
     tags=[Tag.MISC],
@@ -911,6 +887,4 @@ def bounded_range(values: set[int], limit: int = RANGE_LIMIT) -> Range:
 )
 async def ldap_schema(connection: AuthenticatedConnection) -> Schema:
     "Dump the LDAP schema as JSON"
-    if SCHEMA is None:
-        raise ValueError("An LDAP schema is required")
-    return Schema.of(SCHEMA)
+    return Schema.of(require_schema())

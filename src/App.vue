@@ -1,7 +1,34 @@
 <template>
   <div id="app">
     <notification v-model:alert="state.alert" />
-    <login-dialog v-if="!checking && !authenticated && loginDialog" @ok="init" />
+    <div
+      v-if="authTrap"
+      class="rounded mx-4 mt-2 p-3 border border-danger bg-danger/80 text-front dark:text-front"
+      role="alert"
+    >
+      <b>Authentication configuration problem.</b> The login credentials
+      work at the browser level but are rejected by the LDAP directory, so
+      the application cannot be used. Fix the credentials on the upstream
+      server or in the directory.
+    </div>
+    <div
+      v-if="probeErrors.length"
+      class="rounded mx-4 mt-2 p-3 border border-danger bg-danger/80 text-front dark:text-front"
+      role="alert"
+    >
+      <p v-for="(d, i) in probeErrors" :key="i" class="m-0">{{ d.message }}</p>
+    </div>
+    <div
+      v-if="probeWarnings.length"
+      class="rounded mx-4 mt-2 p-3 border border-amber-400 bg-amber-200/80 text-front dark:text-front"
+      role="alert"
+    >
+      <b>Configuration warnings:</b>
+      <ul class="list-disc pl-5">
+        <li v-for="(d, i) in probeWarnings" :key="i">{{ d.message }}</li>
+      </ul>
+    </div>
+    <login-dialog v-if="!checking && !probeErrors.length && !authTrap && !authenticated && loginDialog" @ok="init" />
 
     <template v-else-if="ready">
       <nav-bar v-model:treeOpen="treeOpen" v-model:modal="modal" v-model:oc="oc" v-model:activeDn="activeDn" :user-dn="userDn" @logout="logout" />
@@ -43,8 +70,9 @@ import Notification from "./components/Notification.vue";
 import ObjectClassCard from "./components/schema/ObjectClassCard.vue";
 import TreeView from "./components/TreeView.vue";
 import { initState, state } from "./state";
-import { getWhoAmI } from "@/generated";
-import { setCredentials, clearCredentials, isAuthenticated, setExternalAuthenticated, clearExternalAuthenticated } from "./auth";
+import { getWhoAmI, probe } from "@/generated";
+import type { Diagnostic } from "@/generated";
+import { setCredentials, clearCredentials, isAuthenticated, isExternalAuthBroken, setExternalAuthenticated, clearExternalAuthenticated } from "./auth";
 
 const
   treeOpen = ref(true), // Is the tree visible?
@@ -55,10 +83,21 @@ const
   loginDialog = ref(true), // show the login dialog (only relevant when !authenticated)
   checking = ref(true), // true while the startup auth check runs (nothing rendered, avoids dialog flash)
   authenticated = computed(isAuthenticated),
+  authTrap = computed(() => isExternalAuthBroken()),
+  probeErrors = ref<Diagnostic[]>([]), // error diagnostics from the /probe endpoint
+  probeWarnings = ref<Diagnostic[]>([]), // warning diagnostics from the /probe endpoint
   userDn = ref<string>(), // DN of the current user (already probed once)
   ready = ref(false); // initState() has completed
 
 onMounted(async () => {
+  checking.value = true;
+  await probeLdap();
+  if (probeErrors.value.length) {
+    // Directory not usable (unreachable or misconfigured): show only the
+    // banner, no login dialog.
+    checking.value = false;
+    return;
+  }
   if (authenticated.value) {
     await initState();
     ready.value = true;
@@ -91,8 +130,40 @@ async function probeExternalAuth() {
   ready.value = true;
 }
 
+async function probeLdap() {
+  // Check that the LDAP directory is reachable and usable. This is distinct
+  // from authentication: a failed probe means the deployment itself is broken
+  // (bad LDAP_URL, directory down, or anonymous reads denied where required).
+  const response = await probe();
+  probeErrors.value = [];
+  probeWarnings.value = [];
+  // Surface every diagnostic from the probe directly: errors in the red
+  // banner (unreachable directory, missing/unreadable base or schema),
+  // warnings in the amber one (insecure TLS, denied anonymous reads).
+  const result = response.data;
+  if (!result) {
+    // The probe itself failed (no /api/probe response): fall back to a
+    // synthetic unreachable diagnostic.
+    probeErrors.value = [
+      {
+        severity: "error",
+        message:
+          "Cannot connect to the LDAP directory. Check LDAP_URL.",
+      },
+    ];
+    return;
+  }
+  probeErrors.value = (result.diagnostics ?? []).filter(
+    (d) => d.severity === "error",
+  );
+  probeWarnings.value = (result.diagnostics ?? []).filter(
+    (d) => d.severity === "warning",
+  );
+}
+
 async function init(username: string, password: string) {
   setCredentials(username, password);
+  clearExternalAuthenticated(); // fresh start: flush any external-auth trap flag
   const response = await getWhoAmI();
   if (response.data) userDn.value = response.data;
   await initState();

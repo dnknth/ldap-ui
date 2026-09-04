@@ -17,12 +17,24 @@ export const credentials = reactive<{
 // authenticated without locally stored credentials.
 const externalAuthenticated = ref(false);
 
+// True when external auth was confirmed by the whoami probe, but a subsequent
+// data request got a 401 anyway. That means the upstream-provided credentials
+// do not actually work against the directory — the deployment is broken and
+// can't be resolved from the UI, because the upstream and the app will keep
+// competing over the Authorization header.
+const externalAuthBroken = ref(false);
+
 export function setExternalAuthenticated() {
   externalAuthenticated.value = true;
 }
 
 export function clearExternalAuthenticated() {
   externalAuthenticated.value = false;
+  externalAuthBroken.value = false;
+}
+
+export function isExternalAuthBroken() {
+  return externalAuthBroken.value;
 }
 
 // Credentials being verified by the login dialog. Used by the request
@@ -79,5 +91,22 @@ export function registerAuthInterceptor(interceptClient = client) {
       );
     }
     return request;
+  });
+
+  // Detect the "external auth trap": the whoami probe confirmed upstream
+  // authentication, but a real data endpoint answered 401. That means the
+  // forwarded credentials don't work against the directory.
+  interceptClient.interceptors.response.use((response, request) => {
+    if (response.status === 401 && externalAuthenticated.value && !credentials.username) {
+      try {
+        const url = new URL(request.url);
+        if (!url.pathname.endsWith("/whoami")) {
+          externalAuthBroken.value = true;
+        }
+      } catch {
+        // unparseable/empty request URL: ignore
+      }
+    }
+    return response;
   });
 }

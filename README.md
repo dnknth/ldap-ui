@@ -1,9 +1,10 @@
 # A fast and versatile LDAP editor
 
 [![Docker](https://img.shields.io/docker/v/dnknth/ldap-ui?label=Docker&logo=docker)](https://hub.docker.com/r/dnknth/ldap-ui)
+[![PyPI](https://img.shields.io/pypi/v/ldap-ui?label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/ldap-ui/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This is a *minimal* web interface for LDAP directories. Docker images for `linux/amd64` and `linux/arm64/v8` are [available](https://hub.docker.com/r/dnknth/ldap-ui).
+This is a *minimal* web interface for LDAP directories.
 
 ![Screenshot](https://github.com/dnknth/ldap-ui/blob/main/screenshot.png?raw=true)
 
@@ -11,6 +12,7 @@ This is a *minimal* web interface for LDAP directories. Docker images for `linux
 
 - Directory tree view
 - Entry creation / modification / deletion
+- Password management (set, change or remove a user's password, with old-password verification for self-changes)
 - LDIF import / export
 - Image support for the `jpegPhoto` and `thumbnailPhoto` attributes
 - Schema aware
