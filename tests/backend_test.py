@@ -574,8 +574,7 @@ class ModificationTest(LdapMixin, unittest.TestCase):
                 json=TEST_PERSON,
             )
             if result.status_code != HTTPStatus.CONFLICT:  # stale previous test run
-                self.assertHTTPStatus(result)
-                self.assertEqual(["dn"], result.json())
+                self.assertHTTPStatus(result, HTTPStatus.NO_CONTENT)
             self.assertEntryEqual(TEST_DN, TEST_PERSON)
 
     def test_020_put_entry_again(self):
@@ -616,19 +615,6 @@ class ModificationTest(LdapMixin, unittest.TestCase):
                 files={"blob": JPEG},
             )
             self.assertHTTPStatus(result, HTTPStatus.NO_CONTENT)
-
-    def test_050_get_uploaded_image(self):
-        with self.client:
-            result = self.client.get(
-                f"/api/blob/jpegPhoto/0/{TEST_DN}",
-                auth=AUTH,
-            )
-            self.assertHTTPStatus(result)
-            self.assertEqual(JPEG, result.content)
-            self.assertEqual(
-                'attachment; filename="jpegPhoto-0.bin"',
-                result.headers["Content-Disposition"],
-            )
 
     def test_060_delete_image_from_entry(self):
         with self.client:

@@ -78,9 +78,7 @@ function onOk() {
 
   const entry: Entry = {
     dn: rdn.value + "=" + name.value + "," + props.dn,
-    changed: [],
     binary: [],
-    autoFilled: [],
     isNew: true,
     attrs: {
       objectClass: objectClasses,

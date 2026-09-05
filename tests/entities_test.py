@@ -38,14 +38,12 @@ class EntryTest(unittest.TestCase):
         schema = self._schema({"userPassword": {}, "cn": {}})
 
         entry = ResponseEntry(
-            raw_dn=b"cn=Alice,dc=example,dc=com",
             dn="cn=Alice,dc=example,dc=com",
             attributes={"cn": "Alice"},
             raw_attributes={
                 "userPassword": [b"secret123"],
                 "cn": [b"Alice"],
             },
-            type="searchResultEntry",
         )
 
         result = Entry.of(entry, schema)
@@ -58,14 +56,12 @@ class EntryTest(unittest.TestCase):
         schema = self._schema({"entryUUID": {"no_user_mod": True}, "cn": {}})
 
         entry = ResponseEntry(
-            raw_dn=b"cn=Bob,dc=example,dc=com",
             dn="cn=Bob,dc=example,dc=com",
             attributes={"cn": "Bob"},
             raw_attributes={
                 "entryUUID": [b"abc-123"],
                 "cn": [b"Bob"],
             },
-            type="searchResultEntry",
         )
 
         result = Entry.of(entry, schema)
@@ -83,14 +79,12 @@ class EntryTest(unittest.TestCase):
         )
 
         entry = ResponseEntry(
-            raw_dn=b"cn=Charlie,dc=example,dc=com",
             dn="cn=Charlie,dc=example,dc=com",
             attributes={"cn": "Charlie"},
             raw_attributes={
                 "jpegPhoto": [b"\xff\xd8\xff\xe0"],
                 "cn": [b"Charlie"],
             },
-            type="searchResultEntry",
         )
 
         import base64
@@ -110,14 +104,12 @@ class EntryTest(unittest.TestCase):
         schema = self._schema({"cn": {}})
 
         entry = ResponseEntry(
-            raw_dn=b"cn=test,dc=example,dc=com",
             dn="cn=test,dc=example,dc=com",
             attributes={"cn": "test"},
             raw_attributes={
                 "unknownAttr": [b"value"],
                 "cn": [b"test"],
             },
-            type="searchResultEntry",
         )
 
         with self.assertRaises(ValueError):
@@ -138,7 +130,6 @@ class EntryTest(unittest.TestCase):
         )
 
         entry = ResponseEntry(
-            raw_dn=b"cn=Eve,dc=example,dc=com",
             dn="cn=Eve,dc=example,dc=com",
             attributes={"cn": "Eve"},
             raw_attributes={
@@ -146,7 +137,6 @@ class EntryTest(unittest.TestCase):
                 "userPassword": [b"secret"],
                 "cn": [b"Eve"],
             },
-            type="searchResultEntry",
         )
 
         result = Entry.of(entry, schema)
@@ -161,11 +151,9 @@ class EntryTest(unittest.TestCase):
         )
 
         entry = ResponseEntry(
-            raw_dn=b"cn=test,dc=example,dc=com",
             dn="cn=test,dc=example,dc=com",
             attributes={"description": "Hello, World!"},
             raw_attributes={"description": [b"Hello, World!"]},
-            type="searchResultEntry",
         )
 
         result = Entry.of(entry, schema)
@@ -177,7 +165,6 @@ class EntryTest(unittest.TestCase):
         schema = self._schema({"cn": {}, "sn": {}, "uid": {}})
 
         entry = ResponseEntry(
-            raw_dn=b"uid=1001,dc=example,dc=com",
             dn="uid=1001,dc=example,dc=com",
             attributes={"uid": "1001"},
             raw_attributes={
@@ -185,7 +172,6 @@ class EntryTest(unittest.TestCase):
                 "cn": [b"Frank"],
                 "sn": [b"Smith"],
             },
-            type="searchResultEntry",
         )
 
         result = Entry.of(entry, schema)
@@ -201,11 +187,9 @@ class EntryTest(unittest.TestCase):
         )
 
         entry = ResponseEntry(
-            raw_dn=b"cn=Dave,dc=example,dc=com",
             dn="cn=Dave,dc=example,dc=com",
             attributes={"cn": "Dave"},
             raw_attributes={"userCertificate": [b"\x00\x01\x02\x03"]},
-            type="searchResultEntry",
         )
 
         result = Entry.of(entry, schema)
@@ -220,11 +204,9 @@ class EntryTest(unittest.TestCase):
         )
 
         entry = ResponseEntry(
-            raw_dn=b"cn=test,dc=example,dc=com",
             dn="cn=test,dc=example,dc=com",
             attributes={},
             raw_attributes={"jpegPhoto": [b"\xff\xfe\x00\x01"]},
-            type="searchResultEntry",
         )
 
         result = Entry.of(entry, schema)
@@ -235,11 +217,9 @@ class EntryTest(unittest.TestCase):
         schema = self._schema({"photo": {"syntax": "1.2.3.4"}}, {})
 
         entry = ResponseEntry(
-            raw_dn=b"cn=test,dc=example,dc=com",
             dn="cn=test,dc=example,dc=com",
             attributes={},
             raw_attributes={"photo": [b"data"]},
-            type="searchResultEntry",
         )
 
         result = Entry.of(entry, schema)
@@ -252,14 +232,12 @@ class TreeItemTest(unittest.TestCase):
     def test_basic_conversion(self):
         """TreeItem must extract dn, structuralObjectClass, and hasSubordinates."""
         entry = ResponseEntry(
-            raw_dn=b"cn=alice,dc=example,dc=com",
             dn="cn=alice,dc=example,dc=com",
             attributes={"structuralObjectClass": "person"},
             raw_attributes={
                 "hasSubordinates": [b"TRUE"],
                 "structuralObjectClass": [b"person"],
             },
-            type="searchResultEntry",
         )
 
         item = TreeItem.of(entry)
@@ -270,11 +248,9 @@ class TreeItemTest(unittest.TestCase):
     def test_no_subordinates(self):
         """TreeItem with no subordinates."""
         entry = ResponseEntry(
-            raw_dn=b"cn=bob,dc=example,dc=com",
             dn="cn=bob,dc=example,dc=com",
             attributes={"structuralObjectClass": "person"},
             raw_attributes={"structuralObjectClass": [b"person"]},
-            type="searchResultEntry",
         )
 
         item = TreeItem.of(entry)

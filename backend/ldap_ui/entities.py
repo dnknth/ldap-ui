@@ -24,8 +24,6 @@ class Entry(BaseModel):
     dn: str
     attrs: Attributes
     binary: AttributeNames
-    autoFilled: AttributeNames
-    changed: AttributeNames
     isNew: bool = False
 
     @classmethod
@@ -60,8 +58,6 @@ class Entry(BaseModel):
             attrs=cls._format_attrs(entry, set(binary), schema),
             dn=entry.dn,
             binary=binary,
-            autoFilled=[],
-            changed=[],
         )
 
 

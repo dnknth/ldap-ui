@@ -11,8 +11,6 @@
       name="bounce"
       @enter="emit('show')"
       @after-enter="emit('shown')"
-      @leave="emit('hide')"
-      @after-leave="emit('hidden')"
     >
       <div
         v-if="open"
@@ -105,8 +103,6 @@ const props = defineProps({
     cancel: [];
     show: [];
     shown: [];
-    hide: [];
-    hidden: [];
   }>();
 
 function onOk() {

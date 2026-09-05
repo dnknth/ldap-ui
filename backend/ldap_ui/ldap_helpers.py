@@ -13,7 +13,7 @@ operation to complete without results.
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Any
+from typing import Any, Self
 
 from anyio import sleep
 from fastapi import HTTPException
@@ -25,11 +25,18 @@ from .schema import OCTET_STRING, Syntax
 
 @dataclass(frozen=True)
 class ResponseEntry:
-    raw_dn: bytes
     dn: str
     attributes: dict[str, Any]
     raw_attributes: dict[str, list[bytes]]
-    type: str
+
+    @classmethod
+    def of(cls, response: dict[str, Any]) -> Self:
+        "Build an entry from an ldap3 response dictionary"
+        return cls(
+            dn=response["dn"],
+            attributes=response["attributes"],
+            raw_attributes=response["raw_attributes"],
+        )
 
     @property
     def hasSubordinates(self):
@@ -94,7 +101,7 @@ async def get_responses(
 
     async for entries in get_raw_responses(connection, msgid):
         for response in entries:
-            yield ResponseEntry(**response)
+            yield ResponseEntry.of(response)
 
 
 async def unique(

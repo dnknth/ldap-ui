@@ -67,8 +67,6 @@ from .ldap_connection import bound, ldap_connect, open, parse_url, rate_limit
 from .ldap_helpers import ResponseEntry, empty, get_raw_responses, get_responses, unique
 from .schema import INTEGER, Schema, normalize_dn
 
-NO_CONTENT = Response(status_code=HTTPStatus.NO_CONTENT)
-
 # Special fields
 PHOTOS = ("jpegPhoto", "thumbnailPhoto")
 PASSWORDS = ("userPassword",)
@@ -97,6 +95,7 @@ WILDCARD = re.compile(r"\\2A", re.IGNORECASE)
 SCHEMA: SchemaInfo | None = None
 _SCHEMA_LOCK = Lock()
 
+
 async def ensure_schema(connection: Connection) -> SchemaInfo:
     """
     Return the directory schema, loading it once.
@@ -111,9 +110,6 @@ async def ensure_schema(connection: Connection) -> SchemaInfo:
         if SCHEMA is None:
             SCHEMA = await get_schema(connection)
         return SCHEMA
-
-
-api = APIRouter(prefix="/api", dependencies=[Security(HTTPBasic(auto_error=False))])
 
 
 async def authenticated(
@@ -141,9 +137,7 @@ async def authenticated(
     if not dn:  # Log in
         connection.unbind()
         await rate_limit()
-        raise LDAPInvalidCredentialsResult(
-            [{"desc": "Invalid credentials for DN"}]
-        )
+        raise LDAPInvalidCredentialsResult([{"desc": "Invalid credentials for DN"}])
 
     async with bound(connection, dn, password):
         await ensure_schema(connection)
@@ -272,6 +266,9 @@ class Tag(StrEnum):
     NAVIGATION = "Navigation"
 
 
+api = APIRouter(prefix="/api", dependencies=[Security(HTTPBasic(auto_error=False))])
+
+
 @api.get(
     "/tree/base",
     tags=[Tag.NAVIGATION],
@@ -282,7 +279,7 @@ async def get_base_entry(connection: AuthenticatedConnection) -> list[TreeItem]:
     "Get the directory base entry"
 
     if not settings.BASE_DN:
-        raise ValueError("An LDAP base DN is required!")
+        raise ValueError("An LDAP base DN is required")
     result = await unique(
         connection,
         connection.search(
@@ -401,10 +398,15 @@ def get_modification(
         return (MODIFY_REPLACE, values)
 
 
-@api.put("/entry/{dn:path}", tags=[Tag.EDITING], operation_id="put_entry")
+@api.put(
+    "/entry/{dn:path}",
+    status_code=HTTPStatus.NO_CONTENT,
+    tags=[Tag.EDITING],
+    operation_id="put_entry",
+)
 async def put_entry(
     dn: str, attributes: Attributes, connection: AuthenticatedConnection
-) -> AttributeNames:
+) -> None:
 
     validate_attribute_names(attributes)
     if attributes := {
@@ -413,7 +415,6 @@ async def put_entry(
         if attr not in PHOTOS
     }:
         await empty(connection, connection.add(dn, attributes=attributes))
-    return ["dn"]  # Dummy
 
 
 @api.post(
@@ -436,9 +437,7 @@ async def rename_entry(
     try:
         new_rdn = parse_dn(rdn)
     except LDAPInvalidDnError as exc:
-        raise HTTPException(
-            HTTPStatus.BAD_REQUEST, f"Invalid RDN: {rdn}"
-        ) from exc
+        raise HTTPException(HTTPStatus.BAD_REQUEST, f"Invalid RDN: {rdn}") from exc
 
     if len(new_rdn) != 1:
         raise HTTPException(
@@ -447,21 +446,17 @@ async def rename_entry(
         )
 
     # Build the new DN from the parsed components, dropping the old first RDN.
-    # Reconstructing with safe_dn avoids the raw-string concatenation and
-    # double-escaped separators of the previous parent_dn().
+    # Reconstructing with safe_dn escapes each RDN component (commas, special
+    # characters) instead of concatenating raw strings.
     try:
         parent = parse_dn(dn)[1:]
     except LDAPInvalidDnError as exc:
-        raise HTTPException(
-            HTTPStatus.BAD_REQUEST, f"Invalid DN: {dn}"
-        ) from exc
+        raise HTTPException(HTTPStatus.BAD_REQUEST, f"Invalid DN: {dn}") from exc
 
     if not parent:
         raise HTTPException(HTTPStatus.BAD_REQUEST, "Entry has no parent")
 
-    new_dn = safe_dn(
-        [f"{part[0]}={part[1]}" for part in [*new_rdn, *parent]]
-    )
+    new_dn = safe_dn([f"{part[0]}={part[1]}" for part in [*new_rdn, *parent]])
 
     await empty(connection, connection.add(new_dn, attributes=entry.raw_attributes))
     try:
@@ -470,26 +465,6 @@ async def rename_entry(
         # Cannot delete Entry with subordinates -> Undo
         await empty(connection, connection.delete(new_dn))
         raise
-
-
-@api.get(
-    "/blob/{attr}/{index}/{dn:path}",
-    tags=[Tag.EDITING],
-    operation_id="get_blob",
-    include_in_schema=False,  # Not used in UI, images are transferred inline
-)
-async def get_blob(
-    attr: str, index: int, dn: str, connection: AuthenticatedConnection
-) -> Response:
-    "Retrieve a binary attribute"
-
-    values = await get_blob_values(connection, dn, attr, index)
-
-    return Response(
-        values[index],
-        media_type="application/octet-stream",
-        headers={"Content-Disposition": f'attachment; filename="{attr}-{index:d}.bin"'},
-    )
 
 
 def validate_attribute_name(attribute: str) -> None:
@@ -640,16 +615,16 @@ def is_hashed_password(value: bytes | str) -> bool:
     ...). Values without a prefix, or with an explicit {CLEARTEXT}/{PLAIN}
     prefix, are plaintext and must never be exported.
     """
-    text = value.decode("utf-8", errors="replace") if isinstance(value, bytes) else value
+    text = (
+        value.decode("utf-8", errors="replace") if isinstance(value, bytes) else value
+    )
     match = PASSWORD_SCHEME.match(text)
     if not match:
         return False
     return match.group(0)[1:-1].upper() not in PLAINTEXT_SCHEMES
 
 
-def sanitize_export_entries(
-    entries: list[dict], include_sensitive: bool
-) -> list[dict]:
+def sanitize_export_entries(entries: list[dict], include_sensitive: bool) -> list[dict]:
     """
     Prepare LDAP search response entries for LDIF export (#1).
 
@@ -892,7 +867,7 @@ async def attribute_range(attribute: str, connection: AuthenticatedConnection) -
                 attributes=(attribute,),
             ),
         )
-        if obj and obj.syntax == INTEGER
+        if obj.syntax == INTEGER
     }
 
     if not values:
@@ -937,5 +912,5 @@ def bounded_range(values: set[int], limit: int = RANGE_LIMIT) -> Range:
 async def ldap_schema(connection: AuthenticatedConnection) -> Schema:
     "Dump the LDAP schema as JSON"
     if SCHEMA is None:
-        raise ValueError("An LDAP schema is required!")
+        raise ValueError("An LDAP schema is required")
     return Schema.of(SCHEMA)
