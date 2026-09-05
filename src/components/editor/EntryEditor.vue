@@ -227,7 +227,6 @@ import {
   deleteEntry,
   postChangePassword,
 } from "@/generated";
-import { unique } from "@/utils";
 
 const inputTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"],
   props = defineProps<{
@@ -237,6 +236,8 @@ const inputTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"],
   entry = ref<Entry>(), // entry in editor
   focused = ref<string>(), // currently focused input
   invalid = ref<string[]>([]), // field IDs with validation errors
+  // Names of attributes modified since the entry was loaded (client-side only)
+  changed = ref<string[]>([]),
   exportSensitive = ref(false), // include userPassword/userPKCS12 on LDIF export
   modal = ref<string>(), // pop-up dialog
   keys = computed(() => {
@@ -263,8 +264,12 @@ watch(
 
     if (dn && entry.value && entry.value!.isNew) {
       modal.value = "discard-entry";
-    } else if (dn) load(dn, undefined, undefined);
-    else if (entry.value && !entry.value!.isNew) entry.value = undefined;
+    } else if (dn) {
+      load(dn, undefined, undefined);
+    } else if (entry.value && !entry.value!.isNew) {
+      entry.value = undefined;
+      changed.value = [];
+    }
   },
 );
 
@@ -291,12 +296,14 @@ function onFocus(evt: FocusEvent): void {
 
 function newEntry(newEntry: Entry): void {
   entry.value = newEntry;
+  changed.value = [];
   emit("update:activeDn");
   focus(addMandatoryRows());
 }
 
 function discardEntry(dn?: string): void {
   entry.value = undefined;
+  changed.value = [];
   emit("update:activeDn", dn);
 }
 
@@ -325,11 +332,12 @@ function showError(error: HttpValidationError): void {
 }
 
 // Load an entry into the editing form
-async function load(dn?: string, changed?: string[], focused?: string) {
+async function load(dn?: string, newChanged?: string[], focusedElement?: string) {
   invalid.value = [];
 
   if (!dn || dn.startsWith("-")) {
     entry.value = undefined;
+    changed.value = [];
     return;
   }
   const response = await getEntry({ path: { dn } });
@@ -338,15 +346,15 @@ async function load(dn?: string, changed?: string[], focused?: string) {
     return;
   }
   entry.value = response.data;
-  entry.value!.changed = changed || [];
+  changed.value = newChanged || [];
   entry.value!.isNew = false;
 
   document.title = dn.split(",")[0]!;
-  focus(focused);
+  focus(focusedElement);
 }
 
 function hasChanged(key: string): boolean {
-  return (entry.value?.changed && entry.value.changed.includes(key)) || false;
+  return changed.value.includes(key);
 }
 
 // Submit the entry form via AJAX
@@ -356,8 +364,7 @@ async function save() {
     return;
   }
 
-  entry.value!.changed = [];
-  let changed: string[] = [];
+  changed.value = [];
   if (entry.value!.isNew) {
     const response = await putEntry({
       path: { dn: entry.value!.dn },
@@ -367,7 +374,8 @@ async function save() {
       showError(response.error);
       return;
     }
-    changed = response.data;
+    entry.value!.isNew = false;
+    emit("update:activeDn", entry.value!.dn);
   } else {
     const response = await postEntry({
       path: { dn: entry.value!.dn },
@@ -377,13 +385,8 @@ async function save() {
       showError(response.error);
       return;
     }
-    changed = response.data;
+    load(entry.value!.dn, response.data, focused.value);
   }
-
-  if (entry.value!.isNew) {
-    entry.value!.isNew = false;
-    emit("update:activeDn", entry.value!.dn);
-  } else load(entry.value!.dn, changed, focused.value);
 }
 
 async function renameEntry(rdn: string) {
@@ -421,7 +424,7 @@ async function changePassword(oldPass: string, newPass: string) {
     showError(response.error);
   } else {
     entry.value!.attrs.userPassword = [newPass];
-    entry.value!.changed = ["userPassword"];
+    changed.value = ["userPassword"];
   }
 }
 

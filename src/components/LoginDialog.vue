@@ -2,7 +2,6 @@
   <modal
     title="Log in"
     :open="true"
-    :return-to="returnTo"
     :dismissible="false"
     :close-on-backdrop="false"
     @shown="shown"
@@ -39,10 +38,6 @@ import Modal from "./ui/Modal.vue";
 import { getWhoAmI } from "@/generated";
 import { setPendingCredentials, clearPendingCredentials } from "@/auth";
 
-const props = defineProps<{
-  returnTo?: string;
-}>();
-
 const username = ref(""),
   password = ref(""),
   error = ref(""),
@@ -54,9 +49,6 @@ const username = ref(""),
 
 const hint = "Authenticate against the LDAP directory.";
 
-// Force the fields empty on mount: browser password managers autofill
-// type="password" inputs on load, and the autofilled value would otherwise
-// appear already-entered (and, in some browsers, non-editable).
 // Force the fields empty on mount: browser password managers autofill
 // type="password" inputs on load, and the autofilled value would otherwise
 // appear already-entered (and, in some browsers, non-editable).
@@ -94,15 +86,13 @@ async function onOk() {
   if (!name || !pass) return;
 
   // Authenticate the verification request without committing the global
-  // credentials (which would unmount this dialog before we emit).
-  setPendingCredentials(name, pass);
-  error.value = "";
-
-  // Authenticate the verification request without committing the global
   // credentials (which would unmount this dialog before we emit). whoami is a
   // lightweight endpoint that returns the bound user's DN on success and an
   // empty string for invalid credentials — cheaper than fetching the whole
   // schema just to validate.
+  setPendingCredentials(name, pass);
+  error.value = "";
+
   const response = await getWhoAmI();
   if (response.error || !response.data) {
     clearPendingCredentials();

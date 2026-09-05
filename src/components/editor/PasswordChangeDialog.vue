@@ -7,7 +7,6 @@
     @shown="focus"
     @ok="onOk"
     @cancel="emit('update:modal')"
-    @hidden="emit('update-form')"
   >
     <div v-if="oldExists">
       <small>{{ currentUser ? "Required" : "Optional" }}</small>
@@ -76,7 +75,6 @@ const props = defineProps<{
   ),
   emit = defineEmits<{
     ok: [oldPw: string, newPw: string];
-    "update-form": [];
     "update:modal": [];
   }>();
 

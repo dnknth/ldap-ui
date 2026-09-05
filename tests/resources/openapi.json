@@ -128,6 +128,10 @@
       "ChangePasswordRequest": {
         "description": "Change a password",
         "properties": {
+          "new1": {
+            "title": "New1",
+            "type": "string"
+          },
           "old": {
             "anyOf": [
               {
@@ -138,10 +142,6 @@
               }
             ],
             "title": "Old"
-          },
-          "new1": {
-            "title": "New1",
-            "type": "string"
           }
         },
         "required": [
@@ -163,25 +163,11 @@
             "title": "Attrs",
             "type": "object"
           },
-          "autoFilled": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Autofilled",
-            "type": "array"
-          },
           "binary": {
             "items": {
               "type": "string"
             },
             "title": "Binary",
-            "type": "array"
-          },
-          "changed": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Changed",
             "type": "array"
           },
           "dn": {
@@ -197,9 +183,7 @@
         "required": [
           "dn",
           "attrs",
-          "binary",
-          "autoFilled",
-          "changed"
+          "binary"
         ],
         "title": "Entry",
         "type": "object"
@@ -1030,18 +1014,7 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "title": "Response Put Entry",
-                  "type": "array"
-                }
-              }
-            },
+          "204": {
             "description": "Successful Response"
           },
           "422": {
