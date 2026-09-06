@@ -8,7 +8,9 @@ Frontend (prefer fast checks over the CI script):
 
 ```sh
 pnpm dev              # Vite dev server
-npx vue-tsc --noEmit  # type-check (faster than `pnpm type-check` which uses --build)
+pnpm type-check       # vue-tsc --build; checks src + vite config. The root tsconfig
+                      # is solution-style (files: [] + references), so plain
+                      # `npx vue-tsc --noEmit` compiles nothing — always use --build.
 pnpm test             # vitest (unit tests in src/*.test.ts)
 ```
 

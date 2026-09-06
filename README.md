@@ -154,7 +154,7 @@ The following [access keys](https://developer.mozilla.org/en-US/docs/Web/HTML/Re
 - SASL authentication schemes are presently not supported.
 - Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLDAP 2.4 does). I strongly recommend exposing the app through a TLS-enabled web server.
 - HTTP *Basic Authentication* is performed by the app: the login dialog collects credentials and a request interceptor (`src/auth.ts`) attaches `Authorization: Basic` to every request once logged in. On startup the app probes `/api/whoami`; if an upstream HTTP server (or a native browser Basic challenge) already supplied the `AUTHORIZATION` request variable, the session is treated as authenticated and the login dialog is skipped. Otherwise the dialog credentials are used, replacing any upstream-provided header.
-- LDIF export never includes plaintext passwords: `userPassword` values without an RFC&nbsp;2307 scheme prefix (`{SSHA}`, `{SHA}`, `{MD5}`, …) — or explicitly marked `{CLEARTEXT}`/`{PLAIN}` — are omitted even when the *Include sensitive (hashed passwords)* option is enabled (`?include_sensitive=true`). Only hashed values with a scheme prefix can be exported, so a directory that stores passwords in plaintext cannot leak them through an export.
+- LDIF export always includes `userPassword` values that carry an RFC&nbsp;2307 scheme prefix (`{SSHA}`, `{SHA}`, `{MD5}`, …), but never plaintext: values without a prefix — or explicitly marked `{CLEARTEXT}`/`{PLAIN}` — are omitted. So a directory that stores passwords in plaintext cannot leak them through an export.
 
 ## Q&A
 
