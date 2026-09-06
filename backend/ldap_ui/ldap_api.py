@@ -81,11 +81,6 @@ from .schema import INTEGER, Schema, normalize_dn
 PHOTOS = ("jpegPhoto", "thumbnailPhoto")
 PASSWORDS = ("userPassword",)
 
-# Attributes that must not be exported by default (#1): they carry credential
-# or key material. Lower-cased for a case-insensitive match against the
-# attribute names returned by the directory.
-SENSITIVE = ("userpassword", "userpkcs12")
-
 # RFC 2307 password scheme prefixes. A userPassword value without one is
 # stored as plaintext, and {CLEARTEXT}/{PLAIN} mark plaintext explicitly:
 # neither may ever be exported (#1).
@@ -128,9 +123,7 @@ async def authenticated(
 
         if not dn:  # Log in
             await rate_limit()
-            raise LDAPInvalidCredentialsResult(
-                [{"desc": "Invalid credentials for DN"}]
-            )
+            raise LDAPInvalidCredentialsResult([{"desc": "Invalid credentials for DN"}])
 
         async with bound(connection, dn, password):
             await ensure_schema(connection)
@@ -566,13 +559,13 @@ def is_hashed_password(value: bytes | str) -> bool:
     return match.group(0)[1:-1].upper() not in PLAINTEXT_SCHEMES
 
 
-def sanitize_export_entries(entries: list[dict], include_sensitive: bool) -> list[dict]:
+def sanitize_export_entries(entries: list[dict]) -> list[dict]:
     """
     Prepare LDAP search response entries for LDIF export (#1).
 
-    userPassword/userPKCS12 are removed by default. With include_sensitive the
     userPassword values are exported only if they are hashes; plaintext
-    passwords are never exported.
+    passwords are never exported, even when the directory stores them that
+    way. Other sensitive attributes (userPKCS12) are exported as-is.
     """
     result = []
     for entry in entries:
@@ -583,11 +576,7 @@ def sanitize_export_entries(entries: list[dict], include_sensitive: bool) -> lis
         filtered = dict(raw)
         changed = False
         for attr in list(filtered):
-            key = attr.lower()
-            if key in SENSITIVE and not include_sensitive:
-                del filtered[attr]
-                changed = True
-            elif key == "userpassword":
+            if attr.lower() == "userpassword":
                 values = filtered[attr]
                 values = values if isinstance(values, list) else [values]
                 kept = [v for v in values if is_hashed_password(v)]
@@ -606,13 +595,9 @@ def sanitize_export_entries(entries: list[dict], include_sensitive: bool) -> lis
 
 @api.get(
     "/ldif/{dn:path}",
-    include_in_schema=False,  # Used as a link target, no API call
+    include_in_schema=False,  # Downloaded via the authenticated client, not an API call
 )
-async def export_ldif(
-    dn: str,
-    connection: AuthenticatedConnection,
-    include_sensitive: bool = False,  # Opt in to exposing userPassword/userPKCS12
-) -> Response:
+async def export_ldif(dn: str, connection: AuthenticatedConnection) -> Response:
     "Dump an entry as LDIF"
 
     out = io.StringIO()
@@ -620,7 +605,7 @@ async def export_ldif(
     msgid = connection.search(dn, search_filter=ANY, attributes=ALL_ATTRIBUTES)
     async for entries in get_raw_responses(connection, msgid):
         out.write("# ")
-        entries = sanitize_export_entries(entries, include_sensitive)
+        entries = sanitize_export_entries(entries)
         out.writelines(connection.response_to_ldif(entries))
 
     file_name = first_rdn_value(dn)

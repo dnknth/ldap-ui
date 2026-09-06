@@ -225,7 +225,7 @@ class StripSensitiveTest(unittest.TestCase):
         self.assertFalse(is_hashed_password(b"{CLEARTEXT}plain"))
         self.assertFalse(is_hashed_password(b"{PLAIN}plain"))
 
-    def test_default_strips_sensitive(self):
+    def test_sensitive_kept_including_pkcs12(self):
         entries = self.entry(
             {
                 "userPassword": [b"{SSHA}abc"],
@@ -233,51 +233,51 @@ class StripSensitiveTest(unittest.TestCase):
                 "cn": [b"x"],
             }
         )
-        result = sanitize_export_entries(entries, include_sensitive=False)
-        self.assertEqual(result[0]["raw_attributes"], {"cn": [b"x"]})
+        result = sanitize_export_entries(entries)
+        self.assertEqual(
+            result[0]["raw_attributes"],
+            {"userPassword": [b"{SSHA}abc"], "userPKCS12": [b"pkcs"], "cn": [b"x"]},
+        )
 
     def test_sensitive_keeps_hashed_password(self):
-        entries = self.entry(
-            {"userPassword": [b"{SSHA}abc"], "cn": [b"x"]}
+        entries = self.entry({"userPassword": [b"{SSHA}abc"], "cn": [b"x"]})
+        result = sanitize_export_entries(entries)
+        self.assertEqual(
+            result[0]["raw_attributes"], {"userPassword": [b"{SSHA}abc"], "cn": [b"x"]}
         )
-        result = sanitize_export_entries(entries, include_sensitive=True)
-        self.assertEqual(result[0]["raw_attributes"], {"userPassword": [b"{SSHA}abc"], "cn": [b"x"]})
 
-    def test_sensitive_never_exports_plaintext(self):
-        # Plaintext passwords are dropped even when explicitly requested (#1).
-        entries = self.entry(
-            {"userPassword": [b"secret"], "cn": [b"x"]}
-        )
-        result = sanitize_export_entries(entries, include_sensitive=True)
+    def test_never_exports_plaintext(self):
+        # Plaintext passwords are always dropped, even if the directory stores
+        # them that way (#1).
+        entries = self.entry({"userPassword": [b"secret"], "cn": [b"x"]})
+        result = sanitize_export_entries(entries)
         self.assertEqual(result[0]["raw_attributes"], {"cn": [b"x"]})
 
-    def test_sensitive_mixed_values(self):
+    def test_mixed_values(self):
         # Hashed values are kept, plaintext ones are dropped.
         entries = self.entry(
             {"userPassword": [b"{SSHA}abc", b"plain"], "cn": [b"x"]}
         )
-        result = sanitize_export_entries(entries, include_sensitive=True)
-        self.assertEqual(result[0]["raw_attributes"], {"userPassword": [b"{SSHA}abc"], "cn": [b"x"]})
+        result = sanitize_export_entries(entries)
+        self.assertEqual(
+            result[0]["raw_attributes"], {"userPassword": [b"{SSHA}abc"], "cn": [b"x"]}
+        )
 
     def test_cleartext_scheme_never_exported(self):
-        entries = self.entry(
-            {"userPassword": [b"{CLEARTEXT}plain"], "cn": [b"x"]}
-        )
-        result = sanitize_export_entries(entries, include_sensitive=True)
+        entries = self.entry({"userPassword": [b"{CLEARTEXT}plain"], "cn": [b"x"]})
+        result = sanitize_export_entries(entries)
         self.assertEqual(result[0]["raw_attributes"], {"cn": [b"x"]})
 
     def test_base64_encoded_plaintext_never_exported(self):
         # Even when the value would be emitted as base64 in the LDIF (output
         # encoding relies on the raw value), a plaintext password is dropped.
-        entries = self.entry(
-            {"userPassword": [b"plain"], "cn": [b"x"]}
-        )
-        result = sanitize_export_entries(entries, include_sensitive=True)
+        entries = self.entry({"userPassword": [b"plain"], "cn": [b"x"]})
+        result = sanitize_export_entries(entries)
         self.assertEqual(result[0]["raw_attributes"], {"cn": [b"x"]})
 
     def test_preserves_non_sensitive(self):
         entries = self.entry({"cn": [b"x"]})
-        result = sanitize_export_entries(entries, include_sensitive=True)
+        result = sanitize_export_entries(entries)
         self.assertIs(result[0], entries[0])
 
 
@@ -831,23 +831,12 @@ class ModificationTest(LdapMixin, unittest.TestCase):
                 },
             )
 
-    def test_131_ldif_hides_password_by_default(self):
-        # #1: LDIF export excludes userPassword unless explicitly requested.
+    def test_131_ldif_never_exports_plaintext_password(self):
+        # #1: the test password is stored in plaintext, so LDIF export must
+        # omit it; hashed values are exported, covered by the StripSensitiveTest
+        # unit tests.
         with self.client:
             result = self.client.get(f"/api/ldif/{TEST_DN}", auth=AUTH)
-            self.assertHTTPStatus(result)
-            dn_attrs = parse_ldif(result.content).get(TEST_DN)
-            self.assertTrue(dn_attrs is not None)
-            assert dn_attrs is not None  # typing narrow
-            self.assertNotIn("userPassword", dn_attrs)
-
-    def test_132_ldif_never_exports_plaintext_password(self):
-        # #1: even with include_sensitive, a plaintext-stored userPassword
-        # (no RFC 2307 scheme prefix) is never exported.
-        with self.client:
-            result = self.client.get(
-                f"/api/ldif/{TEST_DN}", params={"include_sensitive": "true"}, auth=AUTH
-            )
             self.assertHTTPStatus(result)
             dn_attrs = parse_ldif(result.content).get(TEST_DN)
             self.assertTrue(dn_attrs is not None)

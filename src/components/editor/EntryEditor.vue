@@ -85,27 +85,11 @@
           <li @click="modal = 'new-entry'" role="menuitem">Add child…</li>
           <li @click="modal = 'copy-entry'" role="menuitem">Copy…</li>
           <li @click="modal = 'rename-entry'" role="menuitem">Rename…</li>
-          <li role="menuitem">
-            <label class="cursor-pointer inline-flex items-center">
-              <input
-                v-model="exportSensitive"
-                type="checkbox"
-                class="mr-2"
-              />
-              Include sensitive (hashed passwords)
-            </label>
-          </li>
-          <li role="menuitem">
-            <a
-              :href="'api/ldif/' + entry.dn + (exportSensitive ? '?include_sensitive=true' : '')"
-            >
-              Export
-            </a>
-          </li>
+          <li @click="exportLdif" role="menuitem">Export</li>
           <li
             @click="modal = 'delete-entry'"
-            class="text-danger"
             role="menuitem"
+            class="text-danger"
           >
             Delete…
           </li>
@@ -219,6 +203,7 @@ import NodeLabel from "../NodeLabel.vue";
 import PasswordChangeDialog from "./PasswordChangeDialog.vue";
 import RenameEntryDialog from "./RenameEntryDialog.vue";
 import { state } from "@/state";
+import { client } from "@/generated/client.gen";
 import {
   getEntry,
   postEntry,
@@ -238,7 +223,6 @@ const inputTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"],
   invalid = ref<string[]>([]), // field IDs with validation errors
   // Names of attributes modified since the entry was loaded (client-side only)
   changed = ref<string[]>([]),
-  exportSensitive = ref(false), // include userPassword/userPKCS12 on LDIF export
   modal = ref<string>(), // pop-up dialog
   keys = computed(() => {
     const keys = Object.keys(entry.value?.attrs || {});
@@ -331,8 +315,34 @@ function showError(error: HttpValidationError): void {
   state.showError(error.detail?.join("\n") || "Operation failed");
 }
 
+// Export the entry as LDIF through the authenticated client. A plain link
+// would sidestep the auth interceptor in auth.ts and 401 unless an upstream
+// reverse proxy supplies Basic auth.
+async function exportLdif(): Promise<void> {
+  const result = await client.get<{ 200: string }, unknown, false>({
+    url: `/api/ldif/${encodeURIComponent(entry.value!.dn)}`,
+    parseAs: "text",
+  });
+  if (result.error) {
+    state.showError(String(result.error));
+    return;
+  }
+  const disposition = result.response?.headers.get("Content-Disposition"),
+    match = disposition?.match(/filename="?([^";]+)/),
+    url = URL.createObjectURL(new Blob([result.data ?? ""]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = match?.[1] || "entry.ldif";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 // Load an entry into the editing form
-async function load(dn?: string, newChanged?: string[], focusedElement?: string) {
+async function load(
+  dn?: string,
+  newChanged?: string[],
+  focusedElement?: string,
+) {
   invalid.value = [];
 
   if (!dn || dn.startsWith("-")) {
@@ -429,10 +439,10 @@ async function changePassword(oldPass: string, newPass: string) {
 }
 
 function attributes(kind: "must" | "may"): string[] {
-    const attrs = entry
-      .value!.attrs.objectClass!.filter((oc) => oc && oc != "top")
-      .map((oc) => state.schema?.oc(oc))
-      .flatMap((oc) => (oc ? oc.$collect(kind) : []));
+  const attrs = entry
+    .value!.attrs.objectClass!.filter((oc) => oc && oc != "top")
+    .map((oc) => state.schema?.oc(oc))
+    .flatMap((oc) => (oc ? oc.$collect(kind) : []));
   if (
     attrs.includes("userPassword") &&
     state.schema?.attr("pwdPolicySubentry")
