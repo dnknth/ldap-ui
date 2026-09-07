@@ -582,9 +582,11 @@ class LoginModeTest(LdapMixin, unittest.TestCase):
 
     def setUp(self):
         self._orig_config = settings.config
+        self._orig_bind_as_user = settings.BIND_AS_USER
 
     def tearDown(self):
         settings.config = self._orig_config
+        settings.BIND_AS_USER = self._orig_bind_as_user
 
     def _set_bind_pattern(self, pattern: str | None):
         settings.config = (
@@ -633,6 +635,22 @@ class LoginModeTest(LdapMixin, unittest.TestCase):
         result = self._whoami("admin", "bedrock")
         self.assertEqual(200, result.status_code, result.text)
         self.assertEqual(ADMIN_DN.lower(), result.json().lower())
+
+    def test_bind_as_user(self):
+        # In BIND_AS_USER mode, BIND_PATTERN resolves the DN before opening
+        # the connection. The initial bind therefore uses the login user's
+        # own credentials and needs no anonymous or service-account bind.
+        settings.BIND_AS_USER = True
+        self._set_bind_pattern(f"cn=%s,{BASE_DN}")
+        result = self._whoami("admin", "bedrock")
+        self.assertEqual(200, result.status_code, result.text)
+        self.assertEqual(ADMIN_DN.lower(), result.json().lower())
+
+    def test_bind_as_user_wrong_password(self):
+        settings.BIND_AS_USER = True
+        self._set_bind_pattern(f"cn=%s,{BASE_DN}")
+        result = self._whoami("admin", "wrong")
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, result.status_code, result.text)
 
 
 class ModificationTest(LdapMixin, unittest.TestCase):

@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi import HTTPException
 from ldap3.core.exceptions import (
+    LDAPInappropriateAuthenticationResult,
     LDAPInvalidCredentialsResult,
     LDAPNoSuchObjectResult,
     LDAPResponseTimeoutError,
@@ -60,6 +61,34 @@ class StartTlsOrderingTest(unittest.IsolatedAsyncioTestCase):
         order = await self._operation_order("ldaps://ldap.example.com")
         self.assertNotIn("start_tls", order)
         self.assertIn("bind", order)
+
+
+class InitialBindCredentialsTest(unittest.TestCase):
+    """`open()` forwards optional credentials to ldap3.Connection."""
+
+    def _open(
+        self,
+        bind_dn: str | None = None,
+        bind_password: str | None = None,
+    ):
+        with patch.object(ldap_connection, "Connection") as connection_cls:
+            ldap_connection.open(
+                "ldap://ldap.example.com",
+                "NO_INFO",
+                bind_dn,
+                bind_password,
+            )
+        return connection_cls.call_args.kwargs
+
+    def test_anonymous_by_default(self):
+        kwargs = self._open()
+        self.assertIsNone(kwargs["user"])
+        self.assertIsNone(kwargs["password"])
+
+    def test_uses_supplied_credentials(self):
+        kwargs = self._open("uid=fred,o=Flintstones", "secret")
+        self.assertEqual(kwargs["user"], "uid=fred,o=Flintstones")
+        self.assertEqual(kwargs["password"], "secret")
 
 
 class LdapConnectResolutionTest(unittest.IsolatedAsyncioTestCase):
@@ -186,6 +215,7 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
             patch.object(settings, "BASE_DN", "dc=nope"),
             patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
             patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", False),
             patch.object(
                 settings,
                 "config",
@@ -217,6 +247,7 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
             patch.object(settings, "BASE_DN", "dc=auto"),
             patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
             patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", False),
             patch.object(settings, "config", lambda _k, default=None: default),
         ):
             result = await probe.run_probe()
@@ -231,24 +262,54 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
             messages,
         )
 
-    @staticmethod
-    @asynccontextmanager
-    async def _raise_invalid_creds():
-        raise LDAPInvalidCredentialsResult([{"desc": "anonymous bind denied"}])
-        yield  # pragma: no cover
-
-    async def test_anonymous_bind_denied_without_bind_pattern_error(self):
-        # Login needs the anonymous user search when BIND_PATTERN is unset, so
-        # a directory that rejects anonymous binds makes the app unusable.
+    async def test_user_bind_mode_skips_anonymous_access_checks(self):
+        # FreeIPA commonly permits an anonymous root-DSE connection but
+        # rejects anonymous reads below it. Those reads say nothing about
+        # BIND_AS_USER requests, which perform them as the login user.
+        connection = self._probe_connection()
         with (
             patch.object(
                 probe,
                 "ldap_connect",
-                side_effect=self._raise_invalid_creds,
+                side_effect=lambda: self._connect(connection),
             ),
             patch.object(settings, "BASE_DN", "dc=example,dc=com"),
             patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
             patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", True),
+            patch.object(
+                settings,
+                "config",
+                lambda k, default=None: "%s" if k == "BIND_PATTERN" else default,
+            ),
+        ):
+            result = await probe.run_probe()
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.diagnostics, [])
+        connection.search.assert_not_called()
+
+    @staticmethod
+    @asynccontextmanager
+    async def _reject_anonymous_bind():
+        raise LDAPInappropriateAuthenticationResult(
+            [{"desc": "anonymous bind denied"}]
+        )
+        yield  # pragma: no cover
+
+    async def test_anonymous_bind_denied_without_bind_pattern_error(self):
+        # Without user-bound mode, a directory that rejects anonymous binds
+        # makes the app unusable before login credentials are tried.
+        with (
+            patch.object(
+                probe,
+                "ldap_connect",
+                side_effect=self._reject_anonymous_bind,
+            ),
+            patch.object(settings, "BASE_DN", "dc=example,dc=com"),
+            patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
+            patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", False),
             patch.object(settings, "config", lambda _k, default=None: default),
         ):
             result = await probe.run_probe()
@@ -257,24 +318,26 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(
             any(
                 d.severity == "error"
-                and "anonymous search" in d.message
+                and "rejects anonymous binds" in d.message
                 for d in result.diagnostics
             ),
             result.diagnostics,
         )
 
-    async def test_anonymous_bind_denied_with_bind_pattern_configured_silent(self):
-        # With BIND_PATTERN and both BASE_DN/SCHEMA_DN configured, anonymous
-        # denial impairs nothing: no warning, deployment fully usable.
+    async def test_anonymous_bind_denied_with_user_bind_mode_silent(self):
+        # The unauthenticated probe cannot bind, but this is expected:
+        # authenticated requests derive the DN from BIND_PATTERN and open
+        # their initial connection with the login user's credentials.
         with (
             patch.object(
                 probe,
                 "ldap_connect",
-                side_effect=self._raise_invalid_creds,
+                side_effect=self._reject_anonymous_bind,
             ),
             patch.object(settings, "BASE_DN", "dc=example,dc=com"),
             patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
             patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", True),
             patch.object(
                 settings,
                 "config",
@@ -286,19 +349,20 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.ok)
         self.assertEqual(result.diagnostics, [])
 
-    async def test_anonymous_bind_denied_with_bind_pattern_missing_base_schema(self):
-        # BIND_PATTERN covers login, but with anonymous access denied the
-        # base/schema cannot be auto-detected: missing explicit config is an
-        # error for each.
+    async def test_bind_pattern_alone_does_not_fix_rejected_anonymous_bind(self):
+        # BIND_PATTERN avoids the username search, but normal mode still
+        # opens its initial connection anonymously. BIND_AS_USER is the
+        # switch that bypasses that failed bind.
         with (
             patch.object(
                 probe,
                 "ldap_connect",
-                side_effect=self._raise_invalid_creds,
+                side_effect=self._reject_anonymous_bind,
             ),
-            patch.object(settings, "BASE_DN", None),
-            patch.object(settings, "SCHEMA_DN", None),
+            patch.object(settings, "BASE_DN", "dc=example,dc=com"),
+            patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
             patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", False),
             patch.object(
                 settings,
                 "config",
@@ -307,22 +371,33 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
         ):
             result = await probe.run_probe()
 
-        # Nothing is usable without the base/schema, even though login would work
-        # via BIND_PATTERN: error findings make the deployment not ok.
+        self.assertFalse(result.ok)
+        self.assertTrue(
+            any("BIND_AS_USER" in d.message for d in result.diagnostics),
+            result.diagnostics,
+        )
+
+    async def test_user_bind_mode_requires_bind_pattern(self):
+        with (
+            patch.object(
+                probe,
+                "ldap_connect",
+                side_effect=self._reject_anonymous_bind,
+            ),
+            patch.object(settings, "BASE_DN", None),
+            patch.object(settings, "SCHEMA_DN", None),
+            patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", True),
+            patch.object(settings, "config", lambda _k, default=None: default),
+        ):
+            result = await probe.run_probe()
+
         self.assertFalse(result.ok)
         self.assertTrue(
             any(
-                "base entry" in d.message and d.severity == "error"
+                "BIND_AS_USER requires BIND_PATTERN" in d.message
                 for d in result.diagnostics
             ),
-            result.diagnostics,
-        )
-        self.assertTrue(
-            any("schema" in d.message and d.severity == "error" for d in result.diagnostics),
-            result.diagnostics,
-        )
-        self.assertFalse(
-            any(d.severity == "warning" for d in result.diagnostics),
             result.diagnostics,
         )
 

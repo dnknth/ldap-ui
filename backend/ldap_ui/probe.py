@@ -4,6 +4,7 @@ import ldap3
 from fastapi import HTTPException
 from ldap3.core.exceptions import (
     LDAPException,
+    LDAPInappropriateAuthenticationResult,
     LDAPInvalidCredentialsResult,
 )
 
@@ -20,11 +21,10 @@ async def run_probe() -> ProbeResult:
     """
     Probe the LDAP directory connectivity and configuration.
 
-    A full probe mirrors what every real request does: open an anonymous
-    connection, resolve the base DN and schema, and sanity-check the settings.
-    Returns a ProbeResult whose `ok` is true when the directory is usable, and
-    whose `diagnostics` list carries individual findings (severity,
-    message) for misconfigurations worth surfacing to the operator.
+    A full probe opens an anonymous connection, resolves the base DN and
+    schema, and sanity-checks the settings. When BIND_AS_USER is enabled,
+    authenticated requests instead open their initial connection with the
+    login user's credentials.
     """
     diagnostics: list[Diagnostic] = []
     try:
@@ -33,7 +33,11 @@ async def run_probe() -> ProbeResult:
             # whole tree 404 while the connection itself succeeds.
             # (`ldap_connect` resolves it best-effort; ambiguous directories
             # leave it unset, which is diagnosed here.)
-            if not settings.BASE_DN:
+            # In BIND_AS_USER mode these access checks with the probe's
+            # anonymous connection would produce false errors on directories
+            # that allow only anonymous root-DSE access. Authenticated
+            # requests perform them with the login user's credentials.
+            if not settings.BIND_AS_USER and not settings.BASE_DN:
                 diagnostics.append(
                     Diagnostic(
                         severity="error",
@@ -41,7 +45,7 @@ async def run_probe() -> ProbeResult:
                         "Provide the BASE_DN setting.",
                     )
                 )
-            else:
+            elif not settings.BIND_AS_USER and settings.BASE_DN:
                 try:
                     await unique(
                         connection,
@@ -67,7 +71,7 @@ async def run_probe() -> ProbeResult:
 
             # Schema readable? A missing/unreadable schema breaks /schema for
             # every user.
-            if not settings.SCHEMA_DN:
+            if not settings.BIND_AS_USER and not settings.SCHEMA_DN:
                 diagnostics.append(
                     Diagnostic(
                         severity="error",
@@ -75,7 +79,7 @@ async def run_probe() -> ProbeResult:
                         "Provide the SCHEMA_DN setting.",
                     )
                 )
-            else:
+            elif not settings.BIND_AS_USER and settings.SCHEMA_DN:
                 try:
                     await get_schema(connection)
                 except (HTTPException, LDAPException):
@@ -90,22 +94,21 @@ async def run_probe() -> ProbeResult:
                             "Provide the SCHEMA_DN setting."
                         )
                     diagnostics.append(Diagnostic(severity="error", message=message))
-    except LDAPInvalidCredentialsResult:
-        # Directory reachable but rejects anonymous binds. That breaks the
-        # anonymous user search used to resolve the login DN (only avoidable
-        # with BIND_PATTERN) and the root-DSE auto-detection of base/schema.
-        # Each feature that cannot be satisfied is diagnosed separately.
+    except (LDAPInappropriateAuthenticationResult, LDAPInvalidCredentialsResult):
+        # The probe has no login credentials, so this failure is expected
+        # when user-bound mode is correctly configured. Real requests derive
+        # the user's DN from BIND_PATTERN and bind directly with the submitted
+        # password instead of taking this anonymous path.
         bind_pattern = settings.config("BIND_PATTERN", default=None)
-        if bind_pattern is None:
+        if not (settings.BIND_AS_USER and bind_pattern is not None):
             diagnostics.append(
                 Diagnostic(
                     severity="error",
-                    message="The directory rejects anonymous binds, but "
-                    "login needs an anonymous search to resolve user names. "
-                    "Configure BIND_PATTERN or allow anonymous access.",
+                    message="The directory rejects anonymous binds. Configure "
+                    "BIND_AS_USER with BIND_PATTERN, or allow anonymous access.",
                 )
             )
-        if not settings.BASE_DN:
+        if not settings.BIND_AS_USER and not settings.BASE_DN:
             diagnostics.append(
                 Diagnostic(
                     severity="error",
@@ -114,7 +117,7 @@ async def run_probe() -> ProbeResult:
                     "setting.",
                 )
             )
-        if not settings.SCHEMA_DN:
+        if not settings.BIND_AS_USER and not settings.SCHEMA_DN:
             diagnostics.append(
                 Diagnostic(
                     severity="error",
@@ -143,6 +146,14 @@ async def run_probe() -> ProbeResult:
         )
 
     bind_pattern = settings.config("BIND_PATTERN", default=None)
+    if settings.BIND_AS_USER and bind_pattern is None:
+        diagnostics.append(
+            Diagnostic(
+                severity="error",
+                message="BIND_AS_USER requires BIND_PATTERN so the login "
+                "user's DN can be resolved before connecting.",
+            )
+        )
     if bind_pattern is not None and bind_pattern.count("%s") != 1:
         diagnostics.append(
             Diagnostic(
