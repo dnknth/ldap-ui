@@ -1,10 +1,12 @@
 import { reactive } from "vue";
 import type { Alert } from "./components/Alert";
 import { LdapSchema } from "./components/schema/schema";
-import { getSchema } from "./generated/sdk.gen";
+import { getSchema, getWhoAmI } from "./generated/sdk.gen";
 
 class State {
   baseDn?: string;
+  activeDn?: string; // currently active DN in the editor
+  userDn?: string; // DN of the current user (already probed once)
   alert?: Alert; // status alert
   schema?: LdapSchema;
 
@@ -31,15 +33,21 @@ class State {
 
   reset() {
     this.baseDn = undefined;
+    this.activeDn = undefined;
+    this.userDn = undefined;
     this.alert = undefined;
     this.schema = undefined;
   }
 }
 
 export const state = reactive(new State());
-export async function initState() {
-  // Load the schema
-  const schemaResponse = await getSchema();
+export async function initState(userDn?: string) {
+  // Load the schema; if the caller already knows the DN (external auth), it
+  // passes it along instead of requiring a second whoami round-trip.
+  const [schemaResponse, whoami] = userDn
+    ? [await getSchema(), undefined]
+    : await Promise.all([getSchema(), getWhoAmI()]);
+  state.userDn = userDn || whoami?.data;
   if (schemaResponse.error) {
     state.showException("Failed to load LDAP schema");
   }

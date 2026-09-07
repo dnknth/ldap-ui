@@ -31,36 +31,43 @@
     <login-dialog v-if="!checking && !probeErrors.length && !authTrap && !authenticated && loginDialog" @ok="init" />
 
     <template v-else-if="ready">
-      <nav-bar v-model:treeOpen="treeOpen" v-model:modal="modal" v-model:oc="oc" v-model:activeDn="activeDn" :user-dn="userDn" @logout="logout" />
-      <ldif-import-dialog v-model:modal="modal" @ok="activeDn = '-'" />
+      <nav-bar
+        v-model:treeOpen="treeOpen"
+        @update:modal="modal = $event"
+        @update:oc="setSide('oc', $event)"
+        @logout="logout"
+      />
+      <ldif-import-dialog v-model:modal="modal" @ok="state.activeDn = '-'" />
 
       <div class="flex container">
         <!-- left column -->
         <div class="space-y-4">
-          <tree-view v-model:activeDn="activeDn" v-show="treeOpen" />
-          <object-class-card v-model="oc" @show-attr="attr = $event" />
-          <attribute-card v-model="attr" />
+          <tree-view v-show="treeOpen" />
+          <object-class-card
+            :model-value="side?.kind == 'oc' ? side.name : undefined"
+            @show-attr="setSide('attr', $event)"
+            @update:model-value="setSide('oc', $event)"
+          />
+          <attribute-card
+            :model-value="side?.kind == 'attr' ? side.name : undefined"
+            @update:model-value="setSide('attr', $event)"
+          />
         </div>
 
         <!-- main editor -->
         <div class="flex-auto mt-4">
-          <entry-editor v-model:activeDn="activeDn" @show-attr="attr = $event" @show-oc="oc = $event" />
+          <entry-editor
+            @show-attr="setSide('attr', $event)"
+            @show-oc="setSide('oc', $event)"
+          />
         </div>
-      </div>
-
-      <div v-if="false"><!-- Not rendered, prevents color pruning -->
-        <span class="text-primary bg-primary"></span>
-        <span class="text-back bg-back"></span>
-        <span class="text-danger bg-danger"></span>
-        <span class="text-front bg-front"></span>
-        <span class="text-secondary bg-secondary"></span>
       </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref } from "vue";
 import AttributeCard from "./components/schema/AttributeCard.vue";
 import EntryEditor from "./components/editor/EntryEditor.vue";
 import LdifImportDialog from "./components/LdifImportDialog.vue";
@@ -76,9 +83,7 @@ import { setCredentials, clearCredentials, isAuthenticated, isExternalAuthBroken
 
 const
   treeOpen = ref(true), // Is the tree visible?
-  activeDn = ref<string>(), // currently active DN in the editor
-  oc = ref<string>(), // objectClass info in side panel
-  attr = ref<string>(), // attribute info in side panel
+  side = ref<{ kind: "oc" | "attr"; name: string }>(), // object class / attribute info in side panel
   modal = ref<string>(), // modal popup ID
   loginDialog = ref(true), // show the login dialog (only relevant when !authenticated)
   checking = ref(true), // true while the startup auth check runs (nothing rendered, avoids dialog flash)
@@ -86,7 +91,6 @@ const
   authTrap = computed(() => isExternalAuthBroken()),
   probeErrors = ref<Diagnostic[]>([]), // error diagnostics from the /probe endpoint
   probeWarnings = ref<Diagnostic[]>([]), // warning diagnostics from the /probe endpoint
-  userDn = ref<string>(), // DN of the current user (already probed once)
   ready = ref(false); // initState() has completed
 
 onMounted(async () => {
@@ -124,9 +128,8 @@ async function probeExternalAuth() {
     state.showException("Unable to determine authentication status");
     return;
   }
-  userDn.value = response.data;
   setExternalAuthenticated();
-  await initState();
+  await initState(response.data);
   ready.value = true;
 }
 
@@ -161,30 +164,24 @@ async function probeLdap() {
   );
 }
 
-async function init(username: string, password: string) {
+async function init(username: string, password: string, userDn: string) {
   setCredentials(username, password);
   clearExternalAuthenticated(); // fresh start: flush any external-auth trap flag
-  const response = await getWhoAmI();
-  if (response.data) userDn.value = response.data;
-  await initState();
+  await initState(userDn); // fetches schema; LoginDialog already probed the DN
   ready.value = true;
 }
 
 function logout() {
   clearCredentials();
   clearExternalAuthenticated();
-  userDn.value = undefined;
   loginDialog.value = true;
   state.reset();
   ready.value = false;
 }
 
-watch(attr, (a) => {
-  if (a) oc.value = undefined;
-});
-watch(oc, (o) => {
-  if (o) attr.value = undefined;
-});
+function setSide(kind: "oc" | "attr", name?: string) {
+  side.value = name ? { kind, name } : undefined;
+}
 </script>
 
 <style>

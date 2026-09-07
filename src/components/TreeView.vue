@@ -28,8 +28,8 @@
           :key="item.dn"
           :oc="item.structuralObjectClass"
           class="tree-link whitespace-nowrap text-front/80"
-          @select-dn="clicked(item.distinguishedName)"
-          :class="{ active: activeDn == item.dn }"
+          @select-dn="state.activeDn = item.distinguishedName.toString()"
+          :class="{ active: state.activeDn == item.dn }"
         >
           <span v-if="!item.distinguishedName.level">{{ item.dn }}</span>
         </node-label>
@@ -72,7 +72,11 @@ class Node implements TreeItem {
     if (this.distinguishedName.matches(dn)) return this;
     if (!dn.isSubordinate(this.distinguishedName) || !this.hasSubordinates)
       return undefined;
-    return this.subordinates.find((node) => node.find(dn));
+    for (const node of this.subordinates) {
+      const result = node.find(dn);
+      if (result) return result;
+    }
+    return undefined;
   }
 
   get loaded(): boolean {
@@ -87,11 +91,7 @@ class Node implements TreeItem {
   }
 }
 
-const props = defineProps<{ activeDn?: string }>(),
-  tree = ref<Node>(),
-  emit = defineEmits<{
-    "update:activeDn": [dn: string];
-  }>();
+const tree = ref<Node>();
 
 onMounted(async () => {
   await reload("base");
@@ -99,7 +99,7 @@ onMounted(async () => {
 });
 
 watch(
-  () => props.activeDn,
+  () => state.activeDn,
   async (selected) => {
     if (!selected || !state.schema) return;
 
@@ -135,12 +135,6 @@ watch(
     }
   },
 );
-
-async function clicked(dn: DN) {
-  emit("update:activeDn", dn.toString());
-  const item = tree.value?.find(dn);
-  if (item && item.hasSubordinates && !item.open) await toggle(item);
-}
 
 // Reload the subtree at entry with given DN
 async function reload(dn?: string) {

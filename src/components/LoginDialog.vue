@@ -44,7 +44,7 @@ const username = ref(""),
   usernameInput = useTemplateRef("username"),
   passwordInput = useTemplateRef("password"),
   emit = defineEmits<{
-    ok: [username: string, password: string];
+    ok: [username: string, password: string, userDn: string];
   }>();
 
 const hint = "Authenticate against the LDAP directory.";
@@ -111,6 +111,6 @@ async function onOk() {
   }
 
   clearPendingCredentials();
-  emit("ok", name, pass);
+  emit("ok", name, pass, response.data);
 }
 </script>

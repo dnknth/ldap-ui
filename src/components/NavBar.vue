@@ -15,9 +15,9 @@
       ></i>
       <node-label
         oc="person"
-        v-if="userDn"
-        :dn="userDn"
-        @select-dn="emit('update:activeDn', $event)"
+        v-if="state.userDn"
+        :dn="state.userDn"
+        @select-dn="state.activeDn = $event"
         class="text-lg"
       />
     </div>
@@ -51,13 +51,16 @@
           id="nav-search"
           ref="input"
         />
-        <search-results
+        <autocomplete
           for="nav-search"
-          @select-dn="
+          :search="searchDns"
+          label="dn"
+          auto-pick-single
+          warn-empty
+          @pick="
             query = '';
-            emit('update:activeDn', $event);
+            state.activeDn = $event;
           "
-          :shorten="state.baseDn"
           :query="query"
         />
       </form>
@@ -74,18 +77,18 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref, useTemplateRef } from "vue";
+import Autocomplete from "./ui/Autocomplete.vue";
 import DropdownMenu from "./ui/DropdownMenu.vue";
 import NodeLabel from "./NodeLabel.vue";
-import SearchResults from "./SearchResults.vue";
 import { state } from "@/state";
 import { isExternalAuthenticated } from "@/auth";
+import { searchDns } from "@/utils";
 
 const input = useTemplateRef("input"),
   query = ref(""),
   collapsed = ref(false),
   externalAuth = isExternalAuthenticated(),
   emit = defineEmits<{
-    "update:activeDn": [dn?: string];
     "update:modal": [name: string];
     "update:oc": [name: string];
     "update:treeOpen": [open: boolean];
@@ -93,11 +96,7 @@ const input = useTemplateRef("input"),
   }>();
 
 defineProps<{
-  activeDn?: string;
-  modal?: string;
-  oc?: string;
   treeOpen: boolean;
-  userDn?: string;
 }>();
 
 function search() {

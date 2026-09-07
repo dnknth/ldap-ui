@@ -111,20 +111,25 @@
           @keyup.esc="query = ''"
         />
       </div>
-      <search-results
-        silent
-        v-if="completable && elementId"
-        @select-dn="complete"
-        :for="elementId"
-        :query="query"
-        label="dn"
-        :shorten="baseDn"
-      />
-      <attribute-search
+      <autocomplete
+          auto-pick-single
+          v-if="completable && elementId"
+          @pick="complete"
+          :for="elementId"
+          :query="query"
+          label="dn"
+          pick-key="dn"
+          :search="searchDns"
+        />
+      <autocomplete
         v-if="oid && elementId"
-        @done="complete"
+        @pick="complete"
         :for="elementId"
         :query="query"
+        key-label="oid"
+        title-label="oid"
+        exact-match-hides
+        :search="(q) => searchAttrs(q, state.schema)"
       />
       <div v-if="hint" class="text-xs ml-6 opacity-70">{{ hint }}</div>
     </div>
@@ -134,20 +139,12 @@
 <script setup lang="ts">
 import { Attribute, generalizedTime } from "../schema/schema";
 import { computed, onMounted, onUpdated, ref, watch } from "vue";
-import AttributeSearch from "./AttributeSearch.vue";
-import SearchResults from "../SearchResults.vue";
+import Autocomplete from "../ui/Autocomplete.vue";
 import ToggleButton from "../ui/ToggleButton.vue";
 import { state } from "@/state";
+import { unique, searchDns, searchAttrs } from "@/utils";
 import { getRange, deleteBlob } from "@/generated";
 import type { Entry } from "@/generated";
-
-function unique(
-  element: unknown,
-  index: number,
-  array: Array<unknown>,
-): boolean {
-  return element == "" || array.indexOf(element) == index;
-}
 
 const dateFormat: Intl.DateTimeFormatOptions = {
     weekday: "long",
@@ -170,7 +167,6 @@ const dateFormat: Intl.DateTimeFormatOptions = {
   props = defineProps<{
     entry: Entry;
     attr: Attribute;
-    baseDn?: string;
     values: string[];
     must: boolean;
     may: boolean;
@@ -267,7 +263,7 @@ function validate(): void {
   valid.value =
     !missing.value &&
     (!illegal.value || empty.value) &&
-    props.values.every(unique);
+    props.values.every((v, i, a) => unique(v, i, a, true));
 }
 
 function update(evt: Event): void {
@@ -318,7 +314,7 @@ function isAux(val: string): boolean {
 }
 
 function duplicate(index: number): boolean {
-  return !unique(props.values[index], index, props.values);
+  return !unique(props.values[index], index, props.values, true);
 }
 
 function multiple(index: number): boolean {

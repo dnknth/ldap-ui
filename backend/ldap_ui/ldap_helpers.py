@@ -79,7 +79,6 @@ class ResponseEntry:
     def is_updateable(self, attr: str, schema: SchemaInfo) -> bool:
         return (
             attr not in self.attributes
-            # FIXME Handle binary attributes properly
             or not self.is_binary(attr, schema)
         )
 
@@ -131,7 +130,7 @@ async def unique(
         if res is None:
             res = r
         else:
-            connection.abandon(msgid)  # FIXME is this needed?
+            connection.abandon(msgid)
             raise HTTPException(
                 HTTPStatus.INTERNAL_SERVER_ERROR,
                 "Non-unique result",

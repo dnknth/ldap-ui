@@ -27,10 +27,10 @@
     />
     <discard-entry-dialog
       v-model:modal="modal"
-      :dn="props.activeDn"
+      :dn="state.activeDn"
       :return-to="focused"
       @ok="discardEntry"
-      @shown="emit('update:activeDn')"
+      @shown="state.activeDn = undefined"
     />
 
     <!-- Modals for main editing area -->
@@ -108,7 +108,7 @@
         v-else
         class="control text-xl mr-2"
         title="close"
-        @click="emit('update:activeDn')"
+        @click="state.activeDn = undefined"
       >
         ⊗
       </div>
@@ -124,7 +124,6 @@
       <attribute-row
         v-for="key in keys"
         :key="key"
-        :base-dn="props.baseDn"
         :attr="state.schema?.attr(key)!"
         :entry="entry"
         :values="entry.attrs[key]!"
@@ -214,10 +213,6 @@ import {
 } from "@/generated";
 
 const inputTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"],
-  props = defineProps<{
-    activeDn?: string;
-    baseDn?: string;
-  }>(),
   entry = ref<Entry>(), // entry in editor
   focused = ref<string>(), // currently focused input
   invalid = ref<string[]>([]), // field IDs with validation errors
@@ -236,13 +231,12 @@ const inputTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"],
     return oc ? oc.name! : "";
   }),
   emit = defineEmits<{
-    "update:activeDn": [dn?: string];
     "show-attr": [name?: string];
     "show-oc": [name: string];
   }>();
 
 watch(
-  () => props.activeDn,
+  () => state.activeDn,
   (dn) => {
     if (!entry.value || dn != entry.value!.dn) focused.value = undefined;
 
@@ -281,14 +275,14 @@ function onFocus(evt: FocusEvent): void {
 function newEntry(newEntry: Entry): void {
   entry.value = newEntry;
   changed.value = [];
-  emit("update:activeDn");
+  state.activeDn = undefined;
   focus(addMandatoryRows());
 }
 
 function discardEntry(dn?: string): void {
   entry.value = undefined;
   changed.value = [];
-  emit("update:activeDn", dn);
+  state.activeDn = dn;
 }
 
 function addAttribute(attr: string): void {
@@ -385,7 +379,7 @@ async function save() {
       return;
     }
     entry.value!.isNew = false;
-    emit("update:activeDn", entry.value!.dn);
+    state.activeDn = entry.value!.dn;
   } else {
     const response = await postEntry({
       path: { dn: entry.value!.dn },
@@ -411,7 +405,7 @@ async function renameEntry(rdn: string) {
 
   const dnparts = entry.value!.dn.split(",");
   dnparts.splice(0, 1, rdn);
-  emit("update:activeDn", dnparts.join(","));
+  state.activeDn = dnparts.join(",");
 }
 
 async function deleteEntryByDn(dn: string) {
@@ -422,7 +416,7 @@ async function deleteEntryByDn(dn: string) {
   }
   document.title = "Directory";
   state.showInfo("👍 Deleted: " + dn);
-  emit("update:activeDn", "-" + dn);
+  state.activeDn = "-" + dn;
 }
 
 async function changePassword(oldPass: string, newPass: string) {

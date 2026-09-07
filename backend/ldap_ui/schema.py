@@ -92,7 +92,7 @@ class _Element(BaseModel):
     names: list[str] = Field(min_length=1)
     desc: str | None = None
     obsolete: bool
-    sup: list[str]  # TODO check
+    sup: list[str]
 
     @computed_field
     def name(self) -> str:
@@ -132,7 +132,6 @@ class Attribute(_Element):
             single_value=attr.single_value,
             no_user_mod=attr.no_user_modification,
             usage=Attribute.Usage[attr.usage or "USER_APPLICATIONS"],
-            # FIXME avoid null values below
             equality=attr.equality[0] if attr.equality else None,
             syntax=attr.syntax,
             # `substr` is not in ldap3's type stubs but exists on some schema
@@ -171,7 +170,7 @@ class Syntax(BaseModel):
     @computed_field
     def not_human_readable(self) -> bool:
         extensions = CaseInsensitiveDict(self.extensions or [])
-        return self.oid == OCTET_STRING or (  # FIXME why needs this hard-coding?
+        return self.oid == OCTET_STRING or (
             "TRUE" in extensions.get("X-NOT-HUMAN-READABLE", [])
         )
 
