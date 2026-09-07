@@ -64,6 +64,12 @@ INSECURE_TLS = config("INSECURE_TLS", cast=_boolean, default=False)
 # Binding
 #
 
+# Bind the initial LDAP connection with the login user's credentials instead
+# of anonymously. This requires BIND_PATTERN so the DN can be derived without
+# first searching the directory. It supports directories such as FreeIPA/389
+# DS configured to reject anonymous binds outright.
+BIND_AS_USER = config("BIND_AS_USER", cast=_boolean, default=False)
+
 
 def GET_BIND_PATTERN(username: str | None) -> str | None:
     """

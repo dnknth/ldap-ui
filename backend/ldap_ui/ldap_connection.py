@@ -53,7 +53,12 @@ def parse_url(url: str) -> tuple[str, str | None]:
     raise ValueError(f"Invalid URL: {url}")
 
 
-def open(url: str, get_info: InfoMode) -> Connection:
+def open(
+    url: str,
+    get_info: InfoMode,
+    bind_dn: str | None = None,
+    bind_password: str | None = None,
+) -> Connection:
     "Open a connection and negotiate TLS before binding"
 
     # Validate the server certificate by default; `INSECURE_TLS=1` downgrades
@@ -68,6 +73,8 @@ def open(url: str, get_info: InfoMode) -> Connection:
 
     connection = Connection(
         Server(url, get_info=get_info, tls=tls),
+        user=bind_dn,
+        password=bind_password,
         client_strategy=ldap3.ASYNC,
         raise_exceptions=True,
     )
@@ -84,9 +91,13 @@ def open(url: str, get_info: InfoMode) -> Connection:
 
 
 @asynccontextmanager
-async def ldap_connect() -> AsyncIterator[Connection]:
+async def ldap_connect(
+    bind_dn: str | None = None,
+    bind_password: str | None = None,
+) -> AsyncIterator[Connection]:
     """
-    Open an anonymous LDAP connection and resolve the base/schema if possible.
+    Open an LDAP connection, optionally bound with the supplied credentials,
+    and resolve the base/schema if possible.
 
     Best-effort resolution only: when the directory is ambiguous (multiple
     naming contexts), contradicts the configuration, or lacks a schema entry,
@@ -102,9 +113,14 @@ async def ldap_connect() -> AsyncIterator[Connection]:
         if (settings.BASE_DN is None and not base_dn) or settings.SCHEMA_DN is None
         else "NO_INFO"
     )
-    connection = open(url, get_info)
+    connection = open(url, get_info, bind_dn, bind_password)
     try:
-        connection.bind()
+        try:
+            connection.bind()
+        except LDAPInvalidCredentialsResult:
+            if bind_dn is not None:
+                await rate_limit()
+            raise
         dsa_info = connection.server.info
 
         if not settings.BASE_DN:

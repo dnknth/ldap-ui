@@ -85,9 +85,10 @@ LDAP access is controlled by the following optional environment variables, possi
 - `SCHEMA_DN`: Optional DN to obtain the directory schema, e.g. `cn=subSchema`.
 - `LOGIN_ATTR`: User name attribute, defaults to `uid`.
 - `USE_TLS`: Enable TLS, defaults to true for `ldaps` connections. Set it to a non-empty string to force `STARTTLS` on `ldap` connections.
+- `BIND_AS_USER`: Set to `true` to bind the initial LDAP connection with the login user's credentials instead of anonymously. Requires `BIND_PATTERN`. This supports directories that reject anonymous binds outright, e.g. FreeIPA with anonymous access disabled - see [Authentication methods](#authentication-methods).
 
 If `BASE_DN` or `SCHEMA_DN` are not provided explicitly, auto-detection from the root DSA is attempted.
-For this, the root DSA must be readable anonymously, e.g. with the following ACL line for OpenLDAP:
+For this, the root DSA must be readable anonymously (or by the login user when `BIND_AS_USER` is enabled), e.g. with the following ACL line for OpenLDAP:
 
 ```text
 access to dn.base="" by * read
@@ -124,8 +125,22 @@ The frontend can be developed independently with hot-reload support using `pnpm 
 
 The UI always uses a simple `bind` operation to authenticate with the LDAP directory. How the `bind` DN is obtained from a given user name depends on a combination of OS environment variables, possibly from a `.env` file:
 
-1. Search by some attribute. By default this is `uid` (overridable via `LOGIN_ATTR`, e.g. `LOGIN_ATTR=cn`). The search is anonymous, so the directory must grant anonymous read access to the search attribute within the search base. To avoid that, use `BIND_PATTERN` (item 2) or require a full-DN login.
+1. Search anonymously by some attribute. By default this is `uid` (overridable via `LOGIN_ATTR`, e.g. `LOGIN_ATTR=cn`). The directory must grant anonymous read access to the search attribute within the search base. To avoid that, use `BIND_PATTERN` (item 2).
 2. If `BIND_PATTERN` is set, no search is performed. `BIND_PATTERN=%s` requires a full DN (e.g. login `cn=admin,dc=example,dc=org`); `BIND_PATTERN=%s,dc=example,dc=org` allows `cn=admin`; `BIND_PATTERN=cn=%s,dc=example,dc=org` allows `admin`.
+
+Before any of the above happens, the backend opens its *first* LDAP connection anonymously by default. Some directories reject anonymous binds outright rather than merely restricting what they can read - for example FreeIPA, once anonymous access is disabled (`nsslapd-allow-anonymous-access: off`). On such a directory every request fails before the user's credentials are tried.
+
+Set `BIND_AS_USER=true` together with `BIND_PATTERN` to derive the user's DN before connecting and bind that initial connection directly with the credentials submitted in the login form. No service account is needed:
+
+```shell
+LDAP_URL=ldap://freeipa.example.org:389
+BASE_DN=dc=example,dc=org
+SCHEMA_DN=cn=schema
+BIND_PATTERN=uid=%s,cn=users,cn=accounts,dc=example,dc=org
+BIND_AS_USER=true
+```
+
+Normal mode remains the default when `BIND_AS_USER` is unset. `/api/probe` reports an error if user-bound mode is enabled without `BIND_PATTERN`.
 
 ### Searching
 
