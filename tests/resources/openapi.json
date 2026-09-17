@@ -1181,7 +1181,7 @@
     },
     "/api/probe": {
       "get": {
-        "description": "Probe the LDAP directory connectivity and configuration.",
+        "description": "LDAP connectivity and configuration, probed at startup and refreshed on a TTL.",
         "operationId": "probe",
         "responses": {
           "200": {

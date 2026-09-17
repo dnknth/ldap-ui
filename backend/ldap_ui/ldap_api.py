@@ -74,7 +74,7 @@ from .ldap_connection import (
     require_schema,
 )
 from .ldap_helpers import ResponseEntry, empty, get_raw_responses, get_responses, unique
-from .probe import run_probe
+from .probe import run_probe, run_startup_probe, startup_probe
 from .schema import INTEGER, Schema, normalize_dn
 
 # Special fields
@@ -839,8 +839,11 @@ def bounded_range(values: set[int], limit: int = RANGE_LIMIT) -> Range:
 
 @api.get("/probe", tags=[Tag.MISC], operation_id="probe", response_model=ProbeResult)
 async def probe() -> ProbeResult:
-    "Probe the LDAP directory connectivity and configuration."
-    return await run_probe()
+    "LDAP connectivity and configuration, probed at startup and refreshed on a TTL."
+    cached = startup_probe()
+    if cached is not None:
+        return cached
+    return await run_startup_probe()
 
 
 @api.get(

@@ -1,5 +1,7 @@
 "LDAP connectivity and configuration probe (`/api/probe`)."
 
+from time import monotonic
+
 import ldap3
 from fastapi import HTTPException
 from ldap3.core.exceptions import (
@@ -14,6 +16,32 @@ from .ldap_helpers import unique
 
 # Default search filter
 ANY = "(objectClass=*)"
+
+# /api/probe serves a cached probe result so it never re-probes per client.
+# The cache is refreshed at backend startup and again at most every PROBE_TTL
+# seconds, so a directory that comes up after the backend does is picked up on
+# refresh rather than wedging the frontend on a stale startup failure.
+PROBE_TTL = 300  # seconds
+
+_startup_probe: ProbeResult | None = None
+_startup_probe_at: float = 0.0  # monotonic() time of the last cached probe
+
+
+async def run_startup_probe() -> ProbeResult:
+    "Run the probe and cache the result (startup and on TTL expiry)."
+    global _startup_probe, _startup_probe_at
+    _startup_probe = await run_probe()
+    _startup_probe_at = monotonic()
+    return _startup_probe
+
+
+def startup_probe() -> ProbeResult | None:
+    "Cached probe result if still fresh, else None (stale or not yet run)."
+    if _startup_probe is None:
+        return None
+    if monotonic() - _startup_probe_at > PROBE_TTL:
+        return None
+    return _startup_probe
 
 
 async def run_probe() -> ProbeResult:

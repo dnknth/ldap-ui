@@ -9,6 +9,8 @@ No sessions, no cookies, nothing else.
 """
 
 import logging
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from http import HTTPStatus
 
 from fastapi import FastAPI, Request, Response
@@ -27,10 +29,28 @@ from ldap3.core.exceptions import (
 )
 
 from . import __version__, ldap_api, settings
+from .probe import run_startup_probe
 
 # Main ASGI entry
 
-app = FastAPI(debug=settings.DEBUG, title="LDAP UI", version=__version__)
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
+    # Probe the directory once at backend start (not on every client
+    # connection): /api/probe serves this cached result, refreshed at most every
+    # PROBE_TTL seconds, so the frontend banner reflects startup state and
+    # picks up a directory that comes up later. /api/health keeps probing live
+    # so the Docker healthcheck still detects the directory going down.
+    await run_startup_probe()
+    yield
+
+
+app = FastAPI(
+    debug=settings.DEBUG,
+    title="LDAP UI",
+    version=__version__,
+    lifespan=lifespan,
+)
 app.include_router(ldap_api.api)
 app.mount("/", StaticFiles(packages=["ldap_ui"], html=True))
 

@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from ldap3 import SchemaInfo
 from ldap3.core.connection import Connection
 from ldap3.core.exceptions import LDAPInvalidDnError
-from ldap_ui import ldap_api, ldap_connection, settings
+from ldap_ui import ldap_api, ldap_connection, probe, settings
 from ldap_ui.app import app
 from ldap_ui.entities import Attributes, Range
 from ldap_ui.ldap_api import (
@@ -353,8 +353,10 @@ class ProbeTest(unittest.TestCase):
     def test_probe_unreachable(self):
         # Point at a closed port; the probe reports ok=false with a diagnostic,
         # still a 200 HTTP response so the frontend can read the details.
+        # The probe runs once at lifespan startup, so the URL must be set
+        # before entering the client (the /api/probe endpoint serves the cache).
+        settings.LDAP_URL = "ldap://127.0.0.1:1/"
         with self.client:
-            settings.LDAP_URL = "ldap://127.0.0.1:1/"
             result = self.client.get("/api/probe")
             self.assertEqual(result.status_code, HTTPStatus.OK)  # 200
             body = result.json()
@@ -366,8 +368,8 @@ class ProbeTest(unittest.TestCase):
             )
 
     def test_probe_invalid_url(self):
+        settings.LDAP_URL = "not-a-url"
         with self.client:
-            settings.LDAP_URL = "not-a-url"
             result = self.client.get("/api/probe")
             self.assertEqual(result.status_code, HTTPStatus.OK)
             body = result.json()
@@ -379,37 +381,52 @@ class ProbeTest(unittest.TestCase):
             )
 
     def test_probe_insecure_tls_warning(self):
-        with self.client:
-            settings.LDAP_URL = "ldaps://127.0.0.1:1/"
-            settings.INSECURE_TLS = True
-            old = settings.config("INSECURE_TLS", default=False)
-            try:
+        settings.LDAP_URL = "ldaps://127.0.0.1:1/"
+        settings.INSECURE_TLS = True
+        old = settings.config("INSECURE_TLS", default=False)
+        try:
+            with self.client:
                 body = self.client.get("/api/probe").json()
-            finally:
-                settings.INSECURE_TLS = old
-            self.assertTrue(
-                any(
-                    d["severity"] == "warning"
-                    and "TLS certificate checking is disabled" in d["message"]
-                    for d in body["diagnostics"]
-                )
+        finally:
+            settings.INSECURE_TLS = old
+        self.assertTrue(
+            any(
+                d["severity"] == "warning"
+                and "TLS certificate checking is disabled" in d["message"]
+                for d in body["diagnostics"]
             )
+        )
 
     def test_probe_bind_pattern_warning(self):
-        with self.client:
-            old_config = settings.config
-            try:
-                settings.config = lambda k, default=None: "bad-pattern"
+        old_config = settings.config
+        try:
+            settings.config = lambda k, default=None: "bad-pattern"
+            with self.client:
                 body = self.client.get("/api/probe").json()
-            finally:
-                settings.config = old_config
-            self.assertTrue(
-                any(
-                    d["severity"] == "error"
-                    and "BIND_PATTERN setting is malformed" in d["message"]
-                    for d in body["diagnostics"]
-                )
+        finally:
+            settings.config = old_config
+        self.assertTrue(
+            any(
+                d["severity"] == "error"
+                and "BIND_PATTERN setting is malformed" in d["message"]
+                for d in body["diagnostics"]
             )
+        )
+
+    def test_probe_refreshes_when_stale(self):
+        # A cached result past PROBE_TTL triggers a fresh probe instead of
+        # serving the old snapshot, so a directory that comes up after the
+        # backend does is picked up on refresh rather than wedging the UI.
+        settings.LDAP_URL = "ldap://127.0.0.1:1/"
+        with self.client:
+            self.assertFalse(self.client.get("/api/probe").json()["ok"])
+            at_before = probe._startup_probe_at
+            # Force the cache past its TTL without waiting PROBE_TTL seconds.
+            probe._startup_probe_at -= probe.PROBE_TTL + 1
+            self.client.get("/api/probe")
+            # A stale cache re-probes, which advances the cached timestamp.
+            self.assertGreater(probe._startup_probe_at, at_before)
+
 
 
 class SchemaCacheTest(unittest.IsolatedAsyncioTestCase):
