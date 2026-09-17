@@ -5,8 +5,8 @@
 # Entry 1: o=Flintstones
 dn: o=Flintstones
 o: Flintstones
-objectclass: organization
-objectclass: top
+objectClass: organization
+objectClass: top
 
 dn: cn=admin,o=Flintstones
 cn: admin
@@ -19,23 +19,23 @@ userPassword: bedrock
 # Entry 2: cn=Flintstones-PG,o=Flintstones
 dn: cn=Flintstones-PG,o=Flintstones
 cn: flintstones-pg
-gidnumber: 1001
-objectclass: posixGroup
-objectclass: top
+gidNumber: 1001
+objectClass: posixGroup
+objectClass: top
 
 # Entry 3: ou=People,o=Flintstones
 dn: ou=People,o=Flintstones
-objectclass: organizationalUnit
-objectclass: top
+objectClass: organizationalUnit
+objectClass: top
 ou: People
 
 # Entry 4: cn=Bamm Bamm Rubble,ou=People,o=Flintstones
 dn: cn=Bamm Bamm Rubble,ou=People,o=Flintstones
 cn: Bamm Bamm Rubble
-gidnumber: 1001
-givenname: Bamm Bamm
-homedirectory: /home/users/flintstones/bammbamm
-jpegphoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQSERUUEhMUFRQVGRUXGBYWFxgY
+gidNumber: 1001
+givenName: Bamm Bamm
+homeDirectory: /home/users/flintstones/bammbamm
+jpegPhoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQSERUUEhMUFRQVGRUXGBYWFxgY
  GRsdFxgZGx0ZHxgeGyYeHRwlHBUWHy8gJicqLi0tHB4yNTAqNScrLCkBCQoKDgwOGg8PGi4lHyU
  vLzQ1NS0sLCwsLCwsLywpKSwsLCwsKSwsLCwsLCksKS8sKSwsLCwsLCwsLCwsLCwsLP/AABEIAL
  gAiAMBIgACEQEDEQH/xAAcAAABBAMBAAAAAAAAAAAAAAAABAUGBwEDCAL/xABDEAACAQMCAwYEA
@@ -144,25 +144,25 @@ jpegphoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQSERUUEhMUFRQVGRUXGBYWFxgY
  wxYoi7433z9KKK5rphX9KOrL52fUx7i7F2asjC2i1R7qdOcHz32z69OlPCoB/r/XlRRUiWOiNtv
  s9UUUV6eBRRRQH/9k=
 l: Bedrock
-loginshell: /bin/sh
+loginShell: /bin/sh
 mail: bammbamm.rubble@flintsones.example.com
 mailHost: flintstone.host
-objectclass: inetLocalMailRecipient
-objectclass: inetOrgPerson
-objectclass: posixAccount
-objectclass: top
+objectClass: inetLocalMailRecipient
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
 sn: Rubble
 uid: bammbamm
-uidnumber: 1105
-userpassword: bammbamm
+uidNumber: 1105
+userPassword: bammbamm
 
 # Entry 5: cn=Barney Rubble,ou=People,o=Flintstones
 dn: cn=Barney Rubble,ou=People,o=Flintstones
 cn: Barney Rubble
-gidnumber: 1001
-givenname: Barney
-homedirectory: /home/users/flintstones/barney
-jpegphoto:: /9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8L
+gidNumber: 1001
+givenName: Barney
+homeDirectory: /home/users/flintstones/barney
+jpegPhoto:: /9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8L
  CwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4
  eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wA
  ARCACGAGQDASIAAhEBAxEB/8QAHAAAAgIDAQEAAAAAAAAAAAAAAAYHCAEEBQID/8QAOhAAAgIBA
@@ -264,24 +264,24 @@ jpegphoto:: /9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8L
  5Fg5PlK7QLyQT3BGmKg+5b7vHTfpltjYkFf8HS9YswVRUWzeuy2JBHyC4QOxWPvZQzCNVDEL4+l
  QDRqOCjhp7mNtl1LNJJ4inYaNGjVpRI0aNGhC//2Q==
 l: Bedrock
-loginshell: /bin/sh
+loginShell: /bin/sh
 mail: barney.rubble@flintsones.example.com
 mailHost: flintstone.host
-objectclass: inetLocalMailRecipient
-objectclass: inetOrgPerson
-objectclass: posixAccount
-objectclass: top
+objectClass: inetLocalMailRecipient
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
 sn: Rubble
 uid: barney
-uidnumber: 1102
+uidNumber: 1102
 
 # Entry 6: cn=Betty Rubble,ou=People,o=Flintstones
 dn: cn=Betty Rubble,ou=People,o=Flintstones
 cn: Betty Rubble
-gidnumber: 1001
-givenname: Betty
-homedirectory: /home/users/flintstones/betty
-jpegphoto:: /9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8L
+gidNumber: 1001
+givenName: Betty
+homeDirectory: /home/users/flintstones/betty
+jpegPhoto:: /9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8L
  CwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4
  eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wA
  ARCADMAGQDASIAAhEBAxEB/8QAHQABAAICAwEBAAAAAAAAAAAAAAYHBQgBAgkEA//EAD8QAAEDB
@@ -385,24 +385,24 @@ jpegphoto:: /9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8L
  Q4WRYZkNqQZEtM+GmK4kbS/FnKLS2+h2dpSFjp0Wlr56rYoVBrTwtwq25U3ksa2OmfHccXCS7Kd
  cZhFwkuFhpSihrmJPwga2QnQ6VOR3rksLT2Slw855s3XFXjT3YOaUpXaaBSlKAUpSgP/Z
 l: Bedrock
-loginshell: /bin/sh
+loginShell: /bin/sh
 mail: betty.rubble@flintsones.example.com
 mailHost: flintstone.host
-objectclass: inetLocalMailRecipient
-objectclass: inetOrgPerson
-objectclass: posixAccount
-objectclass: top
+objectClass: inetLocalMailRecipient
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
 sn: Rubble
 uid: betty
-uidnumber: 1103
+uidNumber: 1103
 
 # Entry 7: cn=Fred Flintstone,ou=People,o=Flintstones
 dn: cn=Fred Flintstone,ou=People,o=Flintstones
 cn: Fred Flintstone
-gidnumber: 1001
-givenname: Fred
-homedirectory: /home/users/flintstones/fred
-jpegphoto:: /9j/4AAQSkZJRgABAQEASABIAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1
+gidNumber: 1001
+givenName: Fred
+homeDirectory: /home/users/flintstones/fred
+jpegPhoto:: /9j/4AAQSkZJRgABAQEASABIAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1
  c2luZyBJSkcgSlBFRyB2NjIpLCBxdWFsaXR5ID0gODAK/9sAQwAFAwQEBAMFBAQEBQUFBgcMCAc
  HBwcPCwsJDBEPEhIRDxERExYcFxMUGhURERghGBodHR8fHxMXIiQiHiQcHh8e/9sAQwEFBQUHBg
  cOCAgOHhQRFB4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eH
@@ -573,26 +573,26 @@ jpegphoto:: /9j/4AAQSkZJRgABAQEASABIAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1
  gFW0czjlz7cq1NtTWO0cdnkvbq4uGrRnmolwh0LcNNJnXjUVwbl3y4vOuuNxyfdoaHF7y01nBV+
  EFZAKtieQxViUpTVjGsGGjRQnOLjkpSlK9LC/9k=
 l: Bedrock
-loginshell: /bin/sh
+loginShell: /bin/sh
 mail: fred.flintstone@flintsones.example.com
 mailHost: flintstone.host
-objectclass: inetLocalMailRecipient
-objectclass: inetOrgPerson
-objectclass: posixAccount
-objectclass: top
+objectClass: inetLocalMailRecipient
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
 sn: Flintstone
 st: 345 Stonecave Road
 uid: fred
-uidnumber: 1100
-userpassword: yabbadabbado
+uidNumber: 1100
+userPassword: yabbadabbado
 
 # Entry 8: cn=Pebbles Flintstone,ou=People,o=Flintstones
 dn: cn=Pebbles Flintstone,ou=People,o=Flintstones
 cn: Pebbles Flintstone
-gidnumber: 1001
-givenname: Pebbles
-homedirectory: /home/users/flintstones/pebbles
-jpegphoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQQERUSExQWFBUWGBoZGBgXGBke
+gidNumber: 1001
+givenName: Pebbles
+homeDirectory: /home/users/flintstones/pebbles
+jpegPhoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQQERUSExQWFBUWGBoZGBgXGBke
  GRciHSMcIB8bHR4aIyojGyEqHxobIC8hIykqLDItGyA9NjEqNSgrLSoBCQoKDgwOGg8PGjUkHiQ
  yNC4tNCwsNTIyLCo1NSksLSwqLy8yNSwsNSwsLC8qLi8qLCwwLC0sKTAqMCw2LC0sLv/AABEIAK
  0ASAMBIgACEQEDEQH/xAAcAAACAwEBAQEAAAAAAAAAAAAFBgAEBwMCCAH/xABDEAACAQIEBAMFB
@@ -677,25 +677,25 @@ jpegphoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQQERUSExQWFBUWGBoZGBgXGBke
  E4dBENMbRuySILBSocG9ioAIN72F+gwPb2dQOSJJamRWN2RpdKPsB4hGFuLAbXt6Y9nhMhGaril
  DEL9i0pFFLDYWgqZYwR3tY/Lqe2NAxXocuigTlwxpEnXTGqqu/ooAxYwQqXuxG6mJiYmIuV//Z
 l: Bedrock
-loginshell: /bin/sh
+loginShell: /bin/sh
 mail: pebbles.flintstone@flintsones.example.com
 mailHost: flintstone.host
-objectclass: inetLocalMailRecipient
-objectclass: inetOrgPerson
-objectclass: posixAccount
-objectclass: top
+objectClass: inetLocalMailRecipient
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
 sn: Flintstone
 st: 345 Stonecave Road
 uid: pebbles
-uidnumber: 1104
+uidNumber: 1104
 
 # Entry 9: cn=Wilma Flintstone,ou=People,o=Flintstones
 dn: cn=Wilma Flintstone,ou=People,o=Flintstones
 cn: Wilma Flintstone
-gidnumber: 1001
-givenname: Wilma
-homedirectory: /home/users/flintstones/wilma
-jpegphoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQSERQUEhMWFBUUGRkXGRUXGRcf
+gidNumber: 1001
+givenName: Wilma
+homeDirectory: /home/users/flintstones/wilma
+jpegPhoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQSERQUEhMWFBUUGRkXGRUXGRcf
  FhseFSIZJR0YGxwXGyweGxsvJR0jHzMgIycrLTgsGB4xNjAqPCcrLCkBCQoKDgwOGg8PGi8lHiQ
  tLioqLTU1LDU1KjQvMTAsNSouLCwpKiwuLDArLzUsKSw0LCwvLCo1LSw1LCkpKSwsMP/AABEIAM
  sAUAMBIgACEQEDEQH/xAAcAAEAAgMBAQEAAAAAAAAAAAAABQYDBAcCAQj/xABBEAACAQIEBAMDB
@@ -764,32 +764,32 @@ jpegphoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQSERQUEhMWFBUUGRkXGRUXGRcf
  80U7zxLnicZnjUEuH8ILBVF2uoA9Dc7HSxcE4f0II4yblV8RF7FjqxF9bFiT763qVm2NrXFw3Wj
  pHOaGnZKUpWizSlKUIX//Z
 l: Bedrock
-loginshell: /bin/sh
+loginShell: /bin/sh
 mail: wilma.flintstone@flintsones.example.com
 mailHost: flintstone.host
-objectclass: inetLocalMailRecipient
-objectclass: inetOrgPerson
-objectclass: posixAccount
-objectclass: top
+objectClass: inetLocalMailRecipient
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
 sn: Flintstone
 st: 345 Stonecave Road
 uid: wilma
-uidnumber: 1101
-userpassword: pebble
+uidNumber: 1101
+userPassword: pebble
 
 # Entry 10: ou=Pets,o=Flintstones
 dn: ou=Pets,o=Flintstones
-objectclass: organizationalUnit
-objectclass: top
+objectClass: organizationalUnit
+objectClass: top
 ou: Pets
 
 # Entry 11: cn=Baby Puss Flintstone,ou=Pets,o=Flintstones
 dn: cn=Baby Puss Flintstone,ou=Pets,o=Flintstones
 cn: Baby Puss Flintstone
-gidnumber: 1001
-givenname: Baby Puss
-homedirectory: /home/users/flintstones/babypuss
-jpegphoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQSEBUUEhQUFRUUFRQWFRYYFhge
+gidNumber: 1001
+givenName: Baby Puss
+homeDirectory: /home/users/flintstones/babypuss
+jpegPhoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQSEBUUEhQUFRUUFRQWFRYYFhge
  FRQeHBoYGyAXFxccHCggHB8jHR0XHzAhJCcpLS0sFh4xNTAqNSYrOCoBCQoKDgwOGg8PGiwkHyQ
  1LC4uLCwsLC0vLDUqLDQsLDQsKSk0KjUsLDUsLDUsLCktLCwsLC00LCwsLiwvNCwsLP/AABEIAK
  AAnAMBIgACEQEDEQH/xAAcAAACAgMBAQAAAAAAAAAAAAAABgUHAQMEAgj/xABCEAACAQMCBAMGA
@@ -909,21 +909,21 @@ jpegphoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQSEBUUEhQUFRUUFRQWFRYYFhge
  /D9n8Mt/dvEe8fulLj9lpEQPg+eCM04YrNMOgjedzmgnyXG42tdQXBeSrS1bVDCAwzpZiXZAfyo
  zklF+QxU4BWaKltZeIooor1C//9k=
 l: Bedrock
-loginshell: /bin/sh
-objectclass: inetOrgPerson
-objectclass: posixAccount
-objectclass: top
+loginShell: /bin/sh
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
 sn: Flintstone
 uid: babypuss
-uidnumber: 1010
+uidNumber: 1010
 
 # Entry 12: cn=Hoppy Rubble,ou=Pets,o=Flintstones
 dn: cn=Hoppy Rubble,ou=Pets,o=Flintstones
 cn: Hoppy Rubble
-gidnumber: 1001
-givenname: Hoppy
-homedirectory: /home/users/flintstones/hoppy
-jpegphoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQSEBUTEhIWExUWGBkaFhYXGBkX
+gidNumber: 1001
+givenName: Hoppy
+homeDirectory: /home/users/flintstones/hoppy
+jpegPhoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQSEBUTEhIWExUWGBkaFhYXGBkX
  FxcZFhcZFhgbFhwbGyYhHBwkGxgZIy8gJCcpLi4tGiAyNTEqOCYrMCkBCQoKDgwOGg8PGi8kHyU
  1LDI2Li4sKSwqLS80LTAsKSoxLDA2NDA1KiotLCkwLC8sLio0NTUsMi8sNSspLDQvNP/AABEIAL
  cAeAMBIgACEQEDEQH/xAAcAAEAAgMBAQEAAAAAAAAAAAAABgcDBAUCAQj/xABEEAACAQMCBAMFB
@@ -1002,10 +1002,10 @@ jpegphoto:: /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBhQSEBUTEhIWExUWGBkaFhYXGBkX
  oF6pSlZLJKUpREpSlESlKURKUpRF5ZARg7g9x4VqPwSA94Ij840/wAqUr25CL1bcJhjOqOGND5q
  iqfxArbpSvESlKURKUpRF//Z
 l: Bedrock
-loginshell: /bin/sh
-objectclass: inetOrgPerson
-objectclass: posixAccount
-objectclass: top
+loginShell: /bin/sh
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
 sn: Rubble
 uid: hoppy
-uidnumber: 1009
+uidNumber: 1009
