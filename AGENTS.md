@@ -1,10 +1,10 @@
 # AGENTS.md
 
-Vue 3 + TypeScript frontend (`src/`) and FastAPI + LDAP3 backend (`backend/ldap_ui/`, imported as `ldap_ui`) — a stateless web UI for LDAP directories. Python ≥3.10 via `uv` (see `pyproject.toml`), Node via `pnpm` (see `package.json`).
+Vue 3 + TypeScript frontend (`src/`) and FastAPI + LDAP3 backend (`backend/ldap_ui/`, imported as `ldap_ui`) — a stateless web UI for LDAP directories.
 
 ## Commands
 
-Frontend (prefer fast checks over the CI script):
+Frontend:
 
 ```sh
 pnpm dev              # Vite dev server
@@ -17,7 +17,7 @@ pnpm test             # vitest (unit tests in src/*.test.ts)
 Backend:
 
 ```sh
-uv run python -m unittest tests.backend_test.RangeTest      # one class (no Docker needed)
+uv run python -m unittest tests.backend_test.RangeTest      # one class
 uv run python -m unittest tests.backend_test tests.openapi_test tests.schema_test  # full suite
 ruff check .                    # `ruff check --fix .` auto-fixes most findings, then re-run
 uvx pyright backend/ tests/                                 # type-check (via `uvx`, not in the venv)
@@ -27,33 +27,31 @@ Run the server: `make debug` (builds `statics` first) or `uv run ldap-ui --reloa
 
 ## Testing quirks
 
-- **Docker required** for `ReadOnlyTest` and `ModificationTest`: they spin up the `dnknth/ldap-demo` container via testcontainers (`LdapMixin` in `tests/backend_test.py`) and point `settings.LDAP_URL` at it. Run these only with Docker Desktop running. `LdapMixin.setUpClass` also resets `settings.BASE_DN`/`settings.SCHEMA_DN` to `None` before connecting — a developer's `.env` (e.g. `BASE_DN=dc=foo`) would otherwise make every directory search 404 with "No Such Object". Keep that reset.
-- Docker-independent classes: `RangeTest`, `NormalizeDnTest`, `StripSensitiveTest`, `ProbeTest`, `SchemaCacheTest`.
-- Several tests mutate module state (`settings.LDAP_URL`, `settings.config`, the `SCHEMA` cache, auth refs) — they are written to restore it; when adding tests, follow that pattern or you'll leak state into later classes.
-- Testcontainers/ryuk is deliberately disabled (`ryuk_disabled = True`) — do not "fix" that.
+- `ReadOnlyTest`/`LoginModeTest`/`ModificationTest` run against `tests/mock_ldap.py`, an in-process ldap3 `MockAsyncStrategy` directory (the `o=Flintstones` fixture from `demo-ldap/flintstones.ldif` plus a `cn=Subschema` entry from the bundled OpenLDAP 2.4 schema). `LdapMixin` (`tests/backend_test.py`): `setUpClass` rebuilds the directory (`mock_ldap.reset()`) so modifications never leak between classes, resets `settings.BASE_DN`/`SCHEMA_DN` to `None` (a dev `.env` `BASE_DN` would 404 every search — keep that), neutralizes `settings.config` (a dev `BIND_PATTERN` changes login mode), and patches `ldap_connection.open` **and** its `ldap_api` re-export to `mock_ldap.mock_open`; `tearDownClass` restores them (ProbeTest needs the real `open`). `mock_ldap.py` substitutes `MockLdapStrategy` for the stock `MockAsyncStrategy` when building each connection; the stock mock can't satisfy the app: single-response ops store an empty entry list, `'+'` searches return the full attribute list plus `hasSubordinates`, `singleLevel` excludes the base, and filter aliases like `gn` resolve to `givenName`.
+- Tests mutate module state (`settings.LDAP_URL`, `settings.config`, the `SCHEMA` cache, auth refs) and restore it — follow that pattern or you'll leak state into later classes.
 
 ## OpenAPI fixture workflow (critical gotcha)
 
-- `tests/openapi_test.py` writes `tests/resources/openapi-actual.json` (gitignored via `*-actual.*`) and asserts the running app's `/openapi.json` matches the committed `tests/resources/openapi.json`. Update the fixture with `cp openapi-actual.json openapi.json` (formatting churn is acceptable).
-- The OpenAPI spec is **derived**: FastAPI builds `/openapi.json` from the routes in `ldap_api.py` **and** the Pydantic models in `backend/ldap_ui/entities.py` (field names, `Literal`s, `Field` constraints, `BaseModel` class names become schema titles/$refs). So model changes (renames, added/removed fields, adjusted constraints) change the spec exactly like route changes do — regenerate the fixture and SDK after any of them.
-- **Version bump**: `__version__` lives in `backend/ldap_ui/__init__.py`; it is embedded in the OpenAPI `info.version`, so bumping requires updating the fixture too.
-- After changing the API, regenerate the TS SDK: `pnpm generate` (`openapi-ts -i tests/resources/openapi.json -o ./src/generated`). `src/generated/` is gitignored and rebuilt by `pnpm build` — never commit it.
-- The `@/generated` barrel (`src/generated/index.ts`) re-exports only the call functions (`sdk.gen`) and model types (`types.gen`) — it does **not** export the `client` instance. The direct imports (`./generated/client.gen` in `main.ts`/`auth.ts`, `./generated/sdk.gen` in `state.ts`) are intentional, not a wart; don't "simplify" them to the barrel.
+- `tests/openapi_test.py` writes `tests/resources/openapi-actual.json` (gitignored) and asserts the app's `/openapi.json` matches the committed `tests/resources/openapi.json`. Update with `cp openapi-actual.json openapi.json` (formatting churn is acceptable).
+- The spec is **derived**: FastAPI builds it from the `ldap_api.py` routes **and** the Pydantic models in `entities.py` (names, `Literal`s, `Field` constraints, model titles/$refs) — model changes change the spec like route changes. Regenerate fixture + SDK after either.
+- **Version bump**: `__version__` (`backend/ldap_ui/__init__.py`) is embedded in `info.version`, so bumping needs the fixture updated too.
+- After API changes regenerate the TS SDK: `pnpm generate` (`openapi-ts -i tests/resources/openapi.json -o ./src/generated`). `src/generated/` is gitignored, rebuilt by `pnpm build` — never commit it.
+- The `@/generated` barrel re-exports only the call functions (`sdk.gen`) and model types (`types.gen`), not the `client` instance — the direct imports of `./generated/client.gen`/`sdk.gen` are intentional.
 
 ## Backend architecture notes
 
 - Package is `backend/ldap_ui/` (pyproject `package-dir = {"" = "backend"}`); run from repo root, not from `backend/`.
 - Stateless by design: a fresh LDAP connection per request (`ldap_connect` in `ldap_connection.py`), `bound()` unbinds in a `finally`.
-- `/api/whoami` is a **soft** endpoint: returns `200 ""` when unauthenticated and never 401s (that is what prevents the browser's native Basic-auth dialog on the startup probe). The login dialog validates credentials against it.
-- The app's own 401s deliberately omit `WWW-Authenticate` (`app.py`/`ldap_api.py`), because the frontend only consumes the status code and the `/api/whoami` empty DN — never the header. Do not re-add it: it would make the browser open its native Basic-auth dialog whenever the login form submits invalid credentials. This is safe with upstream Basic auth: a reverse proxy that performs Basic auth issues its *own* `WWW-Authenticate` and forwards the browser's credentials to the app; the app's `whoami` probe then returns the DN and the login dialog is skipped. The header belongs to the auth-enforcing proxy, not this app.
+- `/api/whoami` is a **soft** endpoint: `200 ""` when unauthenticated, never 401 (prevents the browser's native Basic-auth dialog on the startup probe); the login dialog validates against it.
+- The app's 401s deliberately omit `WWW-Authenticate` (`app.py`/`ldap_api.py`) — it would pop the native dialog on invalid login. The header belongs to an auth-enforcing reverse proxy; the app's `whoami` probe then returns the DN and the login dialog is skipped.
 - `SCHEMA` global cache is guarded by an `anyio.Lock` via `ensure_schema()` — use that, not direct lazy init.
-- `LDAP_URL` (mis)configuration is surfaced by `/api/probe`, which returns a `ProbeResult` with `ok` + `diagnostics[]` (never a non-200, so the frontend can read the details). `ok` is **usability**, not reachability: it is false whenever any `severity="error"` diagnostic exists (unreachable directory, missing/unusable base or schema, unconfigurable login — anything that leaves nothing working), not only when the directory is down. `/api/health` maps that 503 for Docker.
-- TLS is **verified by default**: `open()` in `ldap_connection.py` builds `Server(url, tls=Tls(validate=ssl.CERT_REQUIRED))`; only `INSECURE_TLS=1` downgrades to `CERT_NONE` (the flag's documented purpose). ldap3 otherwise silently defaults to `CERT_NONE` — never drop the `tls=` argument "for simplicity" or TLS connections become MITM-able. A deployment with a self-signed cert must set `INSECURE_TLS=1` (the `/api/probe` `insecure-tls` warning flags it).
-- `pyright backend/ tests/` is clean. Module-level `settings.BASE_DN`/`SCHEMA_DN` and the `SCHEMA` global (in `ldap_connection.py`) are typed `str | None`/`SchemaInfo | None`; requests go through the `require_base_dn()`/`require_schema_dn()`/`require_schema()` accessors (which raise if unresolvable) rather than reading the raw attributes, or pyright rejects the `str | None` assumptions. Don't reintroduce silent optional-attribute reads.
-- Auth plumbing lives in `ldap_connection.py`: `get_basic_credentials`, `anonymous_user_search`/`find_bind_dn`, the `SCHEMA` cache + `ensure_schema()`/`get_schema()`, and the `require_*` accessors. `ldap_api.py` keeps only the FastAPI dependency generators (`authenticated`, `optional_authenticated`, `AuthenticatedConnection`).
-- `check_password`'s `_auth: AuthenticatedConnection` parameter (`ldap_api.py`) is deliberately unused: it only enforces that the caller is authenticated before probing a password. The check itself opens a separate anonymous `NO_INFO` connection (`parse_url`+`open`) and binds it to `dn`/`check`, because `ldap_connect` would bind anonymously and mutate settings during base/schema resolution. Keep the underscore-prefixed dependency — removing it drops the auth gate.
-- `settings.log_warnings()` (`settings.py:141`) is reached only from the `ldap-ui` console script (`pyproject.toml` `[project.scripts]` → `__main__.py`), never via request paths — not dead code; keep it.
-- Concurrency primitives are **anyio only** — no `asyncio` imports anywhere (backend or tests). Use `anyio.sleep`, `anyio.Lock`, `anyio.create_task_group` (there is no `gather`; spawn via task group). Timeouts use `with anyio.fail_after(SECONDS):` — anyio cancel scopes are **synchronous** context managers even in async code, so `async with` will not work. `OPERATION_TIMEOUT` in `ldap_helpers.py` bounds a single LDAP operation and turns expiry into a 504. Polling idiom: `get_response(msgid, timeout=0)` + `await anyio.sleep(0.01)` inside the `fail_after`.
+- `/api/probe` surfaces `LDAP_URL` (mis)configuration as a `ProbeResult` (`ok` + `diagnostics[]`, never non-200). `ok` is **usability**, not reachability: false whenever any `severity="error"` diagnostic exists. `/api/health` maps that to 503 for Docker.
+- TLS is **verified by default**: `open()` builds `Server(url, tls=Tls(validate=ssl.CERT_REQUIRED))`; only `INSECURE_TLS=1` downgrades to `CERT_NONE`. ldap3 otherwise silently defaults to `CERT_NONE` — never drop the `tls=` argument or TLS is MITM-able. Self-signed certs therefore require `INSECURE_TLS=1`.
+- `pyright backend/ tests/` is clean. `settings.BASE_DN`/`SCHEMA_DN` and the `SCHEMA` global are typed `str | None`/`SchemaInfo | None`; read them only via `require_base_dn()`/`require_schema_dn()`/`require_schema()`, or pyright rejects the optional access.
+- Auth plumbing lives in `ldap_connection.py`: `get_basic_credentials`, `anonymous_user_search`/`find_bind_dn`, the `SCHEMA` cache + `ensure_schema()`/`get_schema()`, and the `require_*` accessors. `ldap_api.py` keeps only the FastAPI dependency generators.
+- `check_password`'s `_auth: AuthenticatedConnection` parameter is deliberately unused: it enforces authentication before probing. The check binds a separate anonymous `NO_INFO` connection to `dn`/`check`, since `ldap_connect` would mutate settings during base/schema resolution. Keep the underscore dependency — removing it drops the auth gate.
+- `settings.log_warnings()` (`settings.py:141`) runs only from the `ldap-ui` console script, never request paths — not dead code.
+- Concurrency is **anyio only** — no `asyncio` imports (backend or tests). Use `anyio.sleep`/`Lock`/`create_task_group` (no `gather`). Timeouts: `with anyio.fail_after(SECONDS):` — cancel scopes are **synchronous** context managers even in async code. `OPERATION_TIMEOUT` (`ldap_helpers.py`) bounds a single LDAP op and turns expiry into a 504.
 
 ## Frontend architecture notes
 
@@ -64,6 +62,6 @@ Run the server: `make debug` (builds `statics` first) or `uv run ldap-ui --reloa
 ## Repo conventions
 
 - Commits get amended freely (see `git log`); the working tree usually carries incremental changes over `HEAD`.
-- Security audit (Aug 2026) is complete; reviewed issues are resolved and the remaining ones are **accepted** (decision: not worth fixing now). Remaining findings: (1) `DEBUG` flag enables verbose error detail if enabled — guard it in production (`DEBUG` only via env); (2) cleartext Basic credentials over plain HTTP, acceptable only because the documented deployment binds to `127.0.0.1` loopback or sits behind a TLS-terminating proxy — never publish the port beyond loopback without TLS; (3) `/api/probe` and `/api/health` deliberately expose configuration state to unauthenticated callers (base/schema resolution, anonymous-bind denial, `INSECURE_TLS`, `BIND_PATTERN` presence) — by design, required for the frontend banner and the Docker healthcheck, and only relevant if the port is ever published beyond loopback without a proxy. CSRF and missing security headers were investigated and are not applicable / already mitigated (auth is header-based, no ambient credentials; CSP + `Referrer-Policy` are on the SPA, `nosniff` + `no-store` on `/api`).
+- Security audit (Aug 2026) complete; remaining findings **accepted**: (1) `DEBUG` enables verbose errors — guard in production; (2) cleartext Basic creds over plain HTTP only on loopback or behind a TLS proxy; (3) `/api/probe`/`/api/health` expose config to unauthenticated callers (needed for the frontend banner and Docker healthcheck). CSRF / missing security headers: not applicable or mitigated (header-based auth; CSP + `Referrer-Policy` on the SPA, `nosniff` + `no-store` on `/api`).
 - `.env` is gitignored; settings load a `.env` only if present (avoids a startup warning).
 - CI (`.github/workflows/ci.yml`) runs `pnpm build`+`test` and the Python suite via `xmlrunner`; it does **not** run `ruff` or the OpenAPI comparison, so those are local-only checks.
