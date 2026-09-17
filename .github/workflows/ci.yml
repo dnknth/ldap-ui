@@ -6,24 +6,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: pnpm/setup@v2
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
         with:
-          version: "^11.0.0"
+          version: "^12.0.0"
       - name: Build frontend
         run: |
           pnpm audit --prod
           pnpm build
-          pnpm test --reporter=junit --outputFile.junit=TEST-vitest-results.xml
+          # `pnpm run test` (not `pnpm test`): pnpm v12 intercepts its own
+          # `--reporter` option and would reject vitest's `--reporter=junit`.
+          pnpm run test --reporter=junit --outputFile.junit=TEST-vitest-results.xml
       - name: Install uv
-        uses: astral-sh/setup-uv@v1
+        # setup-uv doesn't publish a `v10` major tag, so pin the full version.
+        uses: astral-sh/setup-uv@v10.1.0
         with:
           version: "latest"
       - name: Run tests
         run: |
           uv run -w unittest-xml-reporting -m xmlrunner discover -s tests -p '*_test.py'
       - name: Publish test results
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v3
         with:
           name: Tests
           path: "TEST-*.xml"

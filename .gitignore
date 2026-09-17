@@ -39,3 +39,7 @@ generated
 # Coverage
 .coverage
 coverage
+
+# Vitest
+.vitest
+TEST-*.xml
