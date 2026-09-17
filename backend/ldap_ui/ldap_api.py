@@ -45,6 +45,7 @@ from ldap3.core.exceptions import (
     LDAPOperationResult,
 )
 from ldap3.protocol.rfc3062 import PasswdModifyRequestValue
+from ldap3.utils.ciDict import CaseInsensitiveDict
 from ldap3.utils.conv import escape_filter_chars, to_raw
 from ldap3.utils.dn import parse_dn, safe_dn
 from ldif import LDIFParser
@@ -378,7 +379,7 @@ async def rename_entry(
     # The new entry must carry the renamed attribute's value so the RDN and
     # the attribute stay consistent: renaming cn=test → sn=baz must yield a
     # new entry whose sn is "baz", not the old value ("test").
-    attrs = dict(entry.raw_attributes)
+    attrs = CaseInsensitiveDict(entry.raw_attributes)
     renamed_attr = new_rdn[0][0].lower()
     attrs[renamed_attr] = [new_rdn[0][1].encode()]
 

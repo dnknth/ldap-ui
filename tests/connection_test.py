@@ -8,6 +8,7 @@ from ldap3.core.exceptions import (
     LDAPNoSuchObjectResult,
     LDAPResponseTimeoutError,
 )
+from ldap3.utils.ciDict import CaseInsensitiveDict
 from ldap_ui import ldap_api, ldap_connection, ldap_helpers, probe, settings
 
 
@@ -427,6 +428,44 @@ class ChangePasswordAsyncTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(oid, ldap_api.PASSWORD_MODIFY_OID)
         self.assertEqual(str(value["oldPasswd"]), "secret")
         self.assertEqual(str(value["newPasswd"]), "new")
+
+
+class RenameEntryTest(unittest.IsolatedAsyncioTestCase):
+    """`rename_entry` must keep the new entry's attributes case-insensitive.
+
+    The directory's raw_attributes is a CaseInsensitiveDict, and the rename
+    RDN may differ in case from the server's key (e.g. RDN "CN=baz" against a
+    "CN" attribute). Copying to a plain dict would then add a duplicate
+    differently-cased key instead of updating the existing one, so the new
+    entry would carry both "CN" and "cn".
+    """
+
+    def _connection(self):
+        connection = MagicMock(name="Connection")
+        raw = CaseInsensitiveDict({"CN": [b"test"]})
+        response = [
+            {
+                "dn": "cn=test,o=Flintstones",
+                "attributes": {"CN": ["test"]},
+                "raw_attributes": raw,
+            }
+        ]
+        connection.search.return_value = 1
+        connection.get_response.side_effect = (
+            lambda msgid, timeout=0: (response, None) if msgid == 1 else ([], None)
+        )
+        connection.add.return_value = 2
+        connection.delete.return_value = 3
+        return connection
+
+    async def test_renamed_attribute_updates_case_insensitively(self):
+        connection = self._connection()
+        await ldap_api.rename_entry("cn=test,o=Flintstones", "CN=baz", connection)
+
+        attrs = connection.add.call_args.kwargs["attributes"]
+        # Exactly one key, updated in place despite the case mismatch.
+        self.assertEqual(list(attrs), ["CN"])
+        self.assertEqual(attrs["CN"], [b"baz"])
 
 
 if __name__ == "__main__":
