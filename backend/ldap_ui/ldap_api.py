@@ -67,6 +67,7 @@ from .ldap_connection import (
     ensure_schema,
     find_bind_dn,
     get_basic_credentials,
+    get_initial_bind_dn,
     ldap_connect,
     open,
     parse_url,
@@ -175,17 +176,6 @@ async def optional_authenticated(
 
         async with bound(connection, dn, password):
             yield connection
-
-
-def get_initial_bind_dn(username: str) -> str | None:
-    """Resolve the login user's DN before connecting when BIND_AS_USER is set."""
-    if not settings.BIND_AS_USER:
-        return None
-
-    if bind_dn := settings.GET_BIND_PATTERN(username):
-        return bind_dn
-
-    raise ValueError("BIND_AS_USER requires BIND_PATTERN")
 
 
 def build_content_disposition(filename: str) -> dict[str, str]:

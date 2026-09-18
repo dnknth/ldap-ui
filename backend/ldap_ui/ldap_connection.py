@@ -8,6 +8,7 @@ import ssl
 from binascii import Error as BinasciiError
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from http import HTTPStatus
 from random import random
 from typing import Literal
 
@@ -216,6 +217,34 @@ async def find_bind_dn(connection: Connection, username: str) -> str | None:
     return settings.GET_BIND_PATTERN(username) or await anonymous_user_search(
         connection, username
     )
+
+
+def get_initial_bind_dn(username: str) -> str | None:
+    """Resolve the login user's DN before connecting when BIND_AS_USER is set.
+
+    A missing or malformed BIND_PATTERN is a server configuration problem,
+    not an error in the submitted credentials: surface it as a clean 503
+    rather than letting a bare ValueError bubble up as an opaque 500.
+    """
+    if not settings.BIND_AS_USER:
+        return None
+
+    try:
+        bind_dn = settings.GET_BIND_PATTERN(username)
+    except ValueError as exc:
+        raise HTTPException(
+            HTTPStatus.SERVICE_UNAVAILABLE,
+            f"The BIND_PATTERN setting is misconfigured: {exc}",
+        ) from exc
+
+    if not bind_dn:
+        raise HTTPException(
+            HTTPStatus.SERVICE_UNAVAILABLE,
+            "BIND_AS_USER requires BIND_PATTERN so the login user's DN can "
+            "be resolved before connecting.",
+        )
+
+    return bind_dn
 
 
 # Schema cache: lazy-initialized once, guarded by a lock because several

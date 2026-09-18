@@ -726,6 +726,26 @@ class LoginModeTest(LdapMixin, unittest.TestCase):
         result = self._whoami("admin", "wrong")
         self.assertEqual(HTTPStatus.UNAUTHORIZED, result.status_code, result.text)
 
+    def test_bind_as_user_requires_bind_pattern(self):
+        """BIND_AS_USER without BIND_PATTERN is a server config problem:
+        a clean 503 on login, not an opaque ValueError 500."""
+        settings.BIND_AS_USER = True
+        self._set_bind_pattern(None)
+        result = self._whoami("admin", "bedrock")
+        self.assertEqual(
+            HTTPStatus.SERVICE_UNAVAILABLE, result.status_code, result.text
+        )
+
+    def test_bind_as_user_malformed_bind_pattern(self):
+        """BIND_AS_USER with a BIND_PATTERN missing its %s placeholder is
+        misconfiguration: also surfaced as a 503, not a 500."""
+        settings.BIND_AS_USER = True
+        self._set_bind_pattern("cn=admin")
+        result = self._whoami("admin", "bedrock")
+        self.assertEqual(
+            HTTPStatus.SERVICE_UNAVAILABLE, result.status_code, result.text
+        )
+
 
 class ModificationTest(LdapMixin, unittest.TestCase):
     client = TestClient(app)
