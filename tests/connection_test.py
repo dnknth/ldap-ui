@@ -203,6 +203,31 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
         connection.get_response.side_effect = LDAPNoSuchObjectResult
         return connection
 
+    def _healthy_probe_connection(self):
+        "Mocked anonymous connection whose searches all succeed."
+        connection = MagicMock(name="Connection")
+        connection.search.return_value = 1
+        connection.get_response.return_value = (
+            [
+                {
+                    "dn": "dc=example,dc=com",
+                    "attributes": {"objectClass": ["top"]},
+                    "raw_attributes": {"objectClass": [b"top"]},
+                }
+            ],
+            None,
+        )
+        return connection
+
+    def _anonymous_denied_probe_connection(self):
+        "Mocked anonymous connection that can bind but not read past the DSE."
+        connection = MagicMock(name="Connection")
+        connection.search.return_value = 1
+        connection.get_response.side_effect = LDAPInappropriateAuthenticationResult(
+            [{"desc": "anonymous bind denied"}]
+        )
+        return connection
+
     async def test_wrong_base_dn_reports_base_dn_not_unreachable(self):
         # A manually configured BASE_DN that doesn't exist is reported as a
         # configured-base problem, not an unreachable directory.
@@ -263,11 +288,11 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
             messages,
         )
 
-    async def test_user_bind_mode_skips_anonymous_access_checks(self):
-        # FreeIPA commonly permits an anonymous root-DSE connection but
-        # rejects anonymous reads below it. Those reads say nothing about
-        # BIND_AS_USER requests, which perform them as the login user.
-        connection = self._probe_connection()
+    async def test_user_bind_mode_runs_checks_when_anonymous_allowed(self):
+        # BIND_AS_USER selects the initial bind, not "skip validation": on a
+        # directory that lets the anonymous probe read, the base/schema checks
+        # still run and a healthy directory stays green.
+        connection = self._healthy_probe_connection()
         with (
             patch.object(
                 probe,
@@ -288,7 +313,105 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result.ok)
         self.assertEqual(result.diagnostics, [])
-        connection.search.assert_not_called()
+        self.assertTrue(connection.search.called)
+
+    async def test_user_bind_mode_typo_base_dn_error(self):
+        # A wrong BASE_DN is a real misconfiguration no matter how requests
+        # bind: the anonymous probe can read here, so the failure is not an
+        # anonymous-access artifact and must still fail the probe.
+        connection = self._probe_connection()
+        with (
+            patch.object(
+                probe,
+                "ldap_connect",
+                side_effect=lambda: self._connect(connection),
+            ),
+            patch.object(settings, "BASE_DN", "dc=nope"),
+            patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
+            patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", True),
+            patch.object(
+                settings,
+                "config",
+                lambda k, default=None: {
+                    "BASE_DN": "dc=nope",
+                    "BIND_PATTERN": "%s",
+                }.get(k, default),
+            ),
+        ):
+            result = await probe.run_probe()
+
+        self.assertFalse(result.ok)
+        self.assertTrue(
+            any("configured base entry does not exist" in d.message for d in result.diagnostics),
+            result.diagnostics,
+        )
+
+    async def test_user_bind_mode_suppresses_anonymous_denied_reads(self):
+        # FreeIPA commonly permits an anonymous root-DSE connection but
+        # rejects anonymous reads below it. Those denials say nothing about
+        # BIND_AS_USER requests, which bind as the login user, so they must
+        # not fail the probe.
+        connection = self._anonymous_denied_probe_connection()
+        with (
+            patch.object(
+                probe,
+                "ldap_connect",
+                side_effect=lambda: self._connect(connection),
+            ),
+            patch.object(settings, "BASE_DN", "dc=example,dc=com"),
+            patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
+            patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", True),
+            patch.object(
+                settings,
+                "config",
+                lambda k, default=None: "%s" if k == "BIND_PATTERN" else default,
+            ),
+        ):
+            result = await probe.run_probe()
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.diagnostics, [])
+
+    async def test_user_bind_mode_unset_base_schema_warning(self):
+        # In user-bound mode the probe usually cannot auto-detect base/schema
+        # (anonymous access is restricted): warn instead of failing, since the
+        # documented FreeIPA configuration sets both explicitly anyway.
+        connection = self._healthy_probe_connection()
+        with (
+            patch.object(
+                probe,
+                "ldap_connect",
+                side_effect=lambda: self._connect(connection),
+            ),
+            patch.object(settings, "BASE_DN", None),
+            patch.object(settings, "SCHEMA_DN", None),
+            patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", True),
+            patch.object(
+                settings,
+                "config",
+                lambda k, default=None: "%s" if k == "BIND_PATTERN" else default,
+            ),
+        ):
+            result = await probe.run_probe()
+
+        self.assertTrue(result.ok)
+        self.assertTrue(
+            any(
+                "BASE_DN" in d.message and d.severity == "warning"
+                for d in result.diagnostics
+            ),
+            result.diagnostics,
+        )
+        self.assertTrue(
+            any(
+                "SCHEMA_DN" in d.message and d.severity == "warning"
+                for d in result.diagnostics
+            ),
+            result.diagnostics,
+        )
 
     @staticmethod
     @asynccontextmanager
