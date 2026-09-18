@@ -635,6 +635,19 @@ class ReadOnlyTest(LdapMixin, unittest.TestCase):
             result = self.client.get("/api/range/cn", auth=AUTH)
             self.assertHTTPStatus(result, HTTPStatus.NOT_FOUND)
 
+    def test_get_unknown_range(self):
+        """A range for a name not in the schema is a 404, not a 500."""
+        with self.client:
+            result = self.client.get("/api/range/zzz", auth=AUTH)
+            self.assertHTTPStatus(result, HTTPStatus.NOT_FOUND)
+
+    def test_get_empty_integer_range(self):
+        """A range for an integer attribute (shadowMax) no entry carries is a
+        404, exercising the empty-values branch of a numeric attribute."""
+        with self.client:
+            result = self.client.get("/api/range/shadowMax", auth=AUTH)
+            self.assertHTTPStatus(result, HTTPStatus.NOT_FOUND)
+
 
 class LoginModeTest(LdapMixin, unittest.TestCase):
     "End-to-end login for every authentication mode documented in the README"
