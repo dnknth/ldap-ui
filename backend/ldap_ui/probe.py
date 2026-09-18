@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from ldap3.core.exceptions import (
     LDAPException,
     LDAPInappropriateAuthenticationResult,
+    LDAPInsufficientAccessRightsResult,
     LDAPInvalidCredentialsResult,
 )
 
@@ -17,6 +18,16 @@ from .ldap_helpers import unique
 
 # Default search filter
 ANY = "(objectClass=*)"
+
+# Failures the anonymous probe connection can hit when the directory restricts
+# anonymous access to the root DSE. In BIND_AS_USER mode these are expected —
+# real requests bind as the login user — so they are skipped rather than
+# reported as configuration errors.
+ANONYMOUS_ACCESS_ERRORS = (
+    LDAPInappropriateAuthenticationResult,
+    LDAPInvalidCredentialsResult,
+    LDAPInsufficientAccessRightsResult,
+)
 
 # /api/probe serves a cached probe result so it never re-probes per client.
 # The cache is refreshed at backend startup and again at most every PROBE_TTL
@@ -52,10 +63,12 @@ async def run_probe() -> ProbeResult:
     A full probe opens an anonymous connection, resolves the base DN and
     schema, and sanity-checks the settings. When BIND_AS_USER is enabled,
     authenticated requests instead open their initial connection with the
-    login user's credentials.
-    Returns a ProbeResult whose `ok` is true when the directory is usable, and
-    whose `diagnostics` list carries individual findings (severity,
-    message) for misconfigurations worth surfacing to the operator.
+    login user's credentials; the probe still runs its base/schema checks on
+    the anonymous connection, skipping failures caused purely by anonymous
+    access being denied. Returns a ProbeResult whose `ok` is true when the
+    directory is usable, and whose `diagnostics` list carries individual
+    findings (severity, message) for misconfigurations worth surfacing to the
+    operator.
     """
     diagnostics: list[Diagnostic] = []
     try:
@@ -64,19 +77,33 @@ async def run_probe() -> ProbeResult:
             # whole tree 404 while the connection itself succeeds.
             # (`ldap_connect` resolves it best-effort; ambiguous directories
             # leave it unset, which is diagnosed here.)
-            # In BIND_AS_USER mode these access checks with the probe's
-            # anonymous connection would produce false errors on directories
-            # that allow only anonymous root-DSE access. Authenticated
-            # requests perform them with the login user's credentials.
-            if not settings.BIND_AS_USER and not settings.BASE_DN:
-                diagnostics.append(
-                    Diagnostic(
-                        severity="error",
-                        message="Could not detect the directory's base entry. "
-                        "Provide the BASE_DN setting.",
+            #
+            # The probe always connects anonymously. In BIND_AS_USER mode the
+            # real requests bind as the login user, so a directory that grants
+            # anonymous access only to the root DSE makes the checks below
+            # fail for a reason unrelated to those requests. Such anonymous
+            # permission failures are skipped; anything else (a wrong BASE_DN,
+            # an unreadable schema, ...) is a real misconfiguration and is
+            # reported regardless of bind mode.
+            if not settings.BASE_DN:
+                if settings.BIND_AS_USER:
+                    diagnostics.append(
+                        Diagnostic(
+                            severity="warning",
+                            message="BIND_AS_USER mode: the base entry could "
+                            "not be detected. Searches resolve it from the "
+                            "BASE_DN setting; consider setting it explicitly.",
+                        )
                     )
-                )
-            elif not settings.BIND_AS_USER and settings.BASE_DN:
+                else:
+                    diagnostics.append(
+                        Diagnostic(
+                            severity="error",
+                            message="Could not detect the directory's base "
+                            "entry. Provide the BASE_DN setting.",
+                        )
+                    )
+            else:
                 try:
                     await unique(
                         connection,
@@ -87,44 +114,73 @@ async def run_probe() -> ProbeResult:
                             get_operational_attributes=True,
                         ),
                     )
-                except (HTTPException, LDAPException):
-                    if settings.config("BASE_DN", default=None):
+                except (HTTPException, LDAPException) as exc:
+                    if settings.BIND_AS_USER and isinstance(
+                        exc, ANONYMOUS_ACCESS_ERRORS
+                    ):
+                        pass  # expected: real requests bind as the login user
+                    elif settings.config("BASE_DN", default=None):
                         message = (
                             "The configured base entry does not exist or "
                             "cannot be read. Check the BASE_DN setting."
+                        )
+                        diagnostics.append(
+                            Diagnostic(severity="error", message=message)
                         )
                     else:
                         message = (
                             "The auto-detected base entry could not be read. "
                             "Provide the BASE_DN setting."
                         )
-                    diagnostics.append(Diagnostic(severity="error", message=message))
+                        diagnostics.append(
+                            Diagnostic(severity="error", message=message)
+                        )
 
             # Schema readable? A missing/unreadable schema breaks /schema for
             # every user.
-            if not settings.BIND_AS_USER and not settings.SCHEMA_DN:
-                diagnostics.append(
-                    Diagnostic(
-                        severity="error",
-                        message="Could not detect the directory's schema. "
-                        "Provide the SCHEMA_DN setting.",
+            if not settings.SCHEMA_DN:
+                if settings.BIND_AS_USER:
+                    diagnostics.append(
+                        Diagnostic(
+                            severity="warning",
+                            message="BIND_AS_USER mode: the directory schema "
+                            "could not be detected. The schema entry is "
+                            "resolved from the SCHEMA_DN setting; consider "
+                            "setting it explicitly.",
+                        )
                     )
-                )
-            elif not settings.BIND_AS_USER and settings.SCHEMA_DN:
+                else:
+                    diagnostics.append(
+                        Diagnostic(
+                            severity="error",
+                            message="Could not detect the directory's schema. "
+                            "Provide the SCHEMA_DN setting.",
+                        )
+                    )
+            else:
                 try:
                     await get_schema(connection)
-                except (HTTPException, LDAPException):
-                    if settings.config("SCHEMA_DN", default=None):
+                except (HTTPException, LDAPException) as exc:
+                    if settings.BIND_AS_USER and isinstance(
+                        exc, ANONYMOUS_ACCESS_ERRORS
+                    ):
+                        pass  # expected: real requests bind as the login user
+                    elif settings.config("SCHEMA_DN", default=None):
                         message = (
                             "The configured schema could not be read. "
                             "Check the SCHEMA_DN setting."
+                        )
+                        diagnostics.append(
+                            Diagnostic(severity="error", message=message)
                         )
                     else:
                         message = (
                             "The auto-detected schema could not be read. "
                             "Provide the SCHEMA_DN setting."
                         )
-                    diagnostics.append(Diagnostic(severity="error", message=message))
+                        diagnostics.append(
+                            Diagnostic(severity="error", message=message)
+                        )
     except (LDAPInappropriateAuthenticationResult, LDAPInvalidCredentialsResult):
         # The probe has no login credentials, so this failure is expected
         # when user-bound mode is correctly configured. Real requests derive
@@ -148,6 +204,16 @@ async def run_probe() -> ProbeResult:
                     "setting.",
                 )
             )
+        elif settings.BIND_AS_USER and not settings.BASE_DN:
+            diagnostics.append(
+                Diagnostic(
+                    severity="warning",
+                    message="BIND_AS_USER mode: the base entry could not be "
+                    "detected because anonymous access is denied. Searches "
+                    "resolve it from the BASE_DN setting; consider setting it "
+                    "explicitly.",
+                )
+            )
         if not settings.BIND_AS_USER and not settings.SCHEMA_DN:
             diagnostics.append(
                 Diagnostic(
@@ -155,6 +221,16 @@ async def run_probe() -> ProbeResult:
                     message="Could not detect the directory's schema, and "
                     "anonymous access is denied. Provide the SCHEMA_DN "
                     "setting.",
+                )
+            )
+        elif settings.BIND_AS_USER and not settings.SCHEMA_DN:
+            diagnostics.append(
+                Diagnostic(
+                    severity="warning",
+                    message="BIND_AS_USER mode: the directory schema could "
+                    "not be detected because anonymous access is denied. The "
+                    "schema entry is resolved from the SCHEMA_DN setting; "
+                    "consider setting it explicitly.",
                 )
             )
     except (LDAPException, ValueError) as exc:
