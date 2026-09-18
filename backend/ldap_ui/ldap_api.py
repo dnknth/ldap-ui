@@ -67,6 +67,7 @@ from .ldap_connection import (
     ensure_schema,
     find_bind_dn,
     get_basic_credentials,
+    get_initial_bind_dn,
     ldap_connect,
     open,
     parse_url,
@@ -119,7 +120,15 @@ async def authenticated(
             [{"desc": "Empty passwords are not allowed."}]
         )
 
-    async with ldap_connect() as connection:
+    initial_bind_dn = get_initial_bind_dn(username)
+    initial_password = password if initial_bind_dn is not None else None
+
+    async with ldap_connect(initial_bind_dn, initial_password) as connection:
+        if initial_bind_dn is not None:
+            await ensure_schema(connection)
+            yield connection
+            return
+
         dn = await find_bind_dn(connection, username)
 
         if not dn:  # Log in
@@ -150,7 +159,14 @@ async def optional_authenticated(
         yield None
         return
 
-    async with ldap_connect() as connection:
+    initial_bind_dn = get_initial_bind_dn(username)
+    initial_password = password if initial_bind_dn is not None else None
+
+    async with ldap_connect(initial_bind_dn, initial_password) as connection:
+        if initial_bind_dn is not None:
+            yield connection
+            return
+
         dn = await find_bind_dn(connection, username)
 
         if not dn:  # Log in
