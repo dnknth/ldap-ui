@@ -92,6 +92,59 @@ class InitialBindCredentialsTest(unittest.TestCase):
         self.assertEqual(kwargs["password"], "secret")
 
 
+class LdapConnectBindFailureTest(unittest.IsolatedAsyncioTestCase):
+    """A failed user-bound initial bind is rate-limited and re-raised.
+
+    Both credential-denial result codes must be throttled: 49
+    (invalidCredentials, the common wrong-password answer) and 48
+    (inappropriateAuthentication, which some directories return for a
+    specific-user bind). A rejected *anonymous* bind is not a credential
+    attempt and must not be rate-limited.
+    """
+
+    async def _bind_failure(self, exc, bind_dn, rate_limited):
+        connection = MagicMock(name="Connection")
+        connection.bind.side_effect = exc
+        with (
+            patch.object(ldap_connection, "open", return_value=connection),
+            patch.object(ldap_connection, "random", return_value=0.5),
+            patch.object(ldap_connection, "sleep", new=AsyncMock()) as sleep,
+            self.assertRaises(type(exc)),
+        ):
+            async with ldap_connection.ldap_connect(bind_dn, "wrong"):
+                pass  # pragma: no cover
+
+        if rate_limited:
+            sleep.assert_awaited_once()
+        else:
+            sleep.assert_not_awaited()
+
+    async def test_invalid_credentials_are_rate_limited(self):
+        await self._bind_failure(
+            LDAPInvalidCredentialsResult([{"desc": "bad password"}]),
+            "cn=test,o=Flintstones",
+            rate_limited=True,
+        )
+
+    async def test_inappropriate_auth_is_rate_limited(self):
+        await self._bind_failure(
+            LDAPInappropriateAuthenticationResult(
+                [{"desc": "inappropriate authentication"}]
+            ),
+            "cn=test,o=Flintstones",
+            rate_limited=True,
+        )
+
+    async def test_rejected_anonymous_bind_is_not_rate_limited(self):
+        await self._bind_failure(
+            LDAPInappropriateAuthenticationResult(
+                [{"desc": "anonymous bind denied"}]
+            ),
+            None,
+            rate_limited=False,
+        )
+
+
 class LdapConnectResolutionTest(unittest.IsolatedAsyncioTestCase):
     """`ldap_connect()` resolves base/schema best-effort and never raises:
     it leaves the settings unset when the directory is ambiguous or
