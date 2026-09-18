@@ -61,7 +61,11 @@ _lock = threading.RLock()
 _STOCK_STRATEGY = _ldap3_connection.MockAsyncStrategy  # type: ignore[attr-defined]
 
 
-def _make_connection(server: Server) -> Connection:
+def _make_connection(
+    server: Server,
+    bind_dn: str | None = None,
+    bind_password: str | None = None,
+) -> Connection:
     """Open a connection to the mock directory.
 
     Installs :class:`MockLdapStrategy` for the duration of the construction
@@ -72,7 +76,11 @@ def _make_connection(server: Server) -> Connection:
         _ldap3_connection.MockAsyncStrategy = MockLdapStrategy  # type: ignore[attr-defined]
         try:
             return Connection(
-                server, client_strategy=MOCK_ASYNC, raise_exceptions=True
+                server,
+                user=bind_dn,
+                password=bind_password,
+                client_strategy=MOCK_ASYNC,
+                raise_exceptions=True,
             )
         finally:
             _ldap3_connection.MockAsyncStrategy = _STOCK_STRATEGY  # type: ignore[attr-defined]
@@ -90,18 +98,27 @@ def reset(ldap_url: str = "ldap://127.0.0.1:389") -> None:
         _Directory.server = build_server(ldap_url)
 
 
-def connect(ldap_url: str = "ldap://127.0.0.1:389") -> Connection:
+def connect(
+    ldap_url: str = "ldap://127.0.0.1:389",
+    bind_dn: str | None = None,
+    bind_password: str | None = None,
+) -> Connection:
     """Open a mock connection to the shared directory."""
     with _lock:
         if _Directory.server is None:
             _Directory.server = build_server(ldap_url)
         server = _Directory.server
-    return _make_connection(server)
+    return _make_connection(server, bind_dn, bind_password)
 
 
-def mock_open(ldap_url: str, get_info=None) -> Connection:
+def mock_open(
+    ldap_url: str,
+    get_info=None,
+    bind_dn: str | None = None,
+    bind_password: str | None = None,
+) -> Connection:
     """Drop-in for ``ldap_connection.open``: the app's connection factory."""
-    return connect(ldap_url)
+    return connect(ldap_url, bind_dn, bind_password)
 
 
 def build_server(ldap_url: str) -> Server:
