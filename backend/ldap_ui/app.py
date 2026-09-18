@@ -20,6 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from ldap3.core.exceptions import (
     LDAPEntryAlreadyExistsResult,
     LDAPException,
+    LDAPInappropriateAuthenticationResult,
     LDAPInsufficientAccessRightsResult,
     LDAPInvalidCredentialsResult,
     LDAPNoSuchObjectResult,
@@ -88,6 +89,7 @@ async def http_headers(request: Request, call_next) -> Response:
 
 LDAP_ERROR_TO_STATUS = {
     LDAPEntryAlreadyExistsResult: HTTPStatus.CONFLICT,
+    LDAPInappropriateAuthenticationResult: HTTPStatus.UNAUTHORIZED,
     LDAPInsufficientAccessRightsResult: HTTPStatus.FORBIDDEN,
     LDAPInvalidCredentialsResult: HTTPStatus.UNAUTHORIZED,
     LDAPNoSuchObjectResult: HTTPStatus.NOT_FOUND,
@@ -112,7 +114,7 @@ def handle_ldap_error(request: Request, exc: LDAPException) -> Response:
     "General handler for LDAP errors"
 
     exc_type = type(exc)
-    if exc_type is LDAPInvalidCredentialsResult:
+    if exc_type in (LDAPInappropriateAuthenticationResult, LDAPInvalidCredentialsResult):
         # Return 401 without the WWW-Authenticate header: the header would
         # make the browser open its own native Basic-auth dialog whenever the
         # login form submits invalid credentials. The frontend only needs the

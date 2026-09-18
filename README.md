@@ -20,7 +20,7 @@ This is a *minimal* web interface for LDAP directories.
 - Asynchronous LDAP backend with decent scalability
 - Available as [Docker image](https://hub.docker.com/r/dnknth/ldap-ui)
 
-The app always requires authentication, even if the directory permits anonymous access. Credentials are validated through a simple `bind` on the directory (SASL is not supported). What a user can see and edit is governed entirely by directory access rules.
+The app always requires authentication, even if the directory permits anonymous access. Credentials are validated via a simple `bind` (SASL is not supported); what a user can see and edit is governed by the directory's access rules.
 
 ## Usage
 
@@ -85,14 +85,13 @@ LDAP access is controlled by the following optional environment variables, possi
 - `SCHEMA_DN`: Optional DN to obtain the directory schema, e.g. `cn=subSchema`.
 - `LOGIN_ATTR`: User name attribute, defaults to `uid`.
 - `USE_TLS`: Enable TLS, defaults to true for `ldaps` connections. Set it to a non-empty string to force `STARTTLS` on `ldap` connections.
-- `BIND_AS_USER`: Set to `true` to bind the initial LDAP connection with the login user's credentials instead of anonymously. Requires `BIND_PATTERN`. This supports directories that reject anonymous binds outright, e.g. FreeIPA with anonymous access disabled - see [Authentication methods](#authentication-methods).
+- `BIND_AS_USER`: Bind the initial LDAP connection with the login user's credentials instead of anonymously, for directories that reject anonymous binds (e.g. FreeIPA). Requires `BIND_PATTERN` - see [Authentication methods](#authentication-methods).
 
-If `BASE_DN` or `SCHEMA_DN` are not provided explicitly, auto-detection from the root DSA is attempted.
-For this, the root DSA must be readable anonymously (or by the login user when `BIND_AS_USER` is enabled), e.g. with the following ACL line for OpenLDAP:
-
+If `BASE_DN`/`SCHEMA_DN` are not set, they are auto-detected from the root DSA, which must be readable anonymously:
 ```text
 access to dn.base="" by * read
 ```
+The lookup is always anonymous - it runs before any user bind - so `BIND_AS_USER` mode still needs explicit `BASE_DN`/`SCHEMA_DN` on directories that deny anonymous root-DSA access.
 
 For finer-grained control, see [settings.py](settings.py).
 
@@ -110,7 +109,7 @@ Prerequisites:
 
 `pnpm build` assembles the frontend in `backend/ldap_ui/statics`.
 
-Review the configuration in [settings.py](settings.py); it is short and mostly self-explanatory (also see notes below). Most settings can be overridden by environment variables or settings in a `.env` file.
+Review the configuration in [settings.py](settings.py); it is short and mostly self-explanatory (also see the notes below).
 
 Run the backend locally:
 
@@ -123,14 +122,14 @@ The frontend can be developed independently with hot-reload support using `pnpm 
 
 ### Authentication methods
 
-The UI always uses a simple `bind` operation to authenticate with the LDAP directory. How the `bind` DN is obtained from a given user name depends on a combination of OS environment variables, possibly from a `.env` file:
+The UI authenticates against the directory with a simple `bind`. The DN to bind is derived from the user name:
 
-1. Search anonymously by some attribute. By default this is `uid` (overridable via `LOGIN_ATTR`, e.g. `LOGIN_ATTR=cn`). The directory must grant anonymous read access to the search attribute within the search base. To avoid that, use `BIND_PATTERN` (item 2).
+1. Search anonymously by an attribute (`uid` by default, overridable via `LOGIN_ATTR`). The directory must grant anonymous read access to that attribute; to avoid that, use `BIND_PATTERN` (item 2).
 2. If `BIND_PATTERN` is set, no search is performed. `BIND_PATTERN=%s` requires a full DN (e.g. login `cn=admin,dc=example,dc=org`); `BIND_PATTERN=%s,dc=example,dc=org` allows `cn=admin`; `BIND_PATTERN=cn=%s,dc=example,dc=org` allows `admin`.
 
-Before any of the above happens, the backend opens its *first* LDAP connection anonymously by default. Some directories reject anonymous binds outright rather than merely restricting what they can read - for example FreeIPA, once anonymous access is disabled (`nsslapd-allow-anonymous-access: off`). On such a directory every request fails before the user's credentials are tried.
+By default the backend opens its first connection anonymously. On directories that reject anonymous binds outright (e.g. FreeIPA with `nsslapd-allow-anonymous-access: off`) every request fails before the user's credentials are tried.
 
-Set `BIND_AS_USER=true` together with `BIND_PATTERN` to derive the user's DN before connecting and bind that initial connection directly with the credentials submitted in the login form. No service account is needed:
+`BIND_AS_USER=true` combined with `BIND_PATTERN` derives the user's DN before connecting and binds the initial connection with the submitted credentials - no service account is needed:
 
 ```shell
 LDAP_URL=ldap://freeipa.example.org:389
@@ -140,7 +139,7 @@ BIND_PATTERN=uid=%s,cn=users,cn=accounts,dc=example,dc=org
 BIND_AS_USER=true
 ```
 
-Normal mode remains the default when `BIND_AS_USER` is unset. `/api/probe` reports an error if user-bound mode is enabled without `BIND_PATTERN`.
+Normal mode is the default when `BIND_AS_USER` is unset; `/api/probe` reports an error if it is set without `BIND_PATTERN`.
 
 ### Searching
 

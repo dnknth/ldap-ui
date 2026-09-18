@@ -16,7 +16,10 @@ import ldap3
 from anyio import Lock, sleep
 from fastapi import HTTPException
 from ldap3 import BASE, Connection, SchemaInfo, Server, Tls
-from ldap3.core.exceptions import LDAPInvalidCredentialsResult
+from ldap3.core.exceptions import (
+    LDAPInappropriateAuthenticationResult,
+    LDAPInvalidCredentialsResult,
+)
 
 from . import settings
 from .ldap_helpers import unique
@@ -118,7 +121,7 @@ async def ldap_connect(
     try:
         try:
             connection.bind()
-        except LDAPInvalidCredentialsResult:
+        except (LDAPInvalidCredentialsResult, LDAPInappropriateAuthenticationResult):
             if bind_dn is not None:
                 await rate_limit()
             raise
@@ -153,7 +156,7 @@ async def bound(connection: Connection, dn: str, password: str | None):
     try:
         try:
             connection.rebind(user=dn, password=password)
-        except LDAPInvalidCredentialsResult:
+        except (LDAPInvalidCredentialsResult, LDAPInappropriateAuthenticationResult):
             await rate_limit()
             raise
         yield

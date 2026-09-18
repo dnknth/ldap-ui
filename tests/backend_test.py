@@ -6,12 +6,16 @@ from typing import cast
 
 import httpx2
 from anyio import Lock, create_task_group, sleep
+from fastapi import Request, Response
 from fastapi.testclient import TestClient
 from ldap3 import SchemaInfo
 from ldap3.core.connection import Connection
-from ldap3.core.exceptions import LDAPInvalidDnError
+from ldap3.core.exceptions import (
+    LDAPInappropriateAuthenticationResult,
+    LDAPInvalidDnError,
+)
 from ldap_ui import ldap_api, ldap_connection, probe, settings
-from ldap_ui.app import app
+from ldap_ui.app import app, handle_ldap_error
 from ldap_ui.entities import Attributes, Range
 from ldap_ui.ldap_api import (
     bounded_range,
@@ -364,6 +368,26 @@ class BindPatternTest(unittest.TestCase):
             self._bind("cn=%s,o=Flintstones", "a+b"),
             "cn=a\\+b,o=Flintstones",
         )
+
+
+class LdapErrorMappingTest(unittest.TestCase):
+    "The request-path LDAP result-code mapping in app.py"
+
+    @staticmethod
+    def _handle(exc) -> Response:
+        request = Request({"type": "http", "method": "GET", "path": "/api/schema"})
+        return handle_ldap_error(request, exc)
+
+    def test_inappropriate_auth_is_401_without_www_authenticate(self):
+        """Result 48 is a credentials failure on the request path: it must map
+        to a 401 without WWW-Authenticate (like 49), not a 500."""
+        response = self._handle(
+            LDAPInappropriateAuthenticationResult(
+                [{"desc": "inappropriate authentication"}]
+            )
+        )
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
+        self.assertNotIn("www-authenticate", response.headers)
 
 
 class ProbeTest(unittest.TestCase):
