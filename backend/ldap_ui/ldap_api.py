@@ -791,7 +791,11 @@ async def attribute_range(attribute: str, connection: AuthenticatedConnection) -
     """
 
     validate_attribute_name(attribute)
-    obj = require_schema().attribute_types[attribute]
+    obj = require_schema().attribute_types.get(attribute)
+    if not obj:
+        raise HTTPException(
+            HTTPStatus.NOT_FOUND, f"Attribute {attribute} not found in schema"
+        )
 
     values = {
         int(entry.raw_attributes[attribute][0])
