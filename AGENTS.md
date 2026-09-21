@@ -12,6 +12,7 @@ pnpm type-check       # vue-tsc --build; checks src + vite config. The root tsco
                       # is solution-style (files: [] + references), so plain
                       # `npx vue-tsc --noEmit` compiles nothing — always use --build.
 pnpm test             # vitest (unit tests in src/*.test.ts)
+pnpm lint             # eslint . --fix (auto-fixes most findings, then re-run)
 ```
 
 Backend:
@@ -65,4 +66,4 @@ Run the server: `make debug` (builds `statics` first) or `uv run ldap-ui --reloa
 - Commits get amended freely (see `git log`); the working tree usually carries incremental changes over `HEAD`.
 - Security audit (Aug 2026) complete; remaining findings **accepted**: (1) `DEBUG` enables verbose errors — guard in production; (2) cleartext Basic creds over plain HTTP only on loopback or behind a TLS proxy; (3) `/api/probe`/`/api/health` expose config to unauthenticated callers (needed for the frontend banner and Docker healthcheck). CSRF / missing security headers: not applicable or mitigated (header-based auth; CSP + `Referrer-Policy` on the SPA, `nosniff` + `no-store` on `/api`).
 - `.env` is gitignored; settings load a `.env` only if present (avoids a startup warning).
-- CI (`.github/workflows/ci.yml`) runs `pnpm build`+`test` and the Python suite via `xmlrunner`; it does **not** run `ruff` or the OpenAPI comparison, so those are local-only checks.
+- CI (`.github/workflows/ci.yml`) runs `pnpm build`+`test` and the Python suite via `xmlrunner`; it does **not** run `ruff`, `eslint`, or the OpenAPI comparison, so those are local-only checks.
