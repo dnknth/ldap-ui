@@ -129,7 +129,7 @@
         key-label="oid"
         title-label="oid"
         exact-match-hides
-        :search="(q) => searchAttrs(q, state.schema)"
+        :search="searchAttrsFor"
       />
       <div v-if="hint" class="text-xs ml-6 opacity-70">{{ hint }}</div>
     </div>
@@ -145,6 +145,13 @@ import { state } from "@/state";
 import { unique, searchDns, searchAttrs } from "@/utils";
 import { getRange, deleteBlob } from "@/generated";
 import type { Entry } from "@/generated";
+
+// Hoisted out of the template: vue-tsc >= 3.3.12 mis-narrows `state.schema`
+// (a `reactive`) inside inline template arrow closures, flagging it as needing
+// `.value` (TS2339). A script-setup handler is unaffected by that regression.
+function searchAttrsFor(q: string) {
+  return searchAttrs(q, state.schema);
+}
 
 const dateFormat: Intl.DateTimeFormatOptions = {
     weekday: "long",
