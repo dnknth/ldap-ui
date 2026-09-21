@@ -4,7 +4,7 @@ authors = [{ name = "dnknth" }]
 description = "A fast and versatile LDAP editor"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 keywords = ["ldap", "web-ui", "python3"]
 classifiers = [
     "Operating System :: OS Independent",
