@@ -1,5 +1,6 @@
 "LDAP connectivity and configuration probe (`/api/probe`)."
 
+from http import HTTPStatus
 from time import monotonic
 
 import ldap3
@@ -9,6 +10,7 @@ from ldap3.core.exceptions import (
     LDAPInappropriateAuthenticationResult,
     LDAPInsufficientAccessRightsResult,
     LDAPInvalidCredentialsResult,
+    LDAPNoSuchObjectResult,
 )
 
 from . import settings
@@ -20,14 +22,33 @@ from .ldap_helpers import unique
 ANY = "(objectClass=*)"
 
 # Failures the anonymous probe connection can hit when the directory restricts
-# anonymous access to the root DSE. In BIND_AS_USER mode these are expected —
-# real requests bind as the login user — so they are skipped rather than
-# reported as configuration errors.
+# anonymous access to the root DSE.
 ANONYMOUS_ACCESS_ERRORS = (
     LDAPInappropriateAuthenticationResult,
     LDAPInvalidCredentialsResult,
     LDAPInsufficientAccessRightsResult,
 )
+
+
+def _anonymous_access_denied(exc: BaseException) -> bool:
+    """Whether a probe check failure is an anonymous-access artifact.
+
+    Directories that restrict anonymous access below the root DSE answer a
+    read of the base/schema with several different signatures: LDAP results
+    48/49/50, result 32 (noSuchObject, hiding the entry), or a successful
+    search that yields no entries (e.g. OpenLDAP ACLs). In BIND_AS_USER mode
+    real requests bind as the login user, so none of these are configuration
+    errors — they are skipped rather than reported, so a user-bound deployment
+    is not blocked by what an anonymous connection cannot see.
+    """
+    if isinstance(exc, ANONYMOUS_ACCESS_ERRORS):
+        return True
+    if isinstance(exc, LDAPNoSuchObjectResult):
+        return True
+    # unique() raises a 404 when the search succeeds but returns no entries:
+    # for a base/schema check with a fixed filter that means the entry is not
+    # visible to the anonymous connection.
+    return isinstance(exc, HTTPException) and exc.status_code == HTTPStatus.NOT_FOUND
 
 # /api/probe serves a cached probe result so it never re-probes per client.
 # The cache is refreshed at backend startup and again at most every PROBE_TTL
@@ -81,10 +102,11 @@ async def run_probe() -> ProbeResult:
             # The probe always connects anonymously. In BIND_AS_USER mode the
             # real requests bind as the login user, so a directory that grants
             # anonymous access only to the root DSE makes the checks below
-            # fail for a reason unrelated to those requests. Such anonymous
-            # permission failures are skipped; anything else (a wrong BASE_DN,
-            # an unreadable schema, ...) is a real misconfiguration and is
-            # reported regardless of bind mode.
+            # fail for a reason unrelated to those requests. Directories
+            # signal that in several ways (LDAP results 48/49/50, 32, or an
+            # empty success), which an anonymous connection cannot tell apart
+            # from a genuinely broken setting, so in user-bound mode they are
+            # skipped rather than failing the deployment.
             if not settings.BASE_DN:
                 if settings.BIND_AS_USER:
                     diagnostics.append(
@@ -115,9 +137,7 @@ async def run_probe() -> ProbeResult:
                         ),
                     )
                 except (HTTPException, LDAPException) as exc:
-                    if settings.BIND_AS_USER and isinstance(
-                        exc, ANONYMOUS_ACCESS_ERRORS
-                    ):
+                    if settings.BIND_AS_USER and _anonymous_access_denied(exc):
                         pass  # expected: real requests bind as the login user
                     elif settings.config("BASE_DN", default=None):
                         message = (
@@ -161,9 +181,7 @@ async def run_probe() -> ProbeResult:
                 try:
                     await get_schema(connection)
                 except (HTTPException, LDAPException) as exc:
-                    if settings.BIND_AS_USER and isinstance(
-                        exc, ANONYMOUS_ACCESS_ERRORS
-                    ):
+                    if settings.BIND_AS_USER and _anonymous_access_denied(exc):
                         pass  # expected: real requests bind as the login user
                     elif settings.config("SCHEMA_DN", default=None):
                         message = (

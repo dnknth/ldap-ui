@@ -368,10 +368,12 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.diagnostics, [])
         self.assertTrue(connection.search.called)
 
-    async def test_user_bind_mode_typo_base_dn_error(self):
-        # A wrong BASE_DN is a real misconfiguration no matter how requests
-        # bind: the anonymous probe can read here, so the failure is not an
-        # anonymous-access artifact and must still fail the probe.
+    async def test_user_bind_mode_no_such_object_base_read_not_fatal(self):
+        # A directory that restricts anonymous access mirrors a broken BASE_DN
+        # with "no such object" (LDAP result 32). An anonymous probe cannot
+        # tell a typo apart from an entry hidden from anonymous, and in
+        # BIND_AS_USER mode real requests bind as the login user, so a 32 base
+        # read must not fail the probe (#195).
         connection = self._probe_connection()
         with (
             patch.object(
@@ -379,26 +381,49 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
                 "ldap_connect",
                 side_effect=lambda: self._connect(connection),
             ),
-            patch.object(settings, "BASE_DN", "dc=nope"),
+            patch.object(settings, "BASE_DN", "dc=example,dc=com"),
             patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
             patch.object(settings, "INSECURE_TLS", False),
             patch.object(settings, "BIND_AS_USER", True),
             patch.object(
                 settings,
                 "config",
-                lambda k, default=None: {
-                    "BASE_DN": "dc=nope",
-                    "BIND_PATTERN": "%s",
-                }.get(k, default),
+                lambda k, default=None: "%s" if k == "BIND_PATTERN" else default,
             ),
         ):
             result = await probe.run_probe()
 
-        self.assertFalse(result.ok)
-        self.assertTrue(
-            any("configured base entry does not exist" in d.message for d in result.diagnostics),
-            result.diagnostics,
-        )
+        self.assertTrue(result.ok)
+        self.assertEqual(result.diagnostics, [])
+
+    async def test_user_bind_mode_empty_base_read_not_fatal(self):
+        # Some directories (e.g. OpenLDAP ACLs) answer a denied anonymous read
+        # with SUCCESS but zero entries instead of an LDAP error; unique()
+        # surfaces that as an HTTP 404. In BIND_AS_USER mode that is an
+        # anonymous-access artifact, not a broken BASE_DN (#195).
+        connection = MagicMock(name="Connection")
+        connection.search.return_value = 1
+        connection.get_response.return_value = ([], {"result": 0})
+        with (
+            patch.object(
+                probe,
+                "ldap_connect",
+                side_effect=lambda: self._connect(connection),
+            ),
+            patch.object(settings, "BASE_DN", "dc=example,dc=com"),
+            patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
+            patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", True),
+            patch.object(
+                settings,
+                "config",
+                lambda k, default=None: "%s" if k == "BIND_PATTERN" else default,
+            ),
+        ):
+            result = await probe.run_probe()
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.diagnostics, [])
 
     async def test_user_bind_mode_suppresses_anonymous_denied_reads(self):
         # FreeIPA commonly permits an anonymous root-DSE connection but
