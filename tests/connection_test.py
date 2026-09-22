@@ -603,6 +603,63 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
             result.diagnostics,
         )
 
+    async def test_bind_pattern_outside_base_warns(self):
+        # A BIND_PATTERN anchored in a different subtree than BASE_DN binds
+        # successfully but makes the user unreachable under the search base:
+        # surface it as a warning, not a login blocker.
+        with (
+            patch.object(
+                probe,
+                "ldap_connect",
+                side_effect=self._reject_anonymous_bind,
+            ),
+            patch.object(settings, "BASE_DN", "dc=example,dc=com"),
+            patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
+            patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", True),
+            patch.object(
+                settings,
+                "config",
+                lambda k, default=None: {
+                    "BIND_PATTERN": "uid=%s,dc=other,dc=com",
+                }.get(k, default),
+            ),
+        ):
+            result = await probe.run_probe()
+
+        self.assertTrue(result.ok)
+        self.assertTrue(
+            any(
+                "outside the BASE_DN subtree" in d.message
+                for d in result.diagnostics
+            ),
+            result.diagnostics,
+        )
+
+    async def test_bind_pattern_anchored_in_base_silent(self):
+        with (
+            patch.object(
+                probe,
+                "ldap_connect",
+                side_effect=self._reject_anonymous_bind,
+            ),
+            patch.object(settings, "BASE_DN", "dc=example,dc=com"),
+            patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
+            patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", True),
+            patch.object(
+                settings,
+                "config",
+                lambda k, default=None: {
+                    "BIND_PATTERN": "uid=%s,ou=people,dc=example,dc=com",
+                }.get(k, default),
+            ),
+        ):
+            result = await probe.run_probe()
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.diagnostics, [])
+
     def _connection(self) -> MagicMock:
         "A mock Connection whose call order is recorded."
         connection = MagicMock(name="Connection")
@@ -662,6 +719,41 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
             pass
 
         connection.unbind.assert_called_once()
+
+
+class BindPatternBaseAnchoringTest(unittest.TestCase):
+    "`_pattern_anchored_in_base`: BIND_PATTERN vs BASE_DN suffix matching"
+
+    def test_anchored_in_base(self):
+        self.assertTrue(
+            probe._pattern_anchored_in_base(
+                "uid=%s,ou=people,dc=example,dc=com", "dc=example,dc=com"
+            )
+        )
+
+    def test_anchored_case_insensitive(self):
+        self.assertTrue(
+            probe._pattern_anchored_in_base(
+                "uid=%s,Ou=People,DC=Example,DC=Com", "dc=example,dc=com"
+            )
+        )
+
+    def test_other_subtree(self):
+        self.assertFalse(
+            probe._pattern_anchored_in_base(
+                "uid=%s,dc=other,dc=com", "dc=example,dc=com"
+            )
+        )
+
+    def test_full_dn_pattern_skipped(self):
+        self.assertTrue(
+            probe._pattern_anchored_in_base("%s", "dc=example,dc=com")
+        )
+
+    def test_relative_suffix_is_not_anchored(self):
+        self.assertFalse(
+            probe._pattern_anchored_in_base("cn=%s,ou=people", "dc=example,dc=com")
+        )
 
 
 class ChangePasswordAsyncTest(unittest.IsolatedAsyncioTestCase):

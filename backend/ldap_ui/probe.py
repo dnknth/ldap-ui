@@ -10,8 +10,10 @@ from ldap3.core.exceptions import (
     LDAPInappropriateAuthenticationResult,
     LDAPInsufficientAccessRightsResult,
     LDAPInvalidCredentialsResult,
+    LDAPInvalidDnError,
     LDAPNoSuchObjectResult,
 )
+from ldap3.utils.dn import parse_dn
 
 from . import settings
 from .entities import Diagnostic, ProbeResult
@@ -49,6 +51,36 @@ def _anonymous_access_denied(exc: BaseException) -> bool:
     # for a base/schema check with a fixed filter that means the entry is not
     # visible to the anonymous connection.
     return isinstance(exc, HTTPException) and exc.status_code == HTTPStatus.NOT_FOUND
+
+
+def _pattern_anchored_in_base(pattern: str, base_dn: str) -> bool:
+    """Is a BIND_PATTERN's static DN suffix a descendant of the base DN?
+
+    Only the literal part after the ``%s`` placeholder is inspected, no user
+    name is needed: ``uid=%s,ou=people,dc=example,dc=org`` matches
+    ``BASE_DN=dc=example,dc=org``. Full-DN patterns (``%s``) and patterns
+    with no embedded base have nothing to compare and pass; a malformed
+    placeholder is diagnosed elsewhere.
+    """
+    if pattern.count("%s") != 1:
+        return True
+    suffix = pattern.split("%s", 1)[1].lstrip(", ")
+    if not suffix:
+        return True
+    try:
+        base_rdns = parse_dn(base_dn)
+    except LDAPInvalidDnError:
+        return True  # BASE_DN itself is malformed; diagnosed elsewhere
+    try:
+        suffix_rdns = parse_dn(suffix)
+    except LDAPInvalidDnError:
+        return False
+    if len(suffix_rdns) < len(base_rdns):
+        return False
+    return all(
+        s[0].casefold() == b[0].casefold() and s[1].casefold() == b[1].casefold()
+        for s, b in zip(reversed(suffix_rdns), reversed(base_rdns))
+    )
 
 # /api/probe serves a cached probe result so it never re-probes per client.
 # The cache is refreshed at backend startup and again at most every PROBE_TTL
@@ -285,6 +317,19 @@ async def run_probe() -> ProbeResult:
                 severity="error",
                 message="The BIND_PATTERN setting is malformed: it needs "
                 "exactly one %s placeholder.",
+            )
+        )
+    if (
+        bind_pattern is not None
+        and settings.BASE_DN
+        and not _pattern_anchored_in_base(bind_pattern, settings.BASE_DN)
+    ):
+        diagnostics.append(
+            Diagnostic(
+                severity="warning",
+                message="BIND_PATTERN derives login DNs outside the BASE_DN "
+                "subtree. Binds may succeed, but the user's entry will not be "
+                "reachable under the configured search base.",
             )
         )
 
