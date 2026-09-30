@@ -23,7 +23,7 @@ ruff check .                    # `ruff check --fix .` auto-fixes most findings,
 uvx pyright backend/ tests/                                 # type-check (via `uvx`, not in the venv)
 ```
 
-Run the server: `make debug` (builds `statics` first) or `uv run ldap-ui --reload --port 5000`.
+Run the server: `make debug` (builds `statics` first) or `uv run ldap-ui --reload --port 5000`. The Vite dev server proxies `/api/` to `127.0.0.1:5000` (vite.config.ts), so `pnpm dev` needs the backend up on port 5000; `pnpm build` writes the SPA into `backend/ldap_ui/statics/` (gitignored), which the backend serves — `make debug` builds it first.
 
 ## Testing quirks
 
@@ -47,16 +47,16 @@ Run the server: `make debug` (builds `statics` first) or `uv run ldap-ui --reloa
 - `SCHEMA` global cache is guarded by an `anyio.Lock` via `ensure_schema()` — use that, not direct lazy init.
 - `/api/probe` surfaces `LDAP_URL` (mis)configuration as a `ProbeResult` (`ok` + `diagnostics[]`, never non-200). `ok` is **usability**, not reachability: false whenever any `severity="error"` diagnostic exists. `/api/health` maps that to 503 for Docker.
 - TLS is **verified by default**: `open()` builds `Server(url, tls=Tls(validate=ssl.CERT_REQUIRED))`; only `INSECURE_TLS=1` downgrades to `CERT_NONE`. ldap3 otherwise silently defaults to `CERT_NONE` — never drop the `tls=` argument or TLS is MITM-able. Self-signed certs therefore require `INSECURE_TLS=1`.
-- `pyright backend/ tests/` is clean. `settings.BASE_DN`/`SCHEMA_DN` and the `SCHEMA` global are typed `str | None`/`SchemaInfo | None`; read them only via `require_base_dn()`/`require_schema_dn()`/`require_schema()`, or pyright rejects the optional access.
+- `pyright backend/ tests/` is clean. `settings.BASE_DN`/`SCHEMA_DN` and the `SCHEMA` global are typed `str | None`/`SchemaInfo | None`; read them only via `require_base_dn()`/`require_schema()` (or `get_schema()`/`ensure_schema()` for the schema cache), or pyright rejects the optional access.
 - Auth plumbing lives in `ldap_connection.py`: `get_basic_credentials`, `anonymous_user_search`/`find_bind_dn`, the `SCHEMA` cache + `ensure_schema()`/`get_schema()`, and the `require_*` accessors. `ldap_api.py` keeps only the FastAPI dependency generators.
 - `check_password`'s `_auth: AuthenticatedConnection` parameter is deliberately unused: it enforces authentication before probing. The check binds a separate anonymous `NO_INFO` connection to `dn`/`check`, since `ldap_connect` would mutate settings during base/schema resolution. Keep the underscore dependency — removing it drops the auth gate.
-- `settings.log_warnings()` (`settings.py:141`) runs only from the `ldap-ui` console script, never request paths — not dead code.
+- `settings.log_warnings()` runs only from the `ldap-ui` console script, never request paths — not dead code.
 - Concurrency is **anyio only** — no `asyncio` imports (backend or tests). Use `anyio.sleep`/`Lock`/`create_task_group` (no `gather`). Timeouts: `with anyio.fail_after(SECONDS):` — cancel scopes are **synchronous** context managers even in async code. `OPERATION_TIMEOUT` (`ldap_helpers.py`) bounds a single LDAP op and turns expiry into a 504.
 
 ## Frontend architecture notes
 
 - Auth is in-memory only (`src/auth.ts`): `setCredentials`/`clearCredentials`, `registerAuthInterceptor` (attaches `Authorization: Basic`), external-auth tracking, and a response interceptor that flags the "external-auth trap" (data endpoint 401s while external auth is active).
-- `App.vue` gates the login dialog on `!checking && !ldapDown && !authTrap && !authenticated && loginDialog`, probes `/api/probe` at startup, and renders banners for `ldapDown`, `authTrap`, and `deploymentsIssues`.
+- `App.vue` gates the login dialog on `!checking && !probeErrors.length && !authTrap && !authenticated && loginDialog`, probes `/api/probe` at startup (distinct from authentication: a failed probe means the deployment is broken, not just logged out), and renders banners for `authTrap`, `probeErrors` (red), and `probeWarnings` (amber).
 - Browser password-manager autofill fights `v-model` (it writes input.value without an `input` event, and Safari ignores `autocomplete="off"` on email-like fields). LoginDialog reads values from DOM refs at submit time as a fallback; there is no fully reliable Safari fix for `mail` fields — don't burn time "fixing" it.
 
 ## Repo conventions
