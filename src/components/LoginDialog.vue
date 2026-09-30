@@ -94,21 +94,37 @@ async function onOk() {
   error.value = "";
 
   const response = await getWhoAmI();
-  // whoami is soft: bad credentials get 200 + an empty DN, never a 401. A
-  // non-200 (or a failed request) means the directory cannot be reached /
-  // configured — that is not the user's credentials, so say so.
+  // whoami is soft: bad credentials get 200 + an empty DN, or 401 when the
+  // username exists but the password is wrong. A failed request (backend down)
+  // or another non-200 means the directory cannot be reached / configured —
+  // that is not the user's credentials, so say so.
   const status = response.response?.status;
+  // A failed request (backend down) has no `response`, so `status` is
+  // undefined; that's an unreachable directory, not the user's credentials.
+  if (response.error && !response.response) {
+    clearPendingCredentials();
+    error.value =
+      "Cannot reach the LDAP directory. Check the connection and configuration.";
+    return;
+  }
+  // whoami is soft: bad credentials come back as 200 + an empty DN, or 401
+  // when the username exists but the password is wrong. Both mean invalid
+  // credentials, not an unreachable directory.
+  if (status === 401 || (status === 200 && !response.data)) {
+    clearPendingCredentials();
+    error.value = "Invalid credentials. Please try again.";
+    return;
+  }
+  // Any other non-200: the directory cannot be reached / configured.
   if (status && status !== 200) {
     clearPendingCredentials();
     error.value =
       "Cannot reach the LDAP directory. Check the connection and configuration.";
     return;
   }
-  if (response.error || !response.data) {
-    clearPendingCredentials();
-    error.value = "Invalid credentials. Please try again.";
-    return;
-  }
+
+  // Success: 200 with a non-empty DN.
+  if (!response.data) return;
 
   clearPendingCredentials();
   emit("ok", name, pass, response.data);
