@@ -100,10 +100,7 @@ defineProps<{
 }>();
 
 function search() {
-  query.value = "";
-  nextTick(() => {
-    query.value = input?.value?.value || "";
-  });
+  query.value = input?.value?.value || "";
 }
 
 // The navbar is mounted fresh after login (v-else-if="ready" in App.vue);

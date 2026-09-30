@@ -94,7 +94,6 @@ const
   ready = ref(false); // initState() has completed
 
 onMounted(async () => {
-  checking.value = true;
   await probeLdap();
   if (probeErrors.value.length) {
     // Directory not usable (unreachable or misconfigured): show only the
