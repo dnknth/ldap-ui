@@ -117,10 +117,10 @@ watch(
     if (!newDn) return;
 
     // Reveal the selected entry by opening all parents
-    let dn = new DN(newDn);
+    const dn = new DN(newDn);
     const hierarchy = [dn].concat(dn.parents(tree.value?.distinguishedName));
     hierarchy.reverse();
-    for (let p of hierarchy) {
+    for (const p of hierarchy) {
       const node = tree.value?.find(p);
       if (!node) break;
       if (!node.loaded) await reload(p.toString());
@@ -130,7 +130,8 @@ watch(
     // Reload parent if entry was added, renamed or deleted
     if (!tree.value?.find(dn)) {
       await reload(dn.parent?.toString());
-      tree.value!.find(dn.parent)!.open = true;
+      const parent = tree.value?.find(dn.parent);
+      if (parent) parent.open = true;
       return;
     }
   },

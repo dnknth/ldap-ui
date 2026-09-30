@@ -53,11 +53,13 @@ const props = defineProps<{
   }),
   emit = defineEmits<{ pick: [value: string] }>();
 
+let searchToken = 0;
+
 function propOf(item: Item, field: string): string {
   return String(item[field] ?? "");
 }
 
-function keyLabel(): string {
+function keyField(): string {
   return props.keyLabel ?? props.label ?? "name";
 }
 
@@ -66,7 +68,7 @@ function labelOf(item: Item): string {
 }
 
 function keyOf(item: Item): string {
-  return propOf(item, keyLabel());
+  return propOf(item, keyField());
 }
 
 function titleOf(item: Item): string {
@@ -84,7 +86,9 @@ watch(
       clear();
       return;
     }
+    const token = ++searchToken;
     const found = (await props.search(q)) ?? [];
+    if (token != searchToken) return; // stale response; a newer query is pending
     const field = props.label ?? "name";
     found.sort((a: Item, b: Item) =>
       propOf(a, field).toLowerCase().localeCompare(propOf(b, field).toLowerCase()),
