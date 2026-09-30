@@ -11,7 +11,8 @@
     "type-check": "vue-tsc --build",
     "test": "vitest --run",
     "test:coverage": "vitest --run --coverage",
-    "generate": "openapi-ts -i tests/resources/openapi.json -o ./src/generated"
+    "generate": "openapi-ts -i tests/resources/openapi.json -o ./src/generated",
+    "lint": "eslint . --fix"
   },
   "dependencies": {
     "@vueuse/core": "latest",
@@ -34,41 +35,11 @@
     "prettier": "latest",
     "tailwindcss": "^3.4.19",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.60.0",
     "vite": "latest",
     "vite-plugin-compression": "latest",
     "vitest": "^5.0.2",
     "vue-tsc": "latest"
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true,
-      "es6": true
-    },
-    "extends": [
-      "eslint:recommended",
-      "plugin:vue/vue3-essential",
-      "@vue/typescript/recommended"
-    ],
-    "parserOptions": {
-      "sourceType": "module"
-    },
-    "rules": {
-      "vue/no-unused-vars": "error",
-      "vue/multi-word-component-names": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          "args": "all",
-          "argsIgnorePattern": "^_",
-          "caughtErrors": "all",
-          "caughtErrorsIgnorePattern": "^_",
-          "destructuredArrayIgnorePattern": "^_",
-          "varsIgnorePattern": "^_",
-          "ignoreRestSiblings": true
-        }
-      ]
-    }
   },
   "browserslist": [
     "> 1%",
