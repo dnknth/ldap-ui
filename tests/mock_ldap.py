@@ -58,7 +58,7 @@ _lock = threading.RLock()
 # resolves ``MockAsyncStrategy`` from the ``ldap3.core.connection`` namespace
 # at construction time, so the swap can be scoped around construction instead
 # of applied process-wide at import.
-_STOCK_STRATEGY = _ldap3_connection.MockAsyncStrategy  # type: ignore[attr-defined]
+_STOCK_STRATEGY = _ldap3_connection.MockAsyncStrategy  # type: ignore
 
 
 def _make_connection(
@@ -73,7 +73,7 @@ def _make_connection(
     behavior.
     """
     with _lock:
-        _ldap3_connection.MockAsyncStrategy = MockLdapStrategy  # type: ignore[attr-defined]
+        _ldap3_connection.MockAsyncStrategy = MockLdapStrategy  # type: ignore
         try:
             return Connection(
                 server,
@@ -83,7 +83,7 @@ def _make_connection(
                 raise_exceptions=True,
             )
         finally:
-            _ldap3_connection.MockAsyncStrategy = _STOCK_STRATEGY  # type: ignore[attr-defined]
+            _ldap3_connection.MockAsyncStrategy = _STOCK_STRATEGY  # type: ignore
 
 
 class _Directory:
@@ -212,15 +212,23 @@ class MockLdapStrategy(MockAsyncStrategy):
                 result = compare_response_to_dict(self.mock_compare(request, controls))
                 result["type"] = "compareResponse"
             case "modDNRequest":
-                result = modify_dn_response_to_dict(self.mock_modify_dn(request, controls))
+                result = modify_dn_response_to_dict(
+                    self.mock_modify_dn(request, controls)
+                )
                 result["type"] = "modDNResponse"
             case "modifyRequest":
                 result = modify_response_to_dict(self.mock_modify(request, controls))
                 result["type"] = "modifyResponse"
             case "extendedReq":
-                result = extended_response_to_dict(self.mock_extended(request, controls))
+                result = extended_response_to_dict(
+                    self.mock_extended(request, controls)
+                )
                 result["type"] = "extendedResp"
-        if self.connection.raise_exceptions and result and result["result"] not in DO_NOT_RAISE_EXCEPTIONS:
+        if (
+            self.connection.raise_exceptions
+            and result
+            and result["result"] not in DO_NOT_RAISE_EXCEPTIONS
+        ):
             raise LDAPOperationResult(
                 result=result["result"],
                 description=result["description"],
@@ -242,7 +250,7 @@ class MockLdapStrategy(MockAsyncStrategy):
         # place (expanding '+'), so a later '+' check would miss it.
         requested = list(request["attributes"])
         request["filter"] = self._translate_filter(request["filter"])
-        responses, result = self._execute_search(request)  # type: ignore[attr-defined]
+        responses, result = self._execute_search(request)  # type: ignore
         if "+" in requested:
             # Operational-attribute request: return every attribute the entry
             # carries (user attributes + operational), as a real server does.
@@ -325,8 +333,14 @@ class MockLdapStrategy(MockAsyncStrategy):
     def mock_extended(self, request_message, controls):
         request = extended_request_to_dict(request_message)
         if request["name"] == PASSWORD_MODIFY_OID and request["value"]:
-            (decoded, _) = decoder.decode(request["value"], asn1Spec=PasswdModifyRequestValue())
-            identity = str(decoded["userIdentity"]) if decoded["userIdentity"].hasValue() else None
+            (decoded, _) = decoder.decode(
+                request["value"], asn1Spec=PasswdModifyRequestValue()
+            )
+            identity = (
+                str(decoded["userIdentity"])
+                if decoded["userIdentity"].hasValue()
+                else None
+            )
             old = str(decoded["oldPasswd"]) if decoded["oldPasswd"].hasValue() else None
             new = str(decoded["newPasswd"]) if decoded["newPasswd"].hasValue() else None
             if not identity or identity not in self.connection.server.dit:
@@ -424,8 +438,6 @@ def fixture_entries() -> list[tuple[str, dict[str, list[str]]]]:
     entries = []
     for dn, attrs in _ldif_records():
         attrs = dict(attrs)
-        attrs["structuralObjectClass"] = [
-            _structural_class(list(attrs["objectClass"]))
-        ]
+        attrs["structuralObjectClass"] = [_structural_class(list(attrs["objectClass"]))]
         entries.append((dn, attrs))
     return entries
