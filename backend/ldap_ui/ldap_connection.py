@@ -6,7 +6,7 @@ import base64
 import re
 import ssl
 from binascii import Error as BinasciiError
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from http import HTTPStatus
 from random import random
@@ -70,9 +70,7 @@ def open(
     # Tls object was never constructed and ldap3 silently defaulted to
     # ssl.CERT_NONE, leaving TLS connections open to active MITM.
     tls = Tls(
-        validate=ssl.CERT_NONE
-        if settings.INSECURE_TLS
-        else ssl.CERT_REQUIRED,
+        validate=ssl.CERT_NONE if settings.INSECURE_TLS else ssl.CERT_REQUIRED,
     )
 
     connection = Connection(
@@ -98,7 +96,7 @@ def open(
 async def ldap_connect(
     bind_dn: str | None = None,
     bind_password: str | None = None,
-) -> AsyncIterator[Connection]:
+) -> AsyncGenerator[Connection, None]:
     """
     Open an LDAP connection, optionally bound with the supplied credentials,
     and resolve the base/schema if possible.
@@ -176,9 +174,7 @@ def get_basic_credentials(authorization: str) -> tuple[str, str]:
     try:
         scheme, credentials = authorization.split(maxsplit=1)
     except ValueError:
-        raise LDAPInvalidCredentialsResult(
-            [{"desc": "Malformed Authorization header"}]
-        )
+        raise LDAPInvalidCredentialsResult([{"desc": "Malformed Authorization header"}])
 
     if scheme.lower() != "basic":
         raise LDAPInvalidCredentialsResult(

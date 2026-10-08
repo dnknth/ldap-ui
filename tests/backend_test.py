@@ -82,9 +82,9 @@ class LdapMixin:
         settings.SCHEMA_DN = None
         # Neutralize a developer's BIND_PATTERN (and keep every other setting
         # lookup deterministic): login must resolve users by search.
-        settings.config = lambda k, default=None: None  # type: ignore[assignment]
-        ldap_connection.open = mock_ldap.mock_open
-        ldap_api.open = mock_ldap.mock_open
+        settings.config = lambda k, default=None: None  # type: ignore
+        ldap_connection.open = mock_ldap.mock_open  # type: ignore
+        ldap_api.open = mock_ldap.mock_open  # type: ignore
         ldap_connection.SCHEMA = None
 
     @classmethod
@@ -102,9 +102,7 @@ class LdapMixin:
 
 def parse_ldif(ldif: bytes) -> dict[str, Attributes]:
     return {
-k: dict(v)
-        for k, v in LDIFParser(io.BytesIO(ldif)).parse()
-        if k is not None
+        k: dict(v) for k, v in LDIFParser(io.BytesIO(ldif)).parse() if k is not None
     }
 
 
@@ -154,11 +152,7 @@ class NormalizeDnTest(unittest.TestCase):
         lowercased name and do not match."""
         schema = SchemaInfo(
             "cn=schema",
-            {
-                "attributeTypes": [
-                    "( 2.5.4.42 NAME ( 'givenName' 'gn' ) SUP name )"
-                ]
-            },
+            {"attributeTypes": ["( 2.5.4.42 NAME ( 'givenName' 'gn' ) SUP name )"]},
             {},
         )
         self.assertEqual(
@@ -176,11 +170,7 @@ class NormalizeDnTest(unittest.TestCase):
         requiring the old password."""
         schema = SchemaInfo(
             "cn=schema",
-            {
-                "attributeTypes": [
-                    "( 2.5.4.42 NAME ( 'givenName' 'gn' ) SUP name )"
-                ]
-            },
+            {"attributeTypes": ["( 2.5.4.42 NAME ( 'givenName' 'gn' ) SUP name )"]},
             {},
         )
         with self.assertRaises(LDAPInvalidDnError):
@@ -192,15 +182,11 @@ class RangeTest(unittest.TestCase):
 
     def test_bounded_range_printable(self):
         """Endpoints are printable when all values fit in the window."""
-        self.assertEqual(
-            Range(min=3, max=5, next=6), bounded_range({3, 4, 5})
-        )
+        self.assertEqual(Range(min=3, max=5, next=6), bounded_range({3, 4, 5}))
 
     def test_bounded_range_fills_gap(self):
         """The window fills the gap between min and max."""
-        self.assertEqual(
-            Range(min=1, max=4, next=2), bounded_range({1, 3, 4})
-        )
+        self.assertEqual(Range(min=1, max=4, next=2), bounded_range({1, 3, 4}))
 
     def test_bounded_range_clamps_high_values(self):
         """Values beyond the limit clamp to the upper bound."""
@@ -219,15 +205,11 @@ class RangeTest(unittest.TestCase):
 
     def test_bounded_range_negative_values(self):
         """Negative values clamp to the lower bound of zero."""
-        self.assertEqual(
-            Range(min=0, max=3, next=0), bounded_range({-5, 1, 2, 3})
-        )
+        self.assertEqual(Range(min=0, max=3, next=0), bounded_range({-5, 1, 2, 3}))
 
     def test_bounded_range_all_negative_collapses_to_zero(self):
         """All-negative input collapses onto zero."""
-        self.assertEqual(
-            Range(min=0, max=0, next=0), bounded_range({-100, -200})
-        )
+        self.assertEqual(Range(min=0, max=0, next=0), bounded_range({-100, -200}))
 
     def test_bounded_range_full_window(self):
         """A full window has no free value: 'next' stays at the upper bound
@@ -284,9 +266,7 @@ class StripSensitiveTest(unittest.TestCase):
 
     def test_mixed_values(self):
         """Hashed values are kept, plaintext ones are dropped."""
-        entries = self.entry(
-            {"userPassword": [b"{SSHA}abc", b"plain"], "cn": [b"x"]}
-        )
+        entries = self.entry({"userPassword": [b"{SSHA}abc", b"plain"], "cn": [b"x"]})
         result = sanitize_export_entries(entries)
         self.assertEqual(
             result[0]["raw_attributes"], {"userPassword": [b"{SSHA}abc"], "cn": [b"x"]}
@@ -319,10 +299,8 @@ class BindPatternTest(unittest.TestCase):
         "Apply the given BIND_PATTERN to username, isolating settings.config."
         orig = settings.config
         try:
-            settings.config = (
-                lambda k, default=None: pattern
-                if k == "BIND_PATTERN"
-                else orig(k, default=None)
+            settings.config = lambda k, default=None: (  # type: ignore
+                pattern if k == "BIND_PATTERN" else orig(k, default=None)
             )
             return settings.GET_BIND_PATTERN(username)
         finally:
@@ -457,7 +435,7 @@ class ProbeTest(unittest.TestCase):
         """A malformed BIND_PATTERN surfaces an error diagnostic."""
         old_config = settings.config
         try:
-            settings.config = lambda k, default=None: "bad-pattern"
+            settings.config = lambda k, default=None: "bad-pattern"  # type: ignore
             with self.client:
                 body = self.client.get("/api/probe").json()
         finally:
@@ -485,7 +463,6 @@ class ProbeTest(unittest.TestCase):
             self.assertGreater(probe._startup_probe_at, at_before)
 
 
-
 class SchemaCacheTest(unittest.IsolatedAsyncioTestCase):
     "Ensure the schema is fetched only once under concurrency (#4)"
 
@@ -509,7 +486,7 @@ class SchemaCacheTest(unittest.IsolatedAsyncioTestCase):
         )
         ldap_connection.SCHEMA = None
         ldap_connection._SCHEMA_LOCK = Lock()
-        ldap_connection.get_schema = fake_get_schema
+        ldap_connection.get_schema = fake_get_schema  # type: ignore
         return calls, original
 
     async def test_ensure_schema_fetches_once(self):
@@ -528,7 +505,11 @@ class SchemaCacheTest(unittest.IsolatedAsyncioTestCase):
                 for _ in range(20):
                     tg.start_soon(_ensure)
         finally:
-            ldap_connection.SCHEMA, ldap_connection._SCHEMA_LOCK, ldap_connection.get_schema = (
+            (
+                ldap_connection.SCHEMA,
+                ldap_connection._SCHEMA_LOCK,
+                ldap_connection.get_schema,
+            ) = (
                 schema,
                 lock,
                 get_schema,
@@ -687,10 +668,8 @@ class LoginModeTest(LdapMixin, unittest.TestCase):
         settings.BIND_AS_USER = self._orig_bind_as_user
 
     def _set_bind_pattern(self, pattern: str | None):
-        settings.config = (
-            lambda k, default=None: pattern
-            if k == "BIND_PATTERN"
-            else self._orig_config(k, default=None)
+        settings.config = lambda k, default=None: (  # type: ignore
+            pattern if k == "BIND_PATTERN" else self._orig_config(k, default=None)
         )
 
     def _whoami(self, user: str, password: str) -> httpx2.Response:
@@ -716,9 +695,7 @@ class LoginModeTest(LdapMixin, unittest.TestCase):
         (401), not a 500 invalid-DN crash (#181)."""
         self._set_bind_pattern("%s")
         result = self._whoami(ADMIN_DN, "wrong")
-        self.assertEqual(
-            HTTPStatus.UNAUTHORIZED, result.status_code, result.text
-        )
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, result.status_code, result.text)
 
     def test_partial_dn_bind_pattern(self):
         """BIND_PATTERN=%s,o=Flintstones: a partial RDN (cn=admin) is suffixed."""
@@ -903,9 +880,7 @@ class ModificationTest(LdapMixin, unittest.TestCase):
         without mutating the entry."""
         for rdn in ("cn=a,dc=evil", "cn=a+sn=b", "cn="):
             with self.client:
-                result = self.client.post(
-                    f"/api/rename/{TEST_DN}", auth=AUTH, json=rdn
-                )
+                result = self.client.post(f"/api/rename/{TEST_DN}", auth=AUTH, json=rdn)
                 self.assertHTTPStatus(result, HTTPStatus.BAD_REQUEST)
         self.assertStillAt(TEST_DN)
 

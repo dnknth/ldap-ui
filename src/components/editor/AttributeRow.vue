@@ -112,15 +112,15 @@
         />
       </div>
       <autocomplete
-          auto-pick-single
-          v-if="completable && elementId"
-          @pick="complete"
-          :for="elementId"
-          :query="query"
-          label="dn"
-          pick-key="dn"
-          :search="searchDns"
-        />
+        auto-pick-single
+        v-if="completable && elementId"
+        @pick="complete"
+        :for="elementId"
+        :query="query"
+        label="dn"
+        pick-key="dn"
+        :search="searchDns"
+      />
       <autocomplete
         v-if="oid && elementId"
         @pick="complete"
