@@ -39,7 +39,7 @@
     "vite": "latest",
     "vite-plugin-compression": "latest",
     "vitest": "^5.0.3",
-    "vue-tsc": "3.3.11"
+    "vue-tsc": "3.3.12"
   },
   "browserslist": [
     "> 1%",
