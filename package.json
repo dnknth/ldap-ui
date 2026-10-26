@@ -35,7 +35,7 @@
     "prettier": "latest",
     "tailwindcss": "^3.4.19",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.71.2",
+    "typescript-eslint": "^8.72.0",
     "vite": "latest",
     "vite-plugin-compression": "latest",
     "vitest": "^5.0.5",
