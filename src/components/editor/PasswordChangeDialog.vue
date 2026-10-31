@@ -68,10 +68,17 @@ const props = defineProps<{
   passwordsMatch = computed(
     () => newPassword.value && newPassword.value === repeated.value,
   ),
+  // The old password field must be shown whenever the entry has a
+  // password, and always for the current user: changing one's own password
+  // requires the old one server-side, even when userPassword itself is not
+  // readable (e.g. =wx access) or not modifiable, and therefore absent
+  // from the entry (issue #23). Without the field, self-service password
+  // change is impossible through this dialog.
   oldExists = computed(
     () =>
-      !!props.entry.attrs.userPassword &&
-      props.entry.attrs.userPassword[0] != "",
+      currentUser.value ||
+      (!!props.entry.attrs.userPassword &&
+        props.entry.attrs.userPassword[0] != ""),
   ),
   emit = defineEmits<{
     ok: [oldPw: string, newPw: string];
