@@ -4,7 +4,7 @@
 [![PyPI](https://img.shields.io/pypi/v/ldap-ui?label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/ldap-ui/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This is a *minimal* web interface for LDAP directories.
+This is a _minimal_ web interface for LDAP directories.
 
 ![Screenshot](https://github.com/dnknth/ldap-ui/blob/main/screenshot.png?raw=true)
 
@@ -23,7 +23,6 @@ This is a *minimal* web interface for LDAP directories.
 The app always requires authentication, even if the directory permits anonymous access. Credentials are validated via a simple `bind` (SASL is not supported); what a user can see and edit is governed by the directory's access rules.
 
 ## Usage
-
 
 ### Docker
 
@@ -88,9 +87,11 @@ LDAP access is controlled by the following optional environment variables, possi
 - `BIND_AS_USER`: Bind the initial LDAP connection with the login user's credentials instead of anonymously, for directories that reject anonymous binds (e.g. FreeIPA). Requires `BIND_PATTERN` - see [Authentication methods](#authentication-methods).
 
 If `BASE_DN`/`SCHEMA_DN` are not set, they are auto-detected from the root DSA, which must be readable anonymously:
+
 ```text
 access to dn.base="" by * read
 ```
+
 The lookup is always anonymous - it runs before any user bind - so `BIND_AS_USER` mode still needs explicit `BASE_DN`/`SCHEMA_DN` on directories that deny anonymous root-DSA access.
 
 For finer-grained control, see [settings.py](settings.py).
@@ -155,9 +156,9 @@ Save or dismiss with the ↩ key.
 The following [access keys](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/accesskey#try_it) are defined:
 
 | Access Key | UI Element                |
-|------------|---------------------------|
+| ---------- | ------------------------- |
 | K          | Global search at page top |
-| A          | Add an attribute           |
+| A          | Add an attribute          |
 | O          | Add an object class       |
 | R          | Reset entry modifications |
 | S          | Save an entry (same as ↩) |
@@ -167,15 +168,15 @@ The following [access keys](https://developer.mozilla.org/en-US/docs/Web/HTML/Re
 - The software works with [OpenLDAP](http://www.openldap.org) using simple bind. Other directories have not been tested much, although [389 DS](https://www.port389.org) works to some extent.
 - SASL authentication schemes are presently not supported.
 - Passwords are transmitted as plain text. The LDAP server is expected to hash them (OpenLDAP 2.4 does). I strongly recommend exposing the app through a TLS-enabled web server.
-- HTTP *Basic Authentication* is performed by the app: the login dialog collects credentials and a request interceptor (`src/auth.ts`) attaches `Authorization: Basic` to every request once logged in. On startup the app probes `/api/whoami`; if an upstream HTTP server (or a native browser Basic challenge) already supplied the `AUTHORIZATION` request variable, the session is treated as authenticated and the login dialog is skipped. Otherwise the dialog credentials are used, replacing any upstream-provided header.
+- HTTP _Basic Authentication_ is performed by the app: the login dialog collects credentials and a request interceptor (`src/auth.ts`) attaches `Authorization: Basic` to every request once logged in. On startup the app probes `/api/whoami`; if an upstream HTTP server (or a native browser Basic challenge) already supplied the `AUTHORIZATION` request variable, the session is treated as authenticated and the login dialog is skipped. Otherwise the dialog credentials are used, replacing any upstream-provided header.
 - LDIF export always includes `userPassword` values that carry an RFC&nbsp;2307 scheme prefix (`{SSHA}`, `{SHA}`, `{MD5}`, …), but never plaintext: values without a prefix — or explicitly marked `{CLEARTEXT}`/`{PLAIN}` — are omitted. So a directory that stores passwords in plaintext cannot leak them through an export.
 
 ## Q&A
 
 - Q: Why are some fields not editable?
-  - A: The RDN of an entry is read-only. To change it, rename the entry with a different RDN, then change the old RDN and rename back. To change passwords, click on the question mark icon on the right side. Binary fields (as per schema) are read-only. You do not want to modify them accidentally.
+    - A: The RDN of an entry is read-only. To change it, rename the entry with a different RDN, then change the old RDN and rename back. To change passwords, click on the question mark icon on the right side. Binary fields (as per schema) are read-only. You do not want to modify them accidentally.
 - Q: Why did you write this?
-  - A: [PHPLdapAdmin](http://phpldapadmin.sf.net/) is no longer actively maintained. I needed a replacement, and wanted to try Vue.
+    - A: [PHPLdapAdmin](http://phpldapadmin.sf.net/) is no longer actively maintained. I needed a replacement, and wanted to try Vue.
 
 ## Acknowledgements
 

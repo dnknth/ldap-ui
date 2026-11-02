@@ -273,7 +273,23 @@ class MockLdapStrategy(MockAsyncStrategy):
             # child).
             base = safe_dn(request["base"])
             responses = [entry for entry in responses if entry["object"] != base]
+        self._apply_password_acl(responses)
         return responses, result
+
+    def _apply_password_acl(self, responses):
+        """Simulate the directory ACL: userPassword is readable only by the
+        entry itself or by the admin (ADMIN_DN). Other callers get it dropped,
+        as a real directory with such an ACL would. Without this, the mock
+        returns every requested attribute to any caller, so the check-password
+        authorization gate (#212) would trivially pass for everyone."""
+        requester = self.bound
+        for entry in responses:
+            dn = entry["object"]
+            if requester == dn or requester == ADMIN_DN:
+                continue
+            entry["attributes"] = [
+                attr for attr in entry["attributes"] if attr["type"] != "userPassword"
+            ]
 
     def _has_subordinates(self, dn: str) -> bool:
         dl = f",{dn.lower()}"
@@ -399,6 +415,11 @@ def _base_dn() -> str:
 
 # The naming context of the demo directory (``o=Flintstones``), from the LDIF.
 BASE_DN = _base_dn()
+
+# The demo directory's administrator (``cn=admin,o=Flintstones``). The mock
+# simulates a typical ACL where userPassword is readable only by the entry
+# itself or by this admin.
+ADMIN_DN = f"cn=admin,{BASE_DN}"
 
 
 @lru_cache(maxsize=1)

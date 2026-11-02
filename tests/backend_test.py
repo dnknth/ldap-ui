@@ -975,5 +975,83 @@ class ModificationTest(LdapMixin, unittest.TestCase):
             self.assertHTTPStatus(result, HTTPStatus.NO_CONTENT)
 
 
+class PasswordAclTest(LdapMixin, unittest.TestCase):
+    """#212: check-password requires the caller to be the entry itself or a
+    caller with read access to the target's userPassword per the directory
+    ACLs (simulated in the mock)."""
+
+    client = TestClient(app)
+    BAMM_DN = f"cn=Bamm Bamm Rubble,ou=People,{BASE_DN}"
+
+    def assertHTTPStatus(
+        self, result: httpx2.Response, status_code=HTTPStatus.OK
+    ) -> None:
+        self.assertEqual(result.status_code, status_code, result.text)
+
+    def test_admin_checks_other_entry(self):
+        """The admin (cn=admin, who can read any userPassword) may verify
+        another entry's password: correct and wrong guesses return
+        true/false."""
+        with self.client:
+            ok = self.client.post(
+                f"/api/check-password/{FRED_DN}",
+                auth=AUTH,
+                json="yabbadabbado",
+            )
+            self.assertHTTPStatus(ok)
+            self.assertEqual(True, ok.json())
+            bad = self.client.post(
+                f"/api/check-password/{FRED_DN}",
+                auth=AUTH,
+                json="wrong",
+            )
+            self.assertHTTPStatus(bad)
+            self.assertEqual(False, bad.json())
+
+    def test_admin_self_check(self):
+        """The admin may still verify their own password (#212)."""
+        with self.client:
+            result = self.client.post(
+                f"/api/check-password/{ADMIN_DN}",
+                auth=AUTH,
+                json="bedrock",
+            )
+            self.assertHTTPStatus(result)
+            self.assertEqual(True, result.json())
+
+    def test_self_check_own_password(self):
+        """fred may verify their own password even though they cannot read
+        another entry's userPassword (the primary dialog use case)."""
+        with self.client:
+            result = self.client.post(
+                f"/api/check-password/{FRED_DN}",
+                auth=("fred", "yabbadabbado"),
+                json="yabbadabbado",
+            )
+            self.assertHTTPStatus(result)
+            self.assertEqual(True, result.json())
+
+    def test_non_admin_cannot_check_admin_password(self):
+        """fred (no read access to admin's userPassword) may not verify the
+        admin's password."""
+        with self.client:
+            result = self.client.post(
+                f"/api/check-password/{ADMIN_DN}",
+                auth=("fred", "yabbadabbado"),
+                json="bedrock",
+            )
+            self.assertHTTPStatus(result, HTTPStatus.FORBIDDEN)
+
+    def test_non_admin_cannot_check_other_password(self):
+        """fred may not verify another entry's password either."""
+        with self.client:
+            result = self.client.post(
+                f"/api/check-password/{self.BAMM_DN}",
+                auth=("fred", "yabbadabbado"),
+                json="bammbamm",
+            )
+            self.assertHTTPStatus(result, HTTPStatus.FORBIDDEN)
+
+
 if __name__ == "__main__":
     unittest.main()

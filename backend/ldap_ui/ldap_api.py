@@ -491,9 +491,21 @@ async def delete_blob(
 async def check_password(
     dn: str,
     check: Annotated[str, Body()],
-    _auth: AuthenticatedConnection,  # Always demand authentication
+    auth: AuthenticatedConnection,  # Always demand authentication
 ) -> bool:
     "Verify a password"
+
+    # Only the entry itself or a caller who can read the target's password may
+    # verify it: the check binds dn/check and returns true/false, so without
+    # this gate any authenticated user could probe another entry's password
+    # (#212). Read access to userPassword is the directory's own ACL decision.
+    if not (is_self(auth, dn) or await can_read_password(auth, dn)):
+        await rate_limit()  # keep authorized vs. denied indistinguishable
+        raise HTTPException(
+            HTTPStatus.FORBIDDEN,
+            "Only the entry itself or a caller with read access to its password "
+            "may verify it",
+        )
 
     url, _ = parse_url(settings.LDAP_URL)
     connection = open(url, "NO_INFO")
@@ -557,6 +569,25 @@ def is_self(connection: Connection, dn: str) -> bool:
         )
     except LDAPInvalidDnError:
         return False
+
+
+async def can_read_password(connection: Connection, dn: str) -> bool:
+    "Can the caller read the target's userPassword per the directory ACLs?"
+    try:
+        entry = await unique(
+            connection,
+            connection.search(
+                dn,
+                search_filter=ANY,
+                search_scope=BASE,
+                attributes=["userPassword"],
+            ),
+        )
+    except HTTPException:
+        # Fail-closed: if the target's password can't be read (attribute
+        # omitted or an ACL/not-found error), treat the caller as unauthorized.
+        return False
+    return bool(entry.attributes.get("userPassword"))
 
 
 def is_hashed_password(value: bytes | str) -> bool:
