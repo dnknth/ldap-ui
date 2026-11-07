@@ -37,3 +37,9 @@ push: clean $(SITE)
 		--platform linux/amd64,linux/arm64 \
 		-t $(IMAGE):$(VERSION) -t $(IMAGE):latest .
 	docker pushrm $(IMAGE)
+
+up:
+	uv sync --upgrade
+	pnpm update
+	pnpm audit --prod
+	$(MAKE) clean dist
