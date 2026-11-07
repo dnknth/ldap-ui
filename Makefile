@@ -31,9 +31,19 @@ clean:
 tidy: clean
 	rm -rf .venv node_modules
 
+token:
+	@pass token/docker.com
+
 # See: https://docs.docker.com/build/building/multi-platform/#multiple-native-nodes
 push: clean $(SITE)
+	docker pull alpine
 	docker buildx build --push \
 		--platform linux/amd64,linux/arm64 \
 		-t $(IMAGE):$(VERSION) -t $(IMAGE):latest .
 	docker pushrm $(IMAGE)
+
+up:
+	uv sync --upgrade
+	pnpm update
+	pnpm audit --prod
+	$(MAKE) clean dist

@@ -1,4 +1,4 @@
-FROM alpine:3
+FROM alpine
 COPY ./ /src/
 RUN apk add --no-cache python3 py3-pip \
     && pip3 install --break-system-packages /src \
