@@ -7,7 +7,9 @@ from ldap3.core.exceptions import (
     LDAPInappropriateAuthenticationResult,
     LDAPInvalidCredentialsResult,
     LDAPNoSuchObjectResult,
+    LDAPOperationsErrorResult,
     LDAPResponseTimeoutError,
+    LDAPStrongerAuthRequiredResult,
 )
 from ldap3.utils.ciDict import CaseInsensitiveDict
 from ldap_ui import ldap_api, ldap_connection, ldap_helpers, probe, settings
@@ -137,9 +139,7 @@ class LdapConnectBindFailureTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_rejected_anonymous_bind_is_not_rate_limited(self):
         await self._bind_failure(
-            LDAPInappropriateAuthenticationResult(
-                [{"desc": "anonymous bind denied"}]
-            ),
+            LDAPInappropriateAuthenticationResult([{"desc": "anonymous bind denied"}]),
             None,
             rate_limited=False,
         )
@@ -452,6 +452,106 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.ok)
         self.assertEqual(result.diagnostics, [])
 
+    async def test_user_bind_mode_ad_operations_error_base_read_not_fatal(self):
+        # Microsoft Active Directory answers a denied anonymous read with
+        # operationsError (result 1) and an "authentication required" message
+        # ("In order to perform this operation a successful bind must be
+        # completed on the connection") rather than results 48/49/50. In
+        # BIND_AS_USER mode that is an anonymous-access artifact, not a broken
+        # BASE_DN/SCHEMA_DN, so it must not fail the probe (#213).
+        connection = MagicMock(name="Connection")
+        connection.search.return_value = 1
+        connection.get_response.side_effect = LDAPOperationsErrorResult(
+            message="000004DC: In order to perform this operation a successful "
+            "bind must be completed on the connection."
+        )
+        with (
+            patch.object(
+                probe,
+                "ldap_connect",
+                side_effect=lambda: self._connect(connection),
+            ),
+            patch.object(settings, "BASE_DN", "dc=example,dc=com"),
+            patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
+            patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", True),
+            patch.object(
+                settings,
+                "config",
+                lambda k, default=None: "%s" if k == "BIND_PATTERN" else default,
+            ),
+        ):
+            result = await probe.run_probe()
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.diagnostics, [])
+
+    async def test_user_bind_mode_generic_operations_error_still_reported(self):
+        # A generic operationsError (no bind/authentication message) must not
+        # be mistaken for an anonymous-access artifact: a genuinely broken
+        # base/schema DN still fails the probe in BIND_AS_USER mode.
+        connection = MagicMock(name="Connection")
+        connection.search.return_value = 1
+        connection.get_response.side_effect = LDAPOperationsErrorResult(
+            message="000004DC: Some unrelated operation error"
+        )
+        with (
+            patch.object(
+                probe,
+                "ldap_connect",
+                side_effect=lambda: self._connect(connection),
+            ),
+            patch.object(settings, "BASE_DN", "dc=example,dc=com"),
+            patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
+            patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", True),
+            patch.object(
+                settings,
+                "config",
+                lambda k, default=None: "%s" if k == "BIND_PATTERN" else default,
+            ),
+        ):
+            result = await probe.run_probe()
+
+        self.assertFalse(result.ok)
+        self.assertTrue(
+            any(
+                d.severity == "error" and "base entry" in d.message
+                for d in result.diagnostics
+            ),
+            result.diagnostics,
+        )
+
+    async def test_user_bind_mode_stronger_auth_required_not_fatal(self):
+        # Result 13 (strongerAuthRequired) is the standard "authentication
+        # required" code; in BIND_AS_USER mode it is an anonymous-access
+        # artifact, not a broken base/schema DN.
+        connection = MagicMock(name="Connection")
+        connection.search.return_value = 1
+        connection.get_response.side_effect = LDAPStrongerAuthRequiredResult(
+            message="Authentication required"
+        )
+        with (
+            patch.object(
+                probe,
+                "ldap_connect",
+                side_effect=lambda: self._connect(connection),
+            ),
+            patch.object(settings, "BASE_DN", "dc=example,dc=com"),
+            patch.object(settings, "SCHEMA_DN", "cn=Subschema"),
+            patch.object(settings, "INSECURE_TLS", False),
+            patch.object(settings, "BIND_AS_USER", True),
+            patch.object(
+                settings,
+                "config",
+                lambda k, default=None: "%s" if k == "BIND_PATTERN" else default,
+            ),
+        ):
+            result = await probe.run_probe()
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.diagnostics, [])
+
     async def test_user_bind_mode_unset_base_schema_warning(self):
         # In user-bound mode the probe usually cannot auto-detect base/schema
         # (anonymous access is restricted): warn instead of failing, since the
@@ -494,9 +594,7 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
     @staticmethod
     @asynccontextmanager
     async def _reject_anonymous_bind():
-        raise LDAPInappropriateAuthenticationResult(
-            [{"desc": "anonymous bind denied"}]
-        )
+        raise LDAPInappropriateAuthenticationResult([{"desc": "anonymous bind denied"}])
         yield  # pragma: no cover
 
     async def test_anonymous_bind_denied_without_bind_pattern_error(self):
@@ -519,8 +617,7 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result.ok)
         self.assertTrue(
             any(
-                d.severity == "error"
-                and "rejects anonymous binds" in d.message
+                d.severity == "error" and "rejects anonymous binds" in d.message
                 for d in result.diagnostics
             ),
             result.diagnostics,
@@ -629,10 +726,7 @@ class RunProbeAsyncTest(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result.ok)
         self.assertTrue(
-            any(
-                "outside the BASE_DN subtree" in d.message
-                for d in result.diagnostics
-            ),
+            any("outside the BASE_DN subtree" in d.message for d in result.diagnostics),
             result.diagnostics,
         )
 
@@ -746,9 +840,7 @@ class BindPatternBaseAnchoringTest(unittest.TestCase):
         )
 
     def test_full_dn_pattern_skipped(self):
-        self.assertTrue(
-            probe._pattern_anchored_in_base("%s", "dc=example,dc=com")
-        )
+        self.assertTrue(probe._pattern_anchored_in_base("%s", "dc=example,dc=com"))
 
     def test_relative_suffix_is_not_anchored(self):
         self.assertFalse(
@@ -819,8 +911,8 @@ class RenameEntryTest(unittest.IsolatedAsyncioTestCase):
             }
         ]
         connection.search.return_value = 1
-        connection.get_response.side_effect = (
-            lambda msgid, timeout=0: (response, None) if msgid == 1 else ([], None)
+        connection.get_response.side_effect = lambda msgid, timeout=0: (
+            (response, None) if msgid == 1 else ([], None)
         )
         connection.add.return_value = 2
         connection.delete.return_value = 3

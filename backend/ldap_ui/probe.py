@@ -12,6 +12,8 @@ from ldap3.core.exceptions import (
     LDAPInvalidCredentialsResult,
     LDAPInvalidDnError,
     LDAPNoSuchObjectResult,
+    LDAPOperationsErrorResult,
+    LDAPStrongerAuthRequiredResult,
 )
 from ldap3.utils.dn import parse_dn
 
@@ -29,6 +31,7 @@ ANONYMOUS_ACCESS_ERRORS = (
     LDAPInappropriateAuthenticationResult,
     LDAPInvalidCredentialsResult,
     LDAPInsufficientAccessRightsResult,
+    LDAPStrongerAuthRequiredResult,
 )
 
 
@@ -47,10 +50,29 @@ def _anonymous_access_denied(exc: BaseException) -> bool:
         return True
     if isinstance(exc, LDAPNoSuchObjectResult):
         return True
+    # Microsoft Active Directory answers a denied anonymous read with result 1
+    # (operationsError) and an "authentication required" message ("In order to
+    # perform this operation a successful bind must be completed on the
+    # connection") rather than results 48/49/50. A generic operationsError is
+    # still reported, so only the bind-required signature is treated as an
+    # anonymous-access artifact (#213).
+    if isinstance(exc, LDAPOperationsErrorResult) and _message_requires_bind(exc):
+        return True
     # unique() raises a 404 when the search succeeds but returns no entries:
     # for a base/schema check with a fixed filter that means the entry is not
     # visible to the anonymous connection.
     return isinstance(exc, HTTPException) and exc.status_code == HTTPStatus.NOT_FOUND
+
+
+def _message_requires_bind(exc: LDAPOperationsErrorResult) -> bool:
+    """Whether an operationsError message demands an authenticated bind.
+
+    AD's auth-required signature is result 1 with a message about needing a
+    successful bind; a generic operationsError (e.g. a genuinely broken base
+    DN) carries no such text and must keep failing the probe.
+    """
+    msg = (exc.message or "").lower()
+    return "bind" in msg and ("authentication" in msg or "successful bind" in msg)
 
 
 def _pattern_anchored_in_base(pattern: str, base_dn: str) -> bool:
