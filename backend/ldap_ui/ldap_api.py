@@ -325,7 +325,7 @@ def get_modification(
 ) -> Modification | None:
     values = list(filter(None, values))
     if not values:
-        return (MODIFY_DELETE, [])
+        return (MODIFY_DELETE, []) if attr in entry.attributes else None
     if attr not in entry.attributes:
         return (MODIFY_ADD, values)
     if set(entry.raw_attributes[attr]) != set(to_raw(values)):

@@ -213,6 +213,7 @@ import {
 } from "@/generated";
 
 const inputTags = ["BUTTON", "INPUT", "SELECT", "TEXTAREA"],
+  booleanSyntax = "1.3.6.1.4.1.1466.115.121.1.7",
   entry = ref<Entry>(), // entry in editor
   focused = ref<string>(), // currently focused input
   invalid = ref<string[]>([]), // field IDs with validation errors
@@ -286,7 +287,10 @@ function discardEntry(dn?: string): void {
 }
 
 function addAttribute(attr: string): void {
-  entry.value!.attrs[attr] = [""];
+  const attrClass = state.schema?.attr(attr);
+  console.log("Syntax: " + attrClass?.syntax);
+  entry.value!.attrs[attr] =
+    attrClass?.syntax == booleanSyntax ? ["FALSE"] : [""];
   focus(attr + "-0");
 }
 
